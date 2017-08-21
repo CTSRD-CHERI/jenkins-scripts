@@ -32,7 +32,7 @@ def buildProjectWithCheribuild(String projectName, String extraArgs, String targ
 
 // This is what get's called from jenkins
 def call(String name, String extraArgs='', targets=['cheri256', 'cheri128', 'mips', 'hybrid-cheri128']) {
-    return targets.collectEntries {
+    parallel targets.collectEntries {
         [(it): {
             node('docker') {
                 echo "Building for ${it}"
