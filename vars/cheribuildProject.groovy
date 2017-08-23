@@ -22,7 +22,7 @@ def buildProjectWithCheribuild(projectName, extraArgs, String targetCPU, String 
                     env
                     pwd
                    '''
-                sh "./cheribuild/jenkins-cheri-build.py --no-tarball --build ${projectName} --cpu ${targetCPU} ${extraArgs}"
+                sh "./cheribuild/jenkins-cheri-build.py --build ${projectName} --cpu ${targetCPU} ${extraArgs}"
                 if (beforeTarball) {
                     sh beforeTarball
                 }
