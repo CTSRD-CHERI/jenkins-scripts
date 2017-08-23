@@ -31,13 +31,20 @@ def buildProjectWithCheribuild(String projectName, String extraArgs, String targ
 }
 
 // This is what get's called from jenkins
-def call(String name, String extraArgs='', targets=['cheri256', 'cheri128', 'mips', 'hybrid-cheri128']) {
-    parallel targets.collectEntries {
+def call(Map args) {
+    def targets
+    if ("targets" in args) {
+        targets = args.targets
+    } else {
+        targets = ['cheri256', 'cheri128', 'mips', 'hybrid-cheri128']
+    }
+    Map<String, Closure> jobs = targets.collectEntries {
         [(it): {
             node('docker') {
                 echo "Building for ${it}"
-                buildProjectWithCheribuild(name, extraArgs, it)
+                buildProjectWithCheribuild(args.name, args.extraArgs, it)
             }
         }]
     }
+    parallel jobs
 }
