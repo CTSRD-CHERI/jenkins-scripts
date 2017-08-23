@@ -49,6 +49,7 @@ def buildProjectWithCheribuild(projectName, extraArgs, String targetCPU, Map oth
                 testImageArg = "--disk-image /usr/local/share/cheribsd/cheribsd-minimal.img"
             }
             def cheribsdImage = docker.image("ctsrd/${imageName}:latest")
+            cheribsdImage.pull()
             cheribsdImage.inside('-u 0') {
                 // ./boot_cheribsd.py --qemu-cmd ~/cheri/output/sdk256/bin/qemu-system-cheri --disk-image ./cheribsd-jenkins_bluehive.img.xz --kernel cheribsd-cheri-malta64-kernel.bz2 -i
                 // TODO: allow booting the minimal bluehive disk-image
