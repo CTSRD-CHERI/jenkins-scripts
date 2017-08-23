@@ -13,7 +13,7 @@ def buildProjectWithCheribuild(projectName, extraArgs, String targetCPU, Map oth
         dir(projectName) {
             checkout scm
         }
-        dir ('cheribuild') {
+        dir('cheribuild') {
             git 'https://github.com/CTSRD-CHERI/cheribuild.git'
         }
         sdkImage.inside('-u 0') {
@@ -54,6 +54,7 @@ def buildProjectWithCheribuild(projectName, extraArgs, String targetCPU, Map oth
             }
         }
     }
+}
 
 // This is what get's called from jenkins
 def call(Map args) {
