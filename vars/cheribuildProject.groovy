@@ -53,8 +53,9 @@ def buildProjectWithCheribuild(projectName, extraArgs, String targetCPU, Map oth
                 // ./boot_cheribsd.py --qemu-cmd ~/cheri/output/sdk256/bin/qemu-system-cheri --disk-image ./cheribsd-jenkins_bluehive.img.xz --kernel cheribsd-cheri-malta64-kernel.bz2 -i
                 // TODO: allow booting the minimal bluehive disk-image
                 def testCommand = "'export CPU=${targetCPU}; " + otherArgs.testScript.replaceAll('\'', '\\\'') + "'"
-
-                sh "boot_cheribsd.py ${testImageArg} --test-command ${testCommand} --test-archive ${tarballName} --test-timeout ${testTimeout}"
+                ansiColor('xterm') {
+                    sh "boot_cheribsd.py ${testImageArg} --test-command ${testCommand} --test-archive ${tarballName} --test-timeout ${testTimeout}"
+                }
             }
         }
     }
