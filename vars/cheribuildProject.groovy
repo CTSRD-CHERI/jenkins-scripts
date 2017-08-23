@@ -33,7 +33,7 @@ def buildProjectWithCheribuild(projectName, extraArgs, String targetCPU, Map oth
         sh 'ls -la'
         archiveArtifacts allowEmptyArchive: false, artifacts: tarballName, fingerprint: true, onlyIfSuccessful: true
     }
-    if ('testScript' in args) {
+    if ('testScript' in otherArgs) {
         def testTimeout = otherArgs.get('testTimeout', 60 * 60)
         stage("run tests for ${targetCPU}") {
             def imageName
@@ -48,7 +48,7 @@ def buildProjectWithCheribuild(projectName, extraArgs, String targetCPU, Map oth
             cheribsdImage.inside('-u 0') {
                 // ./boot_cheribsd.py --qemu-cmd ~/cheri/output/sdk256/bin/qemu-system-cheri --disk-image ./cheribsd-jenkins_bluehive.img.xz --kernel cheribsd-cheri-malta64-kernel.bz2 -i
                 // TODO: allow booting the minimal bluehive disk-image
-                testCommand = "'export CPU=${targetCPU}; " + args.testScript.replaceAll('\'', '\\\'') + "'"
+                testCommand = "'export CPU=${targetCPU}; " + otherArgs.testScript.replaceAll('\'', '\\\'') + "'"
 
                 sh "boot_cheribsd.py --test-command ${testCommand} --test-archive ${tarballName} --test-timeout ${testTimeout}"
             }
