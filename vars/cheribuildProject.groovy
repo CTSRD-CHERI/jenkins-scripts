@@ -1,5 +1,5 @@
 
-def buildProjectWithCheribuild(String projectName, String extraArgs, String targetCPU) {
+def buildProjectWithCheribuild(projectName, extraArgs, String targetCPU, String beforeTarball) {
     def sdkCPU = targetCPU
     if (sdkCPU.startsWith("hybrid-")) {
         sdkCPU = sdkCPU.substring("hybrid-".length())
@@ -22,7 +22,11 @@ def buildProjectWithCheribuild(String projectName, String extraArgs, String targ
                     env
                     pwd
                    '''
-                sh "./cheribuild/jenkins-cheri-build.py --tarball ${projectName} --cpu ${targetCPU} ${extraArgs}"
+                sh "./cheribuild/jenkins-cheri-build.py --no-tarball --build ${projectName} --cpu ${targetCPU} ${extraArgs}"
+                if (beforeTarball) {
+                    sh beforeTarball
+                }
+                sh "./cheribuild/jenkins-cheri-build.py --tarball --no-build ${projectName} --cpu ${targetCPU} ${extraArgs}"
             }
         }
         sh 'ls -la'
@@ -42,7 +46,7 @@ def call(Map args) {
         [(it): {
             node('docker') {
                 echo "Building for ${it}"
-                buildProjectWithCheribuild(args.name, args.extraArgs, it)
+                buildProjectWithCheribuild(args.name, args.extraArgs, it, args.beforeTarball)
             }
         }]
     }
