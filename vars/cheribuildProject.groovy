@@ -44,13 +44,17 @@ def buildProjectWithCheribuild(projectName, extraArgs, String targetCPU, Map oth
                 // There is no need for the binaries to be CHERIABI
                 imageName = "${sdkCPU}-cheribsd-hybrid"
             }
+            def testImageArg = ''
+            if (otherArgs.minimalTestImage) {
+                testImageArg = "--disk-image /usr/local/share/cheribsd/cheribsd-minimal.img"
+            }
             def cheribsdImage = docker.image("ctsrd/${imageName}:latest")
             cheribsdImage.inside('-u 0') {
                 // ./boot_cheribsd.py --qemu-cmd ~/cheri/output/sdk256/bin/qemu-system-cheri --disk-image ./cheribsd-jenkins_bluehive.img.xz --kernel cheribsd-cheri-malta64-kernel.bz2 -i
                 // TODO: allow booting the minimal bluehive disk-image
-                testCommand = "'export CPU=${targetCPU}; " + otherArgs.testScript.replaceAll('\'', '\\\'') + "'"
+                def testCommand = "'export CPU=${targetCPU}; " + otherArgs.testScript.replaceAll('\'', '\\\'') + "'"
 
-                sh "boot_cheribsd.py --test-command ${testCommand} --test-archive ${tarballName} --test-timeout ${testTimeout}"
+                sh "boot_cheribsd.py ${testImageArg} --test-command ${testCommand} --test-archive ${tarballName} --test-timeout ${testTimeout}"
             }
         }
     }
