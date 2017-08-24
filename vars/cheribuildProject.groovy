@@ -1,6 +1,6 @@
 import groovy.json.*
 
-class CheribuildProject implements Serializable {
+class CheribuildProjectParams implements Serializable {
     /// general/build parameters
     String projectName // the cheribuild project name
     String extraArgs // additional arguments to pass to cheribuild.py
@@ -37,7 +37,7 @@ class CheribuildProject implements Serializable {
 // FIXME: all this jenkins transforming stuff is ugly... how can I access the jenkins globals?
 
 // Run a beforeXXX hook (beforeBuild, beforeTarball, etc.)
-def runCallback(CheribuildProject proj, cb) {
+def runCallback(CheribuildProjectParams proj, cb) {
     // def cb = this."${hook}"
     if (!cb) {
         return
@@ -54,7 +54,7 @@ def runCallback(CheribuildProject proj, cb) {
     }
 }
 
-def build(CheribuildProject proj) {
+def build(CheribuildProjectParams proj) {
     // build steps that should happen on all nodes go here
     echo "Target CPU: ${proj.cpu}, SDK CPU: ${proj.sdkCPU}, output: ${proj.tarballName}"
     def sdkImage = docker.image("ctsrd/cheri-sdk-${proj.sdkCPU}:latest")
@@ -87,11 +87,11 @@ def build(CheribuildProject proj) {
         }
     }
     sh 'ls -lah'
-    archiveArtifacts allowEmptyArchive: false, artifacts: tarballName, fingerprint: true, onlyIfSuccessful: true
+    archiveArtifacts allowEmptyArchive: false, artifacts: proj.tarballName, fingerprint: true, onlyIfSuccessful: true
     runCallback(proj, proj.afterBuild)
 }
 
-def runTests(CheribuildProject proj) {
+def runTests(CheribuildProjectParams proj) {
     def imageName
     if (proj.cpu == 'mips') {
         imageName = 'cheri256-cheribsd-mips'
@@ -121,7 +121,7 @@ def runTests(CheribuildProject proj) {
     runCallback(proj, proj.afterTests)
 }
 
-def runCheribuild(CheribuildProject proj) {
+def runCheribuild(CheribuildProjectParams proj) {
     if (!proj.tarballName) {
         proj.tarballName = "${proj.projectName}-${proj.cpu}.tar.xz"
     }
@@ -156,11 +156,11 @@ def call(Map args) {
         [(it): {
             node('docker') {
                 // The map spread operator is not supported in Jenkins
-                // def project = new CheribuildProject(projectName: args.name, *:args)
+                // def project = new CheribuildProjectParams(projectName: args.name, *:args)
                 def ctorArgs = args.getClass().newInstance(args)
                 ctorArgs.projectName = name
                 ctorArgs.cpu = it
-                runCheribuild(ctorArgs as CheribuildProject)
+                runCheribuild(ctorArgs as CheribuildProjectParams)
             }
         }]
     }
