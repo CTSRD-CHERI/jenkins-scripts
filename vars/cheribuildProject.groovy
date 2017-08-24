@@ -1,3 +1,5 @@
+import groovy.json.*
+
 class CheribuildProject {
     /// general/build parameters
     String projectName // the cheribuild project name
@@ -11,6 +13,7 @@ class CheribuildProject {
 
     /// Test parameters:
     def testTimeout = 120 * 60 // timeout for running tests (default 2 hours)
+    boolean minimalTestImage
     String testScript  // if set this will be invoked by ./boot_cheribsd.py in the test stage. If not tests are skipped
     String testExtraArgs  // Additional command line options to be passed to ./boot_cheribsd.py
     // FIXME: implement this:
@@ -124,6 +127,7 @@ class CheribuildProject {
             sdkCPU = sdkCPU.substring("hybrid-".length())
         }
 
+        echo new JsonBuilder( project ).toPrettyString()
         stage("Build ${cpu}") {
             build()
         }
@@ -139,16 +143,13 @@ class CheribuildProject {
 // This is what gets called from jenkins
 def call(Map args) {
     def targets = args.get('targets', ['mips', 'cheri256', 'cheri128', 'hybrid-cheri128'])
-    def name = args.projectName
+    def name = args.name
+    args.remove('targets')
+    args.remove('name')
     assert name
     Map<String, Closure> jobs = targets.collectEntries {
         [(it): {
             node('docker') {
-                // make a deep copy:
-                // Map ctorArgs = args.clone()
-                def ctorArgs = args.getClass().newInstance(args)
-                ctorArgs.remove('targets')
-                ctorArgs.remove('name')
                 def project = new CheribuildProject(projectName: args.name, *:args)
                 project.run()
             }
