@@ -56,7 +56,7 @@ def buildProjectWithCheribuild(projectName, extraArgs, String targetCPU, Map oth
                 sh "./cheribuild/jenkins-cheri-build.py --tarball --tarball-name ${tarballName} --no-build ${projectName} --cpu ${targetCPU} ${extraArgs}"
             }
         }
-        sh 'ls -la'
+        sh 'ls -lah'
         archiveArtifacts allowEmptyArchive: false, artifacts: tarballName, fingerprint: true, onlyIfSuccessful: true
         runCallback('afterBuild', otherArgs)
     }
