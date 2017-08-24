@@ -52,7 +52,7 @@ def buildProjectWithCheribuild(projectName, extraArgs, String targetCPU, Map oth
                 // TODO: allow booting the minimal bluehive disk-image
                 def testCommand = "'export CPU=${targetCPU}; " + otherArgs.testScript.replaceAll('\'', '\\\'') + "'"
                 ansiColor('xterm') {
-                    sh "apt-get install -y wget && https://raw.githubusercontent.com/RichardsonAlex/cheri-sdk-docker/master/cheribsd/boot_cheribsd.py -O /usr/local/bin/boot_cheribsd.py"
+                    sh "wget https://raw.githubusercontent.com/RichardsonAlex/cheri-sdk-docker/master/cheribsd/boot_cheribsd.py -O /usr/local/bin/boot_cheribsd.py"
                     if ('beforeTests' in otherArgs) {
                         otherArgs.beforeTests(targetCPU)
                     }
