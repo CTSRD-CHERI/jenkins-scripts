@@ -20,7 +20,15 @@ def buildProjectWithCheribuild(projectName, extraArgs, String targetCPU, Map oth
             env.CPU = targetCPU
             ansiColor('xterm') {
                 sh "rm -fv ${tarballName}; pwd"
-                sh "./cheribuild/jenkins-cheri-build.py --build ${projectName} --cpu ${targetCPU} ${extraArgs}"
+                def cheribuildCmd = "./cheribuild/jenkins-cheri-build.py --build ${projectName} --cpu ${targetCPU} ${extraArgs}"
+                // by default try an incremental build first and if that fails fall back to a clean build
+                // this behaviour can be disabled by passing noIncrementalBuild: true
+                if (otherArgs.noIncrementalBuild) {
+                    sh "${cheribuildCmd}"
+                } else {
+                    sh "${cheribuildCmd} --no-clean || (echo 'incremental build failed!' && ${cheribuildCmd})"
+                }
+
                 if (otherArgs.beforeTarball) {
                     sh otherArgs.beforeTarball
                 }
