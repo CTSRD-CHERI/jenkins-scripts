@@ -129,13 +129,12 @@ class CheribuildProject implements Serializable {
         }
 
         println(new JsonBuilder( this ).toPrettyString())
-        stage "Build ${cpu}", {
-            build()
-        }
+
+
+        stage("Build ${cpu}", { build() })
+
         if (testScript) {
-            stage "run tests for ${cpu}", {
-                runTests()
-            }
+            stage("run tests for ${cpu}", { runTests() })
         }
         // TODO: clean up properly and remove the created artifacts?
     }
@@ -143,7 +142,8 @@ class CheribuildProject implements Serializable {
 
 // This is what gets called from jenkins
 def call(Map args) {
-    def targets = args.get('targets', ['mips', 'cheri256', 'cheri128', 'hybrid-cheri128'])
+    // def targets = args.get('targets', ['mips', 'cheri256', 'cheri128', 'hybrid-cheri128'])
+    def targets = ["mips"]
     def name = args.name
     args.remove('targets')
     args.remove('name')
