@@ -150,7 +150,11 @@ def call(Map args) {
     Map<String, Closure> jobs = targets.collectEntries {
         [(it): {
             node('docker') {
-                def project = new CheribuildProject(projectName: args.name, *:args)
+                // The map spread operator is not supported in Jenkins
+                // def project = new CheribuildProject(projectName: args.name, *:args)
+                def ctorArgs = args.getClass().newInstance(args)
+                ctorArgs.projectName = name
+                def project = ctorArgs as CheribuildProject
                 project.run()
             }
         }]
