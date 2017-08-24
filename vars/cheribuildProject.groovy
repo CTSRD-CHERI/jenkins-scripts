@@ -49,101 +49,104 @@ class CheribuildProject implements Serializable {
             }
         }
     }
+}
 
-    def build() {
-        // build steps that should happen on all nodes go here
-        echo "Target CPU: ${cpu}, SDK CPU: ${sdkCPU}, output: ${tarballName}"
-        def sdkImage = docker.image("ctsrd/cheri-sdk-${sdkCPU}:latest")
-        sdkImage.pull() // make sure we have the latest available from Docker Hub
-        runCallback(beforeSCM)
-        dir(projectName) {
-            checkout scm
-        }
-        dir('cheribuild') {
-            git 'https://github.com/CTSRD-CHERI/cheribuild.git'
-        }
-        runCallback(beforeBuildOutsideDocker)
-        sdkImage.inside('-u 0') {
-            env.CPU = cpu
-            ansiColor('xterm') {
-                sh "rm -fv ${tarballName}; pwd"
-                runCallback(beforeBuild)
-                def cheribuildCmd = "./cheribuild/jenkins-cheri-build.py --build ${projectName} --cpu ${cpu} ${extraArgs}"
-                // by default try an incremental build first and if that fails fall back to a clean build
-                // this behaviour can be disabled by passing noIncrementalBuild: true
-                if (noIncrementalBuild) {
-                    sh "${cheribuildCmd}"
-                } else {
-                    sh "${cheribuildCmd} --no-clean || (echo 'incremental build failed!' && ${cheribuildCmd})"
-                }
-                runCallback(beforeTarball)
-                sh "./cheribuild/jenkins-cheri-build.py --tarball --tarball-name ${tarballName} --no-build ${projectName} --cpu ${cpu} ${extraArgs}"
-                runCallback(afterBuildInDocker)
+
+
+def build(CheribuildProject proj) {
+    // build steps that should happen on all nodes go here
+    echo "Target CPU: ${proj.cpu}, SDK CPU: ${proj.sdkCPU}, output: ${proj.tarballName}"
+    def sdkImage = docker.image("ctsrd/cheri-sdk-${proj.sdkCPU}:latest")
+    sdkImage.pull() // make sure we have the latest available from Docker Hub
+    proj.runCallback(proj.beforeSCM)
+    dir(proj.projectName) {
+        checkout scm
+    }
+    dir('cheribuild') {
+        git 'https://github.com/CTSRD-CHERI/cheribuild.git'
+    }
+    proj.runCallback(proj.beforeBuildOutsideDocker)
+    sdkImage.inside('-u 0') {
+        env.CPU = proj.cpu
+        ansiColor('xterm') {
+            sh "rm -fv ${proj.tarballName}; pwd"
+            proj.runCallback(proj.beforeBuild)
+            def cheribuildArgs = "${proj.projectName} --cpu ${proj.cpu} ${proj.extraArgs}"
+            def cheribuildCmd = "./cheribuild/jenkins-cheri-build.py --build ${cheribuildArgs}"
+            // by default try an incremental build first and if that fails fall back to a clean build
+            // this behaviour can be disabled by passing noIncrementalBuild: true
+            if (proj.noIncrementalBuild) {
+                sh "${cheribuildCmd}"
+            } else {
+                sh "${cheribuildCmd} --no-clean || (echo 'incremental build failed!' && ${cheribuildCmd})"
             }
+            proj.runCallback(proj.beforeTarball)
+            sh "./cheribuild/jenkins-cheri-build.py --tarball --tarball-name ${proj.tarballName} --no-build ${cheribuildArgs}"
+            proj.runCallback(proj.afterBuildInDocker)
         }
-        sh 'ls -lah'
-        archiveArtifacts allowEmptyArchive: false, artifacts: tarballName, fingerprint: true, onlyIfSuccessful: true
-        runCallback(afterBuild)
+    }
+    sh 'ls -lah'
+    archiveArtifacts allowEmptyArchive: false, artifacts: tarballName, fingerprint: true, onlyIfSuccessful: true
+    proj.runCallback(proj.afterBuild)
+}
+
+def runTests(CheribuildProject proj) {
+    def imageName
+    if (proj.cpu == 'mips') {
+        imageName = 'cheri256-cheribsd-mips'
+    } else {
+        // boot a world with a hybrid userspace (it contains all the necessary shared libs)
+        // There is no need for the binaries to be CHERIABI
+        imageName = "${proj.sdkCPU}-cheribsd-hybrid"
+    }
+    def testImageArg = ''
+    if (proj.minimalTestImage) {
+        testImageArg = "--disk-image /usr/local/share/cheribsd/cheribsd-minimal.img"
+    }
+    def cheribsdImage = docker.image("ctsrd/${imageName}:latest")
+    cheribsdImage.pull()
+    proj.runCallback(proj.beforeTestsOutsideDocker)
+    cheribsdImage.inside('-u 0') {
+        // ./boot_cheribsd.py --qemu-cmd ~/cheri/output/sdk256/bin/qemu-system-cheri --disk-image ./cheribsd-jenkins_bluehive.img.xz --kernel cheribsd-cheri-malta64-kernel.bz2 -i
+        // TODO: allow booting the minimal bluehive disk-image
+        def testCommand = "'export CPU=${proj.cpu}; " + proj.testScript.replaceAll('\'', '\\\'') + "'"
+        ansiColor('xterm') {
+            sh "wget https://raw.githubusercontent.com/RichardsonAlex/cheri-sdk-docker/master/cheribsd/boot_cheribsd.py -O /usr/local/bin/boot_cheribsd.py"
+            proj.runCallback(proj.beforeTests)
+            sh "boot_cheribsd.py ${testImageArg} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
+        }
+        proj.runCallback(proj.afterTestsInDocker)
+    }
+    proj.runCallback(proj.afterTests)
+}
+
+def runCheribuild(CheribuildProject proj) {
+    if (!proj.tarballName) {
+        tarballName = "${proj.projectName}-${proj.cpu}.tar.xz"
     }
 
-    def runTests() {
-        def imageName
-        if (cpu == 'mips') {
-            imageName = 'cheri256-cheribsd-mips'
-        } else {
-            // boot a world with a hybrid userspace (it contains all the necessary shared libs)
-            // There is no need for the binaries to be CHERIABI
-            imageName = "${sdkCPU}-cheribsd-hybrid"
-        }
-        def testImageArg = ''
-        if (minimalTestImage) {
-            testImageArg = "--disk-image /usr/local/share/cheribsd/cheribsd-minimal.img"
-        }
-        def cheribsdImage = docker.image("ctsrd/${imageName}:latest")
-        cheribsdImage.pull()
-        runCallback(beforeTestsOutsideDocker)
-        cheribsdImage.inside('-u 0') {
-            // ./boot_cheribsd.py --qemu-cmd ~/cheri/output/sdk256/bin/qemu-system-cheri --disk-image ./cheribsd-jenkins_bluehive.img.xz --kernel cheribsd-cheri-malta64-kernel.bz2 -i
-            // TODO: allow booting the minimal bluehive disk-image
-            def testCommand = "'export CPU=${cpu}; " + testScript.replaceAll('\'', '\\\'') + "'"
-            ansiColor('xterm') {
-                sh "wget https://raw.githubusercontent.com/RichardsonAlex/cheri-sdk-docker/master/cheribsd/boot_cheribsd.py -O /usr/local/bin/boot_cheribsd.py"
-                runCallback(beforeTests)
-                sh "boot_cheribsd.py ${testImageArg} --test-command ${testCommand} --test-archive ${tarballName} --test-timeout ${testTimeout} ${testExtraArgs}"
-            }
-            runCallback(afterTestsInDocker)
-        }
-        runCallback(afterTests)
+    assert proj.cpu
+    // compute sdkCPU from args
+    proj.sdkCPU = proj.cpu
+    if (proj.sdkCPU.startsWith("hybrid-")) {
+        proj.sdkCPU = proj.sdkCPU.substring("hybrid-".length())
     }
 
-    def run() {
-        if (!tarballName) {
-            tarballName = "${projectName}-${cpu}.tar.xz"
-        }
-
-        assert cpu
-        // compute sdkCPU from args
-        sdkCPU = cpu
-        if (sdkCPU.startsWith("hybrid-")) {
-            sdkCPU = sdkCPU.substring("hybrid-".length())
-        }
-
-        println(new JsonBuilder( this ).toPrettyString())
-
-
-        stage("Build ${cpu}", { build() })
-
-        if (testScript) {
-            stage("run tests for ${cpu}", { runTests() })
-        }
-        // TODO: clean up properly and remove the created artifacts?
+    println(new JsonBuilder( this ).toPrettyString())
+    stage("Build ${proj.cpu}") {
+        build(proj)
     }
+    if (proj.testScript) {
+        stage("run tests for ${proj.cpu}") {
+            runTests(proj)
+        }
+    }
+    // TODO: clean up properly and remove the created artifacts?
 }
 
 // This is what gets called from jenkins
 def call(Map args) {
-    // def targets = args.get('targets', ['mips', 'cheri256', 'cheri128', 'hybrid-cheri128'])
-    def targets = ["mips"]
+    def targets = args.get('targets', ['mips', 'cheri256', 'cheri128', 'hybrid-cheri128'])
     def name = args.name
     args.remove('targets')
     args.remove('name')
@@ -156,8 +159,7 @@ def call(Map args) {
                 def ctorArgs = args.getClass().newInstance(args)
                 ctorArgs.projectName = name
                 ctorArgs.cpu = it
-                def project = ctorArgs as CheribuildProject
-                project.run()
+                runCheribuild(ctorArgs as CheribuildProject)
             }
         }]
     }
