@@ -26,12 +26,12 @@ def buildProjectWithCheribuild(projectName, extraArgs, String targetCPU, Map oth
         sdkCPU = sdkCPU.substring("hybrid-".length())
     }
     def tarballName = otherArgs.get('tarballName', "${projectName}-${targetCPU}.tar.xz")
-    echo "Target CPU: ${targetCPU}, SDK CPU: ${sdkCPU}, output: ${tarballName}"
     // build steps that should happen on all nodes go here
-    def sdkImage = docker.image("ctsrd/cheri-sdk-${sdkCPU}:latest")
-    sdkImage.pull() // make sure we have the latest available from Docker Hub
-    runCallback('beforeSCM', otherArgs)
-    stage("build ${targetCPU}") {
+    stage("Build ${targetCPU}") {
+        echo "Target CPU: ${targetCPU}, SDK CPU: ${sdkCPU}, output: ${tarballName}"
+        def sdkImage = docker.image("ctsrd/cheri-sdk-${sdkCPU}:latest")
+        sdkImage.pull() // make sure we have the latest available from Docker Hub
+        runCallback('beforeSCM', otherArgs)
         dir(projectName) {
             checkout scm
         }
@@ -58,8 +58,8 @@ def buildProjectWithCheribuild(projectName, extraArgs, String targetCPU, Map oth
         }
         sh 'ls -la'
         archiveArtifacts allowEmptyArchive: false, artifacts: tarballName, fingerprint: true, onlyIfSuccessful: true
+        runCallback('afterBuild', otherArgs)
     }
-    runCallback('afterBuild', otherArgs)
     if ('testScript' in otherArgs) {
         def testTimeout = otherArgs.get('testTimeout', 60 * 60)
         stage("run tests for ${targetCPU}") {
@@ -92,8 +92,8 @@ def buildProjectWithCheribuild(projectName, extraArgs, String targetCPU, Map oth
                 }
             }
         }
+        runCallback('afterTests', otherArgs)
     }
-    runCallback('afterTests', otherArgs)
     // TODO: clean up properly and remove the created artifacts?
 }
 
@@ -103,7 +103,6 @@ def call(Map args) {
     Map<String, Closure> jobs = targets.collectEntries {
         [(it): {
             node('docker') {
-                echo "Building for ${it}"
                 buildProjectWithCheribuild(args.name, args.extraArgs, it, args)
             }
         }]
