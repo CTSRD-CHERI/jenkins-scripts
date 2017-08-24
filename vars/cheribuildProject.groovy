@@ -108,5 +108,9 @@ def call(Map args) {
             }
         }]
     }
-    parallel jobs
+    if (args.sequential) {
+        jobs.each { k, job -> job() }
+    } else {
+        parallel jobs
+    }
 }
