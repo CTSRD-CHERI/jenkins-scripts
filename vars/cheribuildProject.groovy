@@ -122,7 +122,7 @@ def runTests(CheribuildProject proj) {
 
 def runCheribuild(CheribuildProject proj) {
     if (!proj.tarballName) {
-        tarballName = "${proj.projectName}-${proj.cpu}.tar.xz"
+        proj.tarballName = "${proj.projectName}-${proj.cpu}.tar.xz"
     }
 
     assert proj.cpu
@@ -132,7 +132,7 @@ def runCheribuild(CheribuildProject proj) {
         proj.sdkCPU = proj.sdkCPU.substring("hybrid-".length())
     }
 
-    println(new JsonBuilder( this ).toPrettyString())
+    echo new JsonBuilder( proj ).toPrettyString()
     stage("Build ${proj.cpu}") {
         build(proj)
     }
