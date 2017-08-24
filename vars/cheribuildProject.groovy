@@ -110,6 +110,8 @@ def call(Map args) {
     if (args.sequential) {
         jobs.each { k, job -> job() }
     } else {
-        parallel jobs
+        stage("Cheribuild") {
+            parallel jobs
+        }
     }
 }
