@@ -31,46 +31,47 @@ class CheribuildProject implements Serializable {
     // def afterTestsInCheriBSD // before running the tests (sent to cheribsd command line)
     def afterTestsInDocker // before running the tests (inside docker, cheribsd no longer running)
     def afterTests // before running the tests (no longer inside docker)
-
-    // Run a beforeXXX hook (beforeBuild, beforeTarball, etc.)
-    def runCallback(cb) {
-        // def cb = this."${hook}"
-        if (!cb) {
-            return
-        }
-        // echo "Running callback ${hook}"
-        if ((cb instanceof Closure) || cb.metaClass.respondsTo(cb, 'call')) {
-            //noinspection GroovyAssignabilityCheck
-            cb(this.cpu)
-        } else {
-            assert cb instanceof String
-            if (!cb.allWhitespace) {
-                sh cb
-            }
-        }
-    }
 }
 
 
+// FIXME: all this jenkins transforming stuff is ugly... how can I access the jenkins globals?
+
+// Run a beforeXXX hook (beforeBuild, beforeTarball, etc.)
+def runCallback(CheribuildProject proj, cb) {
+    // def cb = this."${hook}"
+    if (!cb) {
+        return
+    }
+    // echo "Running callback ${hook}"
+    if ((cb instanceof Closure) || cb.metaClass.respondsTo(cb, 'call')) {
+        //noinspection GroovyAssignabilityCheck
+        cb(proj.cpu)
+    } else {
+        assert cb instanceof String
+        if (!cb.allWhitespace) {
+            sh cb
+        }
+    }
+}
 
 def build(CheribuildProject proj) {
     // build steps that should happen on all nodes go here
     echo "Target CPU: ${proj.cpu}, SDK CPU: ${proj.sdkCPU}, output: ${proj.tarballName}"
     def sdkImage = docker.image("ctsrd/cheri-sdk-${proj.sdkCPU}:latest")
     sdkImage.pull() // make sure we have the latest available from Docker Hub
-    proj.runCallback(proj.beforeSCM)
+    runCallback(proj, proj.beforeSCM)
     dir(proj.projectName) {
         checkout scm
     }
     dir('cheribuild') {
         git 'https://github.com/CTSRD-CHERI/cheribuild.git'
     }
-    proj.runCallback(proj.beforeBuildOutsideDocker)
+    runCallback(proj, proj.beforeBuildOutsideDocker)
     sdkImage.inside('-u 0') {
         env.CPU = proj.cpu
         ansiColor('xterm') {
             sh "rm -fv ${proj.tarballName}; pwd"
-            proj.runCallback(proj.beforeBuild)
+            runCallback(proj, proj.beforeBuild)
             def cheribuildArgs = "${proj.projectName} --cpu ${proj.cpu} ${proj.extraArgs}"
             def cheribuildCmd = "./cheribuild/jenkins-cheri-build.py --build ${cheribuildArgs}"
             // by default try an incremental build first and if that fails fall back to a clean build
@@ -80,14 +81,14 @@ def build(CheribuildProject proj) {
             } else {
                 sh "${cheribuildCmd} --no-clean || (echo 'incremental build failed!' && ${cheribuildCmd})"
             }
-            proj.runCallback(proj.beforeTarball)
+            runCallback(proj, proj.beforeTarball)
             sh "./cheribuild/jenkins-cheri-build.py --tarball --tarball-name ${proj.tarballName} --no-build ${cheribuildArgs}"
-            proj.runCallback(proj.afterBuildInDocker)
+            runCallback(proj, proj.afterBuildInDocker)
         }
     }
     sh 'ls -lah'
     archiveArtifacts allowEmptyArchive: false, artifacts: tarballName, fingerprint: true, onlyIfSuccessful: true
-    proj.runCallback(proj.afterBuild)
+    runCallback(proj, proj.afterBuild)
 }
 
 def runTests(CheribuildProject proj) {
@@ -105,19 +106,19 @@ def runTests(CheribuildProject proj) {
     }
     def cheribsdImage = docker.image("ctsrd/${imageName}:latest")
     cheribsdImage.pull()
-    proj.runCallback(proj.beforeTestsOutsideDocker)
+    runCallback(proj, proj.beforeTestsOutsideDocker)
     cheribsdImage.inside('-u 0') {
         // ./boot_cheribsd.py --qemu-cmd ~/cheri/output/sdk256/bin/qemu-system-cheri --disk-image ./cheribsd-jenkins_bluehive.img.xz --kernel cheribsd-cheri-malta64-kernel.bz2 -i
         // TODO: allow booting the minimal bluehive disk-image
         def testCommand = "'export CPU=${proj.cpu}; " + proj.testScript.replaceAll('\'', '\\\'') + "'"
         ansiColor('xterm') {
             sh "wget https://raw.githubusercontent.com/RichardsonAlex/cheri-sdk-docker/master/cheribsd/boot_cheribsd.py -O /usr/local/bin/boot_cheribsd.py"
-            proj.runCallback(proj.beforeTests)
+            runCallback(proj, proj.beforeTests)
             sh "boot_cheribsd.py ${testImageArg} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
         }
-        proj.runCallback(proj.afterTestsInDocker)
+        runCallback(proj, proj.afterTestsInDocker)
     }
-    proj.runCallback(proj.afterTests)
+    runCallback(proj, proj.afterTests)
 }
 
 def runCheribuild(CheribuildProject proj) {
