@@ -129,11 +129,11 @@ class CheribuildProject implements Serializable {
         }
 
         println(new JsonBuilder( this ).toPrettyString())
-        stage("Build ${cpu}") {
+        stage "Build ${cpu}", {
             build()
         }
         if (testScript) {
-            stage("run tests for ${cpu}") {
+            stage "run tests for ${cpu}", {
                 runTests()
             }
         }
