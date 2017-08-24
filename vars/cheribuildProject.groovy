@@ -99,7 +99,7 @@ def buildProjectWithCheribuild(projectName, extraArgs, String targetCPU, Map oth
 
 // This is what get's called from jenkins
 def call(Map args) {
-    def targets = args.get('targets', ['cheri256', 'cheri128', 'mips', 'hybrid-cheri128'])
+    def targets = args.get('targets', ['mips', 'cheri256', 'cheri128', 'hybrid-cheri128'])
     Map<String, Closure> jobs = targets.collectEntries {
         [(it): {
             node('docker') {
