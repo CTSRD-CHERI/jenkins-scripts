@@ -139,6 +139,8 @@ class CheribuildProject {
 // This is what gets called from jenkins
 def call(Map args) {
     def targets = args.get('targets', ['mips', 'cheri256', 'cheri128', 'hybrid-cheri128'])
+    def name = args.projectName
+    assert name
     Map<String, Closure> jobs = targets.collectEntries {
         [(it): {
             node('docker') {
@@ -147,7 +149,7 @@ def call(Map args) {
                 def ctorArgs = args.getClass().newInstance(args)
                 ctorArgs.remove('targets')
                 ctorArgs.remove('name')
-                def project = new CheribuildProject(projectName: args.name, *:ctorArgs)
+                def project = new CheribuildProject(projectName: args.name, *:args)
                 project.run()
             }
         }]
