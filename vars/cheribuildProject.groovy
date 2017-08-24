@@ -19,10 +19,7 @@ def buildProjectWithCheribuild(projectName, extraArgs, String targetCPU, Map oth
         sdkImage.inside('-u 0') {
             env.CPU = targetCPU
             ansiColor('xterm') {
-                sh '''
-                    env
-                    pwd
-                   '''
+                sh "rm -fv ${tarballName}; pwd"
                 sh "./cheribuild/jenkins-cheri-build.py --build ${projectName} --cpu ${targetCPU} ${extraArgs}"
                 if (otherArgs.beforeTarball) {
                     sh otherArgs.beforeTarball
@@ -65,6 +62,7 @@ def buildProjectWithCheribuild(projectName, extraArgs, String targetCPU, Map oth
             }
         }
     }
+    // TODO: clean up properly and remove the created artifacts?
 }
 
 // This is what get's called from jenkins
