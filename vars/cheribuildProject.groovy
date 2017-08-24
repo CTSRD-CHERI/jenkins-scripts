@@ -121,6 +121,7 @@ class CheribuildProject {
             tarballName = "${projectName}-${cpu}.tar.xz"
         }
 
+        assert cpu
         // compute sdkCPU from args
         sdkCPU = cpu
         if (sdkCPU.startsWith("hybrid-")) {
@@ -154,6 +155,7 @@ def call(Map args) {
                 // def project = new CheribuildProject(projectName: args.name, *:args)
                 def ctorArgs = args.getClass().newInstance(args)
                 ctorArgs.projectName = name
+                ctorArgs.cpu = it
                 def project = ctorArgs as CheribuildProject
                 project.run()
             }
