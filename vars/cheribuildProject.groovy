@@ -1,6 +1,6 @@
 import groovy.json.*
 
-class CheribuildProject {
+class CheribuildProject implements Serializable {
     /// general/build parameters
     String projectName // the cheribuild project name
     String extraArgs // additional arguments to pass to cheribuild.py
