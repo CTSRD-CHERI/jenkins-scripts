@@ -128,7 +128,7 @@ class CheribuildProject {
             sdkCPU = sdkCPU.substring("hybrid-".length())
         }
 
-        echo new JsonBuilder( project ).toPrettyString()
+        echo new JsonBuilder( this ).toPrettyString()
         stage("Build ${cpu}") {
             build()
         }
