@@ -3,7 +3,7 @@ import groovy.json.*
 class CheribuildProjectParams implements Serializable {
     /// general/build parameters
     String projectName // the cheribuild project name
-    String extraArgs // additional arguments to pass to cheribuild.py
+    String extraArgs = '' // additional arguments to pass to cheribuild.py
     String cpu // --cpu flag for cheribuild
     String sdkCPU  // the SDK used to build (e.g. for cheri256-hybrid will use the cheri256 sdk to build MIPS code)
     String tarballName  // output tarball name (default is "${projectName}-${cpu}.tar.xz")
@@ -15,7 +15,7 @@ class CheribuildProjectParams implements Serializable {
     def testTimeout = 120 * 60 // timeout for running tests (default 2 hours)
     boolean minimalTestImage
     String testScript  // if set this will be invoked by ./boot_cheribsd.py in the test stage. If not tests are skipped
-    String testExtraArgs  // Additional command line options to be passed to ./boot_cheribsd.py
+    String testExtraArgs = ''  // Additional command line options to be passed to ./boot_cheribsd.py
     // FIXME: implement this:
     // List testOutputs  // if set these files will be scp'd from CheriBSD after running the tests (e.g. JUnit XML files)
 
