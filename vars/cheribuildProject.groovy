@@ -70,8 +70,6 @@ def build(CheribuildProjectParams proj) {
 	runCallback(proj, proj.beforeBuild)
 	// No docker yet
 	// sdkImage.inside('-u 0') {
-	env.CPU = proj.cpu
-	env.SDK_CPU = proj.sdkCPU
 	ansiColor('xterm') {
 		sh "rm -fv ${proj.tarballName}; pwd"
 		runCallback(proj, proj.beforeBuildInDocker)
@@ -143,6 +141,8 @@ def runCheribuild(CheribuildProjectParams proj) {
 			proj.sdkCPU = 'mips'
 		}
 	}
+	env.CPU = proj.cpu
+	env.SDK_CPU = proj.sdkCPU
 
 	// echo new JsonBuilder( proj ).toPrettyString()
 	if (proj.skipInitialSetup) {
