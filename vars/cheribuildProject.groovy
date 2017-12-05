@@ -137,6 +137,10 @@ def runCheribuild(CheribuildProjectParams proj) {
 		if (proj.sdkCPU.startsWith("hybrid-")) {
 			proj.sdkCPU = proj.sdkCPU.substring("hybrid-".length())
 		}
+		// Build using the MIPS SDK for native projects
+		if (proj.cpu == 'native' || proj.cpu == 'x86') {
+			proj.sdkCPU = 'mips'
+		}
 	}
 
 	// echo new JsonBuilder( proj ).toPrettyString()
