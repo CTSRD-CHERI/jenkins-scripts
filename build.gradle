@@ -3,6 +3,19 @@ apply plugin: 'groovy'
 repositories {
     mavenCentral()
 }
+sourceSets {
+    main {
+        groovy.srcDirs = [file('src'), file('vars')]
+    }
+    test {
+        groovy.srcDirs = [file('test')]
+    }
+}
+
+test {
+    include "test"
+}
+
 dependencies {
     compile 'org.codehaus.groovy:groovy-all:2.4.5'
     testCompile 'junit:junit:4.12'

@@ -1,10 +1,14 @@
-def doBuild(String buildArgs, String testArgs, String assembler) {
-    timeout(120) {
+def doBuild(String name, String buildArgs, String testArgs, String assembler) {
+    return timeout(240) {
         if (assembler != 'clang') {
             copyArtifacts filter: 'binutils.tar.bz2', fingerprintArtifacts: true, projectName: 'CHERI-binutils/label=linux/'
         }
         def clangValue = assembler == 'clang' ? '1' : '0'
-        def script = '''#!/bin/bash
+        stage(name + ' - Build') {
+            // NOPRINTS=1 might to be required for successful builds? At least for CACHECORE
+            // This should speed up running the tests:
+            buildArgs +=' NOPRINTS=1'
+            sh '''#!/bin/bash
 set -xe
 . /local/ecad/setup.bash \$QUARTUS_DEFAULT
 tar xjf binutils.tar.bz2
@@ -14,26 +18,30 @@ cd ctsrd/cheri/trunk
 make clean
 #rm sim sim.so
 # build the simulator
-''' + "make ${buildArgs} sim || (make clean ; make ${buildArgs} sim)" + '''
-cd ../../..
-cd ctsrd/cheritest/trunk
+''' + "make ${buildArgs} sim || (make clean ; make ${buildArgs} sim)"
+        }
+        stage(name + ' - Test') {
+            sh '''#!/bin/bash
+set -xe
+cd $WORKSPACE/ctsrd/cheritest/trunk
 make clean
 # Rebuild the clang tests every time, in case clang itself has changed
 rm -f obj/*clang* log/*clang*
-''' + "make CLANG=${clangValue} ${testArgs} nosetests_combined.xml -j8 || true"
-        sh script
-        archiveArtifacts allowEmptyArchive: false, artifacts: 'ctsrd/cheri/trunk/sim, ctsrd/cheri/trunk/sim.so, ctsrd/cheri/trunk/sim.dtb, ctsrd/cheri/trunk/build_cap_tags_0_sim/sim, ctsrd/cheri/trunk/build_cap_tags_0_sim/sim.so, ctsrd/cheri/trunk/build_cap_tags_0_sim/sim.dtb, ctsrd/cherilibs/trunk/peripherals/*.so, ctsrd/cherilibs/trunk/tools/memConv.py', caseSensitive: true, defaultExcludes: true, excludes: 'ctsrd/cheritest/**/*', fingerprint: false, onlyIfSuccessful: true
-        // JUnit Results
-        junit 'ctsrd/cheritest/trunk/nosetests_combined.xml'
+''' + "make CLANG=${clangValue} ${testArgs} -j8 || true"
+            sh script
+            archiveArtifacts allowEmptyArchive: false, artifacts: 'ctsrd/cheri/trunk/sim, ctsrd/cheri/trunk/sim.so, ctsrd/cheri/trunk/sim.dtb, ctsrd/cheri/trunk/build_cap_tags_0_sim/sim, ctsrd/cheri/trunk/build_cap_tags_0_sim/sim.so, ctsrd/cheri/trunk/build_cap_tags_0_sim/sim.dtb, ctsrd/cherilibs/trunk/peripherals/*.so, ctsrd/cherilibs/trunk/tools/memConv.py', caseSensitive: true, defaultExcludes: true, excludes: 'ctsrd/cheritest/**/*', fingerprint: false, onlyIfSuccessful: true
+            // JUnit Results
+            junit 'ctsrd/cheritest/trunk/nosetests_*.xml'
+        }
     }
 }
 
-def cheriHardwareTest(Map args) {
+def call(Map args) {
     return node('llvm&&bluespec') {
         stage(args.name + ' - Checkout') {
             /* dir('ctsrd/cheritest/trunk') {
-                git url: 'git@github.com:CTSRD-CHERI/cheritest.git', credentialsId: 'cheritest_key', branch: 'master'
-            } */
+                            git url: 'git@github.com:CTSRD-CHERI/cheritest.git', credentialsId: 'cheritest_key', branch: 'master'
+                        } */
             dir('ctsrd/cheritest/trunk') {
                 checkout scm  // get the sources from git
             }
@@ -50,14 +58,6 @@ def cheriHardwareTest(Map args) {
                                remote               : 'svn+ssh://secsvn@svn-ctsrd.cl.cam.ac.uk/ctsrd/cheri/trunk']],
                       workspaceUpdater: [$class: 'UpdateUpdater']])
         }
-        stage(args.name + ' - Build and test') {
-            doBuild(args.buildArgs, args.testArgs, args.get("assembler"))
-        }
+        doBuild(args.name, args.buildArgs, args.testArgs, args.get("assembler"))
     }
 }
-
-
-cheriHardwareTest(
-        name: "CHERI1-TEST",
-        buildArgs: 'CAP=True NOPRINTS=1',
-        testArgs: 'NOFUZZR=1 GENERIC_L1=1 STATCOUNTERS=1 ALLOW_UNALIGNED=1 SIM_TRACE_OPTS=')
