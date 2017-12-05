@@ -1,11 +1,12 @@
 import groovy.json.*
 
 class CheribuildProjectParams implements Serializable {
-	boolean skipScm = false // Whether to skip the clone/copy artifacts stage (useful if there are multiple cheribuild invocations)
-	boolean skipArtifacts = false // Whether to skip the copy artifacts stage (useful if there are multiple cheribuild invocations)
+	boolean skipScm = false
+	// Whether to skip the clone/copy artifacts stage (useful if there are multiple cheribuild invocations)
+	boolean skipArtifacts = false
+	// Whether to skip the copy artifacts stage (useful if there are multiple cheribuild invocations)
 	boolean skipInitialSetup = false // skip both the copy artifacts and clone stage
 	boolean allocateNode = true // allocate a new jenkins node using node()
-
 
 	/// general/build parameters
 	String target // the cheribuild project name
@@ -45,7 +46,6 @@ class CheribuildProjectParams implements Serializable {
 	def afterTests // before running the tests (no longer inside docker)
 }
 
-
 // FIXME: all this jenkins transforming stuff is ugly... how can I access the jenkins globals?
 
 // Run a beforeXXX hook (beforeBuild, beforeTarball, etc.)
@@ -70,24 +70,24 @@ def build(CheribuildProjectParams proj) {
 	runCallback(proj, proj.beforeBuild)
 	// No docker yet
 	// sdkImage.inside('-u 0') {
-		env.CPU = proj.cpu
-	    env.SDK_CPU = proj.sdkCPU
-		ansiColor('xterm') {
-			sh "rm -fv ${proj.tarballName}; pwd"
-			runCallback(proj, proj.beforeBuildInDocker)
-			def cheribuildArgs = "${proj.target} --cpu ${proj.cpu} ${proj.extraArgs}"
-			def cheribuildCmd = "./cheribuild/jenkins-cheri-build.py --build ${cheribuildArgs}"
-			// by default try an incremental build first and if that fails fall back to a clean build
-			// this behaviour can be disabled by passing noIncrementalBuild: true
-			if (proj.noIncrementalBuild) {
-				sh "${cheribuildCmd}"
-			} else {
-				sh "${cheribuildCmd} --no-clean || (echo 'incremental build failed!' && ${cheribuildCmd})"
-			}
-			runCallback(proj, proj.beforeTarball)
-			sh "./cheribuild/jenkins-cheri-build.py --tarball --tarball-name ${proj.tarballName} --no-build ${cheribuildArgs}"
-			runCallback(proj, proj.afterBuildInDocker)
+	env.CPU = proj.cpu
+	env.SDK_CPU = proj.sdkCPU
+	ansiColor('xterm') {
+		sh "rm -fv ${proj.tarballName}; pwd"
+		runCallback(proj, proj.beforeBuildInDocker)
+		def cheribuildArgs = "${proj.target} --cpu ${proj.cpu} ${proj.extraArgs}"
+		def cheribuildCmd = "./cheribuild/jenkins-cheri-build.py --build ${cheribuildArgs}"
+		// by default try an incremental build first and if that fails fall back to a clean build
+		// this behaviour can be disabled by passing noIncrementalBuild: true
+		if (proj.noIncrementalBuild) {
+			sh "${cheribuildCmd}"
+		} else {
+			sh "${cheribuildCmd} --no-clean || (echo 'incremental build failed!' && ${cheribuildCmd})"
 		}
+		runCallback(proj, proj.beforeTarball)
+		sh "./cheribuild/jenkins-cheri-build.py --tarball --tarball-name ${proj.tarballName} --no-build ${cheribuildArgs}"
+		runCallback(proj, proj.afterBuildInDocker)
+	}
 	// }
 	sh 'ls -lah; ls -lah tarball || true'
 	archiveArtifacts allowEmptyArchive: false, artifacts: proj.tarballName, fingerprint: true, onlyIfSuccessful: true
