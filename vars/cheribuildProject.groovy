@@ -167,7 +167,7 @@ def runCheribuild(CheribuildProjectParams proj) {
 			}
 			if (proj.needsFullCheriSDK) {
 				copyArtifacts projectName: "CHERI-SDK/ALLOC=jemalloc,ISA=vanilla,SDK_CPU=${proj.sdkCPU},label=${proj.label}", filter: '*-sdk.tar.xz', fingerprintArtifacts: true
-				sh "./cheribuild/cheribuild.py extract-sdk --cpu ${proj.cpu} ${proj.extraArgs}"
+				sh "./cheribuild/jenkins-cheri-build.py extract-sdk --cpu ${proj.cpu} ${proj.extraArgs}"
 			}
 			echo 'WORKSPACE after checkout:'
 			sh 'ls -la'
