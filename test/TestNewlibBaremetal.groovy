@@ -1,4 +1,5 @@
 import com.lesfurets.jenkins.unit.BasePipelineTest
+import com.lesfurets.jenkins.unit.cps.BasePipelineTestCPS
 import com.lesfurets.jenkins.unit.global.lib.LibraryConfiguration
 import com.lesfurets.jenkins.unit.global.lib.LocalSource
 import org.junit.Before

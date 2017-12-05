@@ -190,31 +190,31 @@ def call(Map args) {
 	// def project = new CheribuildProjectParams(target: args.name, *:args)
 	def config = args as CheribuildProjectParams
 	if (args.allocateNode) {
-		return node('docker') {
+		node('docker') {
 			runCheribuild(config)
 		}
 	} else {
-		return { runCheribuild(config) }
+		runCheribuild(config)
 	}
 }
 
 if (env.get("RUN_UNIT_TESTS")) {
+	def doBuild = { args ->
+		def commonArgs = [
+				target: 'libcxxrt',
+				allocateNode: false,
+				skipScm: true,  // only the first run handles the SCM
+				extraArgs: '--install-prefix=/']
+		runCheribuild((commonArgs + args) as CheribuildProjectParams)
+	}
+
 	node('linux') {
-		def cheribuildProject = { args ->
-			def commonArgs = [
-					target: 'libcxxrt',
-					allocateNode: false,
-					skipScm: true,  // only the first run handles the SCM
-					extraArgs: '--install-prefix=/']
-			runCheribuild((commonArgs + args) as CheribuildProjectParams)
-		}
-		cheribuildProject(target: 'libcxxrt-baremetal', cpu: 'mips', skipScm: false,
-				needsFullCheriSDK: false, // this was already set up in the previous step from
+		doBuild(target: 'libcxxrt-baremetal', cpu: 'mips', skipScm: false,
 				artifactsToCopy: [[job: 'Newlib-baremetal-mips/master', filter: 'newlib-baremetal-mips.tar.xz']],
 				beforeBuild: 'mkdir -p cherisdk/baremetal && tar xzf newlib-baremetal-mips.tar.xz -C cherisdk/baremetal; ls -laR cheribsd/baremetal')
-		cheribuildProject([cpu: 'mips', skipArtifacts: true])
-		cheribuildProject([target: 'libcxxrt', cpu: 'cheri128', skipScm: true, allocateNode: false])
-		cheribuildProject([target: 'libcxxrt', cpu: 'cheri256', skipScm: true, allocateNode: false])
-		cheribuildProject([target: 'libcxxrt', cpu: 'native', skipScm: true, allocateNode: false])
+		doBuild([cpu: 'mips', skipArtifacts: true]) // we can reuse artifacts from last build
+		doBuild([target: 'libcxxrt', cpu: 'cheri128', skipScm: true, allocateNode: false])
+		doBuild([target: 'libcxxrt', cpu: 'cheri256', skipScm: true, allocateNode: false])
+		doBuild([target: 'libcxxrt', cpu: 'native', skipScm: true, allocateNode: false])
 	}
 }
