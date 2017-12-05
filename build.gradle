@@ -4,6 +4,12 @@ repositories {
     mavenCentral()
 }
 sourceSets {
+    jobs {
+        groovy {
+            srcDirs 'jobs'
+            compileClasspath += main.compileClasspath
+        }
+    }
     main {
         groovy.srcDirs = [file('src'), file('vars')]
     }
@@ -16,7 +22,15 @@ test {
     include "test"
 }
 
+repositories {
+    jcenter()
+    maven {
+        url 'https://repo.jenkins-ci.org/public/'
+    }
+}
+
 dependencies {
+    compile 'org.jenkins-ci.plugins:job-dsl-core:1.66'
     compile 'org.codehaus.groovy:groovy-all:2.4.5'
     testCompile 'junit:junit:4.12'
     testCompile group:'com.lesfurets', name:'jenkins-pipeline-unit', version: '+'

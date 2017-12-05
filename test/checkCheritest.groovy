@@ -32,7 +32,9 @@ class TestCHERI1Test extends BasePipelineTest {
         helper.registerAllowedMethod("timeout", [Integer.class, Closure.class], null)
         helper.registerAllowedMethod("timeout", [Map.class, Closure.class], null)
         helper.registerAllowedMethod("copyArtifacts", [Map.class], /*{ args -> println "Copying $args" }*/null)
-        helper.registerAllowedMethod("cheriHardwareTest", [Map.class], { args -> cheriHardwareTest.call(args) })
+        binding.setVariable("env", ["JOB_NAME":"CHERI1-FPU-TEST-pipeline/master"])
+        // binding.getVariable('env').JOB_NAME = "CHERI1-TEST-pipeline"
+        // helper.registerAllowedMethod("cheriHardwareTest", [Map.class], { args -> cheriHardwareTest.call(args) })
         def scmBranch = "feature_test"
         binding.setVariable('scm', [branch: 'master'])
         /* binding.setVariable('scm', [
