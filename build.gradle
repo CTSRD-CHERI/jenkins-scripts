@@ -36,3 +36,13 @@ dependencies {
     testCompile group:'com.lesfurets', name:'jenkins-pipeline-unit', version: '+'
 
 }
+
+task copyTask(type: Copy,) {
+    from '.'
+    into 'build/libs/jenkins-scripts@master'
+    include 'src/**'
+    include 'vars/**'
+}
+tasks.withType(Test) {
+    tasks.copyTask.execute()
+}

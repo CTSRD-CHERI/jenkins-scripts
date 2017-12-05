@@ -1,6 +1,12 @@
 import groovy.json.*
 
 class CheribuildProjectParams implements Serializable {
+	boolean skipScm = false // Whether to skip the clone/copy artifacts stage (useful if there are multiple cheribuild invocations)
+	boolean skipArtifacts = false // Whether to skip the copy artifacts stage (useful if there are multiple cheribuild invocations)
+	boolean skipInitialSetup = false // skip both the copy artifacts and clone stage
+	boolean allocateNode = true // allocate a new jenkins node using node()
+
+
 	/// general/build parameters
 	String target // the cheribuild project name
 	String extraArgs = '' // additional arguments to pass to cheribuild.py
@@ -27,13 +33,13 @@ class CheribuildProjectParams implements Serializable {
 
 	/// hooks
 	def beforeSCM // callback before checking out the sources
-	def beforeBuildOutsideDocker  // callback before starting docker
-	def beforeBuild  // first command inside docker
+	def beforeBuild  // callback before starting docker
+	def beforeBuildInDocker  // first command inside docker
 	def beforeTarball  // after building but before creating the tarball
 	def afterBuildInDocker  // after building and tarball (no longer inside docker)
 	def afterBuild  // after building and tarball (no longer inside docker)
-	def beforeTestsOutsideDocker // before running the tests (inside docker)
-	def beforeTests // before running the tests (inside docker)
+	def beforeTests // before running the tests (before docker)
+	def beforeTestsInDocker // before running the tests (inside docker)
 	// def afterTestsInCheriBSD // before running the tests (sent to cheribsd command line)
 	def afterTestsInDocker // before running the tests (inside docker, cheribsd no longer running)
 	def afterTests // before running the tests (no longer inside docker)
@@ -61,13 +67,13 @@ def runCallback(CheribuildProjectParams proj, cb) {
 }
 
 def build(CheribuildProjectParams proj) {
-	runCallback(proj, proj.beforeBuildOutsideDocker)
+	runCallback(proj, proj.beforeBuild)
 	// No docker yet
 	// sdkImage.inside('-u 0') {
 		env.CPU = proj.cpu
 		ansiColor('xterm') {
 			sh "rm -fv ${proj.tarballName}; pwd"
-			runCallback(proj, proj.beforeBuild)
+			runCallback(proj, proj.beforeBuildInDocker)
 			def cheribuildArgs = "${proj.target} --cpu ${proj.cpu} ${proj.extraArgs}"
 			def cheribuildCmd = "./cheribuild/jenkins-cheri-build.py --build ${cheribuildArgs}"
 			// by default try an incremental build first and if that fails fall back to a clean build
@@ -82,7 +88,7 @@ def build(CheribuildProjectParams proj) {
 			runCallback(proj, proj.afterBuildInDocker)
 		}
 	// }
-	sh 'ls -lah'
+	sh 'ls -lah; ls -lah tarball || true'
 	archiveArtifacts allowEmptyArchive: false, artifacts: proj.tarballName, fingerprint: true, onlyIfSuccessful: true
 	runCallback(proj, proj.afterBuild)
 }
@@ -102,14 +108,14 @@ def runTests(CheribuildProjectParams proj) {
 	}
 	def cheribsdImage = docker.image("ctsrd/${imageName}:latest")
 	cheribsdImage.pull()
-	runCallback(proj, proj.beforeTestsOutsideDocker)
+	runCallback(proj, proj.beforeTests)
 	cheribsdImage.inside('-u 0') {
 		// ./boot_cheribsd.py --qemu-cmd ~/cheri/output/sdk256/bin/qemu-system-cheri --disk-image ./cheribsd-jenkins_bluehive.img.xz --kernel cheribsd-cheri-malta64-kernel.bz2 -i
 		// TODO: allow booting the minimal bluehive disk-image
 		def testCommand = "'export CPU=${proj.cpu}; " + proj.testScript.replaceAll('\'', '\\\'') + "'"
 		ansiColor('xterm') {
 			sh "wget https://raw.githubusercontent.com/RichardsonAlex/cheri-sdk-docker/master/cheribsd/boot_cheribsd.py -O /usr/local/bin/boot_cheribsd.py"
-			runCallback(proj, proj.beforeTests)
+			runCallback(proj, proj.beforeTestsInDocker)
 			sh "boot_cheribsd.py ${testImageArg} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
 		}
 		runCallback(proj, proj.afterTestsInDocker)
@@ -133,29 +139,39 @@ def runCheribuild(CheribuildProjectParams proj) {
 		}
 	}
 
-	echo new JsonBuilder( proj ).toPrettyString()
-	stage("Checkout and copy artifacts") {
-		echo "Target CPU: ${proj.cpu}, SDK CPU: ${proj.sdkCPU}, output: ${proj.tarballName}"
-		// def sdkImage = docker.image("ctsrd/cheri-sdk-${proj.sdkCPU}:latest")
-		// sdkImage.pull() // make sure we have the latest available from Docker Hub
-		runCallback(proj, proj.beforeSCM)
+	// echo new JsonBuilder( proj ).toPrettyString()
+	if (proj.skipInitialSetup) {
+		proj.skipScm = true
+		proj.skipArtifacts = true
+	}
+	if (!proj.skipScm) {
+		stage("Checkout") {
+			echo "Target CPU: ${proj.cpu}, SDK CPU: ${proj.sdkCPU}, output: ${proj.tarballName}"
+			// def sdkImage = docker.image("ctsrd/cheri-sdk-${proj.sdkCPU}:latest")
+			// sdkImage.pull() // make sure we have the latest available from Docker Hub
+			runCallback(proj, proj.beforeSCM)
 
-		dir(proj.customGitCheckoutDir ? proj.customGitCheckoutDir : proj.target) {
-			checkout scm
+			dir(proj.customGitCheckoutDir ? proj.customGitCheckoutDir : proj.target) {
+				checkout scm
+			}
+			dir('cheribuild') {
+				git 'https://github.com/CTSRD-CHERI/cheribuild.git'
+			}
 		}
-		dir('cheribuild') {
-			git 'https://github.com/CTSRD-CHERI/cheribuild.git'
+	}
+	if (!proj.skipArtifacts) {
+		stage("Setup SDK for ${proj.target} (${proj.cpu})") {
+			// now copy all the artifacts
+			for (artifacts in proj.artifactsToCopy) {
+				copyArtifacts projectName: artifacts.job, filter: artifacts.filter, fingerprintArtifacts: true
+			}
+			if (proj.needsFullCheriSDK) {
+				copyArtifacts projectName: "CHERI-SDK/ALLOC=jemalloc,ISA=vanilla,SDK_CPU=${proj.sdkCPU},label=${proj.label}", filter: '*-sdk.tar.xz', fingerprintArtifacts: true
+				sh "./cheribuild/cheribuild.py extract-sdk --cpu ${proj.cpu} ${proj.extraArgs}"
+			}
+			echo 'WORKSPACE after checkout:'
+			sh 'ls -la'
 		}
-
-		// now copy all the artifacts
-		for (artifacts in proj.artifactsToCopy) {
-			copyArtifacts projectName: artifacts.project, filter: artifacts.filter, fingerprintArtifacts: true
-		}
-		if (proj.needsFullCheriSDK) {
-			copyArtifacts projectName: "CHERI-SDK/ALLOC=jemalloc,ISA=vanilla,SDK_CPU=${proj.sdkCPU},label=${proj.label}", filter: '*-sdk.tar.xz', fingerprintArtifacts: true
-		}
-		echo 'WORKSPACE after checkout:'
-		sh 'ls -la'
 	}
 	stage("Build ${proj.target} for ${proj.cpu}") {
 		build(proj)
@@ -170,13 +186,35 @@ def runCheribuild(CheribuildProjectParams proj) {
 
 // This is what gets called from jenkins
 def call(Map args) {
-	node('docker') {
-		// The map spread operator is not supported in Jenkins
-		// def project = new CheribuildProjectParams(target: args.name, *:args)
-		def config = args as CheribuildProjectParams
-		runCheribuild(config)
+	// The map spread operator is not supported in Jenkins
+	// def project = new CheribuildProjectParams(target: args.name, *:args)
+	def config = args as CheribuildProjectParams
+	if (args.allocateNode) {
+		return node('docker') {
+			runCheribuild(config)
+		}
+	} else {
+		return { runCheribuild(config) }
 	}
 }
 
-// for testing:
-// call(target:"newlib-baremetal", cpu:"mips")
+if (env.get("RUN_UNIT_TESTS")) {
+	node('linux') {
+		def cheribuildProject = { args ->
+			def commonArgs = [
+					target: 'libcxxrt',
+					allocateNode: false,
+					skipScm: true,  // only the first run handles the SCM
+					extraArgs: '--install-prefix=/']
+			runCheribuild((commonArgs + args) as CheribuildProjectParams)
+		}
+		cheribuildProject(target: 'libcxxrt-baremetal', cpu: 'mips', skipScm: false,
+				needsFullCheriSDK: false, // this was already set up in the previous step from
+				artifactsToCopy: [[job: 'Newlib-baremetal-mips/master', filter: 'newlib-baremetal-mips.tar.xz']],
+				beforeBuild: 'mkdir -p cherisdk/baremetal && tar xzf newlib-baremetal-mips.tar.xz -C cherisdk/baremetal; ls -laR cheribsd/baremetal')
+		cheribuildProject([cpu: 'mips', skipArtifacts: true])
+		cheribuildProject([target: 'libcxxrt', cpu: 'cheri128', skipScm: true, allocateNode: false])
+		cheribuildProject([target: 'libcxxrt', cpu: 'cheri256', skipScm: true, allocateNode: false])
+		cheribuildProject([target: 'libcxxrt', cpu: 'native', skipScm: true, allocateNode: false])
+	}
+}

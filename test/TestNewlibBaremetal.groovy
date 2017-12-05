@@ -1,4 +1,6 @@
 import com.lesfurets.jenkins.unit.BasePipelineTest
+import com.lesfurets.jenkins.unit.global.lib.LibraryConfiguration
+import com.lesfurets.jenkins.unit.global.lib.LocalSource
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -15,23 +17,26 @@ class TestNewlibBaremetal extends BasePipelineTest {
         scriptRoots += 'vars'
         super.setUp()
         // String sharedLibs = this.class.getResource('vars').getFile()
-        /* def library = library().name('cheriHardwareTest')
+		String sharedLibs = "."
+        def library = LibraryConfiguration.library().name('jenkins-scripts')
                 .defaultVersion("master")
-                .allowOverride(true)
+                .allowOverride(false)
                 .implicit(true)
-                .targetPath(folder.root.getAbsolutePath())
-                .retriever(localSource('vars'))
+                .targetPath(sharedLibs)
+                .retriever(LocalSource.localSource(sharedLibs))
                 .build()
-        helper.registerSharedLibrary(library) */
+        // helper.registerSharedLibrary(library)
+		setScriptRoots([ 'src', 'vars', 'test/groovy', '.' ] as String[])
+		setScriptExtension('groovy')
         helper.registerAllowedMethod("timeout", [Integer.class, Closure.class], null)
         helper.registerAllowedMethod("timeout", [Map.class, Closure.class], null)
         helper.registerAllowedMethod("git", [String.class], null)
         helper.registerAllowedMethod("ansiColor", [String.class, Closure.class], null)
         helper.registerAllowedMethod("copyArtifacts", [Map.class], /*{ args -> println "Copying $args" }*/null)
-        binding.setVariable("env", ["JOB_NAME":"newlib-baremetal/master"])
+        binding.setVariable("env", ["JOB_NAME":"newlib-baremetal/master", "RUN_UNIT_TESTS": "1"])
         // binding.getVariable('env').JOB_NAME = "CHERI1-TEST-pipeline"
 		// def realCheribuildProject = cheribuildProject
-        // helper.registerAllowedMethod("cheribuildProject", [String.class, Map.class], { t, args -> new cheribuildProject().call(t, args) })
+        // helper.registerAllowedMethod("cheribuildProject", [Map.class], {args -> cheribuildProject(args)})
         def scmBranch = "feature_test"
         binding.setVariable('scm', [branch: 'master'])
         /* binding.setVariable('scm', [
@@ -50,8 +55,9 @@ class TestNewlibBaremetal extends BasePipelineTest {
     @Test
     void should_execute_without_errors() throws Exception {
         // def script = loadScript("test-scripts/newlib-baremetal.groovy")
-        def script = loadScript("vars/cheribuildProject.groovy")
-        script.run()
+        def script = loadScript("cheribuildProject.groovy")
+		script.run()
+        // script.evaluate("test-scripts/newlib-baremetal.groovy" as File)
         printCallStack()
     }
 }
