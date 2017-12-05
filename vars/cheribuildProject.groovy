@@ -71,6 +71,7 @@ def build(CheribuildProjectParams proj) {
 	// No docker yet
 	// sdkImage.inside('-u 0') {
 		env.CPU = proj.cpu
+	    env.SDK_CPU = proj.sdkCPU
 		ansiColor('xterm') {
 			sh "rm -fv ${proj.tarballName}; pwd"
 			runCallback(proj, proj.beforeBuildInDocker)
