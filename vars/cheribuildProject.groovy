@@ -6,7 +6,7 @@ class CheribuildProjectParams implements Serializable {
 	boolean skipArtifacts = false
 	// Whether to skip the copy artifacts stage (useful if there are multiple cheribuild invocations)
 	boolean skipInitialSetup = false // skip both the copy artifacts and clone stage
-	boolean allocateNode = true // allocate a new jenkins node using node()
+	String nodeLabel = "linux" // if non-null allocate a new jenkins node using node()
 
 	/// general/build parameters
 	String target // the cheribuild project name
@@ -122,7 +122,7 @@ def runTests(CheribuildProjectParams proj) {
 	runCallback(proj, proj.afterTests)
 }
 
-def runCheribuild(CheribuildProjectParams proj) {
+def runCheribuildImpl(CheribuildProjectParams proj) {
 	if (!proj.tarballName) {
 		proj.tarballName = "${proj.target}-${proj.cpu}.tar.xz"
 	}
@@ -191,28 +191,50 @@ def runCheribuild(CheribuildProjectParams proj) {
 	// TODO: clean up properly and remove the created artifacts?
 }
 
-// This is what gets called from jenkins
-def call(Map args) {
+def runCheribuild(Map args) {
+	def params = new CheribuildProjectParams()
+	for (it in args) {
+		try {
+			params[it.key] = it.value
+		} catch (MissingPropertyException e) {
+			error("cheribuildProject: Unknown argument ${it.key}: ${e}")
+			return
+		} catch (IllegalArgumentException e) {
+			error("cheribuildProject: Bad value ${it.value} for argument ${it.key}: ${e.getMessage()}")
+			return
+		} catch (e) {
+			error("cheribuildProject: Could not set argument ${it.key} to ${it.value}: ${e}")
+			return
+		}
+	}
 	// The map spread operator is not supported in Jenkins
 	// def project = new CheribuildProjectParams(target: args.name, *:args)
-	def config = args as CheribuildProjectParams
-	if (args.allocateNode) {
-		node('docker') {
-			runCheribuild(config)
+	if (params.nodeLabel != null) {
+		node(params.nodeLabel) {
+			runCheribuildImpl(params)
 		}
 	} else {
-		runCheribuild(config)
+		runCheribuildImpl(params)
 	}
 }
 
+// This is what gets called from jenkins
+def call(Map args) {
+	// just call the real method here so that I can run the tests
+	// the problem is that if I invoke call I get endless recursion
+	runCheribuild(args)
+}
+
+// TODO: this should move to a separate file but it doesn't seem possible with PipelineUnit
 if (env.get("RUN_UNIT_TESTS")) {
+	runCheribuild(target: "newlib-baremetal", cpu: "mips", extraArgs: '--install-prefix=/')
 	def doBuild = { args ->
 		def commonArgs = [
 				target: 'libcxxrt',
-				allocateNode: false,
+				nodeLabel: null,
 				skipScm: true,  // only the first run handles the SCM
 				extraArgs: '--install-prefix=/']
-		runCheribuild((commonArgs + args) as CheribuildProjectParams)
+		// runCheribuild(commonArgs + args)
 	}
 
 	node('linux') {
@@ -220,8 +242,8 @@ if (env.get("RUN_UNIT_TESTS")) {
 				artifactsToCopy: [[job: 'Newlib-baremetal-mips/master', filter: 'newlib-baremetal-mips.tar.xz']],
 				beforeBuild: 'mkdir -p cherisdk/baremetal && tar xzf newlib-baremetal-mips.tar.xz -C cherisdk/baremetal; ls -laR cheribsd/baremetal')
 		doBuild([cpu: 'mips', skipArtifacts: true]) // we can reuse artifacts from last build
-		doBuild([target: 'libcxxrt', cpu: 'cheri128', skipScm: true, allocateNode: false])
-		doBuild([target: 'libcxxrt', cpu: 'cheri256', skipScm: true, allocateNode: false])
-		doBuild([target: 'libcxxrt', cpu: 'native', skipScm: true, allocateNode: false])
+		doBuild([target: 'libcxxrt', cpu: 'cheri128', skipScm: true])
+		doBuild([target: 'libcxxrt', cpu: 'cheri256', skipScm: true])
+		doBuild([target: 'libcxxrt', cpu: 'native', skipScm: true])
 	}
 }
