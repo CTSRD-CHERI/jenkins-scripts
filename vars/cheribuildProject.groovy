@@ -207,6 +207,15 @@ def runCheribuild(Map args) {
 			return
 		}
 	}
+	try {
+		properties([
+				pipelineTriggers([
+						[$class: "GitHubPushTrigger"]
+				])
+		])
+	} catch(e) {
+		echo("FAILED TO SET GitHub push trigger in Jenkinsfile")
+	}
 	// The map spread operator is not supported in Jenkins
 	// def project = new CheribuildProjectParams(target: args.name, *:args)
 	if (params.nodeLabel != null) {
