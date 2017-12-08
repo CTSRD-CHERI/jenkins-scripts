@@ -36,6 +36,28 @@ JobConfig getJobParameters() {
 			"CHERI1-MULTI2-TEST": [
 					buildArgs: 'MULTI=2 CAP=True',
 					testArgs: 'GENERIC_L1=1 MULTI=1 NOFUZZR=1 SIM_TRACE_OPTS= nosetests_cachedmulti.xml'],
+
+			// BERI TESTS:
+
+			"BERI1-TEST": [
+					buildArgs: '',
+					testArgs: 'TEST_CP2=10 GENERIC_L1=1 NOFUZZR=1 BERI=1 make nosetest_cached'],
+
+			"BERI1-MICRO-TEST": [
+					buildArgs: 'MICRO=True NOWATCH=True',
+					testArgs: 'TEST_CP2=0 CHERI_MICRO=1 NOFUZZR=1 WONTFIX=1 nosetests_combined.xml'],
+
+			"BERI1-MULTI1-TEST": [
+					buildArgs: 'NOT_FLAT=1 MULTI=1',
+					testArgs: 'TEST_CP2=0 GENERIC_L1=1 NOFUZZR=1 SIM_TRACE_OPTS= nosetests_cached.xml'],
+
+			"BERI1-MULTI2-TEST": [
+					buildArgs: 'NOT_FLAT=1 MULTI=2',
+					testArgs: 'MULTI=1 TEST_CP2=0 GENERIC_L1=1 NOFUZZR=1 SIM_TRACE_OPTS= nosetests_cachedmulti.xml'],
+
+			"BERI1-MULTI2-TIMEBASED-TEST": [
+					buildArgs: 'NOT_FLAT=1 MULTI=2 TIMEBASED=1',
+					testArgs: 'MULTI=1 TEST_CP2=0 GENERIC_L1=1 NOFUZZR=1 SIM_TRACE_OPTS= nosetests_cachedmulti.xml'],
 	]
 	Map result = config.get(jobName)
 	if (!result) {
@@ -46,6 +68,11 @@ JobConfig getJobParameters() {
 }
 
 def doBuild(JobConfig args) {
+	if (args.name.startsWith('BERI')) {
+		if (!args.testArgs.contains('TEST_CP2=0')) {
+			return error("BERI tests need TEST_CP2=0 set")
+		}
+	}
 	return timeout(240) {
 		if (args.assembler != 'clang') {
 			copyArtifacts filter: 'binutils.tar.bz2', fingerprintArtifacts: true, projectName: 'CHERI-binutils/label=linux/'
@@ -58,9 +85,7 @@ def doBuild(JobConfig args) {
 			sh '''#!/bin/bash
 set -xe
 . /local/ecad/setup.bash \$QUARTUS_DEFAULT
-tar xjf binutils.tar.bz2
 #export PATH=\$WORKSPACE/binutils/bin:\$CHERITEST_TOOL_PATH:$PATH
-export PATH=\$WORKSPACE/binutils/bin:\$PATH
 cd ctsrd/cheri/trunk
 make clean
 #rm sim sim.so
@@ -70,11 +95,15 @@ make clean
 		stage('Tests') {
 			sh '''#!/bin/bash
 set -xe
-cd $WORKSPACE/ctsrd/cheritest/trunk
+cd $WORKSPACE
+. /local/ecad/setup.bash \$QUARTUS_DEFAULT
+tar xjf binutils.tar.bz2
+cd \$WORKSPACE/ctsrd/cheritest/trunk
+export PATH=\$WORKSPACE/binutils/bin:\$PATH
 make clean
 # Rebuild the clang tests every time, in case clang itself has changed
 rm -f obj/*clang* log/*clang*
-''' + "make CLANG=${clangValue} ${args.testArgs} -j8 || true"
+''' + "make CLANG=${clangValue} ${args.testArgs} -j8\npwd\nls -la log"
 			archiveArtifacts allowEmptyArchive: false, artifacts: 'ctsrd/cheri/trunk/sim, ctsrd/cheri/trunk/sim.so, ctsrd/cheri/trunk/sim.dtb, ctsrd/cheri/trunk/build_cap_tags_0_sim/sim, ctsrd/cheri/trunk/build_cap_tags_0_sim/sim.so, ctsrd/cheri/trunk/build_cap_tags_0_sim/sim.dtb, ctsrd/cherilibs/trunk/peripherals/*.so, ctsrd/cherilibs/trunk/tools/memConv.py', caseSensitive: true, defaultExcludes: true, excludes: 'ctsrd/cheritest/**/*', fingerprint: false, onlyIfSuccessful: true
 			// JUnit Results
 			junit 'ctsrd/cheritest/trunk/nosetests_*.xml'

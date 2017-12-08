@@ -32,7 +32,6 @@ class TestCHERI1Test extends BasePipelineTest {
         helper.registerAllowedMethod("timeout", [Integer.class, Closure.class], null)
         helper.registerAllowedMethod("timeout", [Map.class, Closure.class], null)
         helper.registerAllowedMethod("copyArtifacts", [Map.class], /*{ args -> println "Copying $args" }*/null)
-        binding.setVariable("env", ["JOB_NAME":"CHERI1-FPU-TEST-pipeline/master"])
         // binding.getVariable('env').JOB_NAME = "CHERI1-TEST-pipeline"
         // helper.registerAllowedMethod("cheriHardwareTest", [Map.class], { args -> cheriHardwareTest.call(args) })
         def scmBranch = "feature_test"
@@ -51,7 +50,16 @@ class TestCHERI1Test extends BasePipelineTest {
     }
 
     @Test
-    void should_execute_without_errors() throws Exception {
+    void cheri1_fpu_test() throws Exception {
+        binding.setVariable("env", ["JOB_NAME":"CHERI1-FPU-TEST-pipeline/master"])
+        def script = loadScript("test-scripts/CHERI1Test.groovy")
+        script.run()
+        printCallStack()
+    }
+
+    @Test
+    void ber1_test() throws Exception {
+        binding.setVariable("env", ["JOB_NAME":"BERI1-TEST-pipeline/master"])
         def script = loadScript("test-scripts/CHERI1Test.groovy")
         script.run()
         printCallStack()
