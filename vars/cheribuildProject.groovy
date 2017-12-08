@@ -159,7 +159,10 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			runCallback(proj, proj.beforeSCM)
 
 			dir(proj.customGitCheckoutDir ? proj.customGitCheckoutDir : proj.target) {
-				checkout scm
+				echo ('SCM before: ' + new JsonBuilder( scm ).toPrettyString())
+				def result = checkout scm
+				echo ('SCM after: ' + new JsonBuilder( scm ).toPrettyString())
+				echo ('Checkout result: ' + new JsonBuilder( result ).toPrettyString())
 			}
 			dir('cheribuild') {
 				git 'https://github.com/CTSRD-CHERI/cheribuild.git'
