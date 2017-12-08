@@ -188,6 +188,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			runTests(proj)
 		}
 	}
+	warnings canComputeNew: false, canResolveRelativePaths: false, consoleParsers: [[parserName: 'Clang (LLVM based)']]
 	// TODO: clean up properly and remove the created artifacts?
 }
 
@@ -213,6 +214,7 @@ def runCheribuild(Map args) {
 						[$class: "GitHubPushTrigger"]
 				]),
 				disableConcurrentBuilds(),
+				[$class: 'CopyArtifactPermissionProperty', projectNames: '*'],
 		])
 	} catch(e) {
 		echo("FAILED TO SET GitHub push trigger in Jenkinsfile: ${e}")
