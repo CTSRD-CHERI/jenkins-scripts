@@ -7,6 +7,8 @@ class CheribuildProjectParams implements Serializable {
 	// Whether to skip the copy artifacts stage (useful if there are multiple cheribuild invocations)
 	boolean skipInitialSetup = false // skip both the copy artifacts and clone stage
 	String nodeLabel = "linux" // if non-null allocate a new jenkins node using node()
+	boolean setGitHubStatus = true
+
 
 	/// general/build parameters
 	String target // the cheribuild project name
@@ -189,6 +191,24 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 		}
 	}
 	warnings canComputeNew: false, canResolveRelativePaths: false, consoleParsers: [[parserName: 'Clang (LLVM based)']]
+	step([$class: 'AnalysisPublisher', canComputeNew: false])
+	if (proj.setGitHubStatus) {
+		def message = "${currentBuild.description} ${proj.cpu}"
+		step([
+				$class: 'GitHubCommitStatusSetter',
+				errorHandlers: [[$class: 'ShallowAnyErrorHandler']],
+				statusResultSource: [
+						$class: 'ConditionalStatusResultSource',
+						results: [
+								[$class: 'BetterThanOrEqualBuildResult', result: 'SUCCESS', state: 'SUCCESS', message: message],
+								[$class: 'BetterThanOrEqualBuildResult', result: 'UNSTABLE', state: 'UNSTABLE', message: message],
+								[$class: 'BetterThanOrEqualBuildResult', result: 'FAILURE', state: 'FAILURE', message: message],
+								[$class: 'AnyBuildResult', state: 'FAILURE', message: 'Loophole']
+						]
+				]
+		])
+	}
+
 	// TODO: clean up properly and remove the created artifacts?
 }
 
