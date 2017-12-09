@@ -160,7 +160,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 
 			dir(proj.customGitCheckoutDir ? proj.customGitCheckoutDir : proj.target) {
 				echo ('SCM before: ' + new JsonBuilder( scm ).toPrettyString())
-				def result = checkout scm
+				checkout scm
 				// echo ('SCM after: ' + new JsonBuilder( scm ).toPrettyString())
 				// echo ('Checkout result: ' + new JsonBuilder( result ).toPrettyString())
 			}
