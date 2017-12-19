@@ -146,7 +146,6 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 	env.CPU = proj.cpu
 	env.SDK_CPU = proj.sdkCPU
 
-	// echo new JsonBuilder( proj ).toPrettyString()
 	if (proj.skipInitialSetup) {
 		proj.skipScm = true
 		proj.skipArtifacts = true
@@ -159,10 +158,8 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			runCallback(proj, proj.beforeSCM)
 
 			dir(proj.customGitCheckoutDir ? proj.customGitCheckoutDir : proj.target) {
-				// echo ('SCM before: ' + new JsonBuilder( scm ).toPrettyString())
-				checkout scm
-				// echo ('SCM after: ' + new JsonBuilder( scm ).toPrettyString())
-				// echo ('Checkout result: ' + new JsonBuilder( result ).toPrettyString())
+				def x = checkout scm
+				echo("${x}")
 			}
 			dir('cheribuild') {
 				git 'https://github.com/CTSRD-CHERI/cheribuild.git'

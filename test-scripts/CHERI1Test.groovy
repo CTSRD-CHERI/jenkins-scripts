@@ -1,8 +1,14 @@
 class JobConfig {
 	String buildArgs
 	String testArgs
-	String assembler = "binutils"
 	String name = null
+
+	// TODO: for some reason I can't make these globals, so let's just put them here
+	static String clangArchiveName = 'cheri-multi-master-clang-llvm.tar.xz'
+	static String clangJobName = 'CLANG-LLVM-master/CPU=cheri-multi,label=linux/'
+	static String binutilsArchiveName = 'binutils.tar.bz2'
+	static String binutilsJobName = 'CHERI-binutils/label=linux/'
+
 }
 
 // TODO: instead of this we could also have a Jenkinsfile per config and use JobDSL to generate one job per jenkinsfile
@@ -41,22 +47,22 @@ JobConfig getJobParameters() {
 
 			"BERI1-TEST": [
 					buildArgs: '',
-					testArgs: 'TEST_CP2=10 GENERIC_L1=1 NOFUZZR=1 BERI=1 make nosetest_cached'],
+					testArgs: 'TEST_CP2=0 GENERIC_L1=1 NOFUZZR=1 BERI=1 nosetest_cached'],
 
 			"BERI1-MICRO-TEST": [
 					buildArgs: 'MICRO=True NOWATCH=True',
 					testArgs: 'TEST_CP2=0 CHERI_MICRO=1 NOFUZZR=1 WONTFIX=1 nosetests_combined.xml'],
 
 			"BERI1-MULTI1-TEST": [
-					buildArgs: 'NOT_FLAT=1 MULTI=1',
+					buildArgs: 'MULTI=1',
 					testArgs: 'TEST_CP2=0 GENERIC_L1=1 NOFUZZR=1 SIM_TRACE_OPTS= nosetests_cached.xml'],
 
 			"BERI1-MULTI2-TEST": [
-					buildArgs: 'NOT_FLAT=1 MULTI=2',
+					buildArgs: 'MULTI=2',
 					testArgs: 'MULTI=1 TEST_CP2=0 GENERIC_L1=1 NOFUZZR=1 SIM_TRACE_OPTS= nosetests_cachedmulti.xml'],
 
 			"BERI1-MULTI2-TIMEBASED-TEST": [
-					buildArgs: 'NOT_FLAT=1 MULTI=2 TIMEBASED=1',
+					buildArgs: 'MULTI=2 TIMEBASED=1',
 					testArgs: 'MULTI=1 TEST_CP2=0 GENERIC_L1=1 NOFUZZR=1 SIM_TRACE_OPTS= nosetests_cachedmulti.xml'],
 	]
 	Map result = config.get(jobName)
@@ -67,47 +73,70 @@ JobConfig getJobParameters() {
 	return result as JobConfig
 }
 
+
+def runTests(JobConfig args, String assembler) {
+	def prepareAssembler = ''
+	def assemblerTestFlag = ''
+	if (assembler == 'clang') {
+		assemblerTestFlag = 'CLANG=1 CHERI_SDK=\$WORKSPACE/cherisdk'
+		prepareAssembler = """
+mkdir -p cherisdk
+tar Jxf ${args.clangArchiveName} --strip-components 1 -C cherisdk
+export CHERI_SDK=\$WORKSPACE/cherisdk"""
+	} else {
+		prepareAssembler = """
+tar xjf ${args.binutilsArchiveName}
+export PATH=\$WORKSPACE/binutils/bin:\$PATH"""
+		assemblerTestFlag = 'CLANG=0'
+	}
+	stage("Tests (${assembler})") {
+		sh """#!/bin/bash
+set -xe
+cd \$WORKSPACE
+${prepareAssembler}
+
+. /local/ecad/setup.bash \$QUARTUS_DEFAULT
+cd \$WORKSPACE/ctsrd/cheritest/trunk
+# always do a full clean in case the linker/compiler has changed
+make clean
+make ${assemblerTestFlag} ${args.testArgs} -j8
+"""
+		// JUnit Results
+		junit 'ctsrd/cheritest/trunk/nosetests_*.xml'
+	}
+}
+
 def doBuild(JobConfig args) {
 	if (args.name.startsWith('BERI')) {
 		if (!args.testArgs.contains('TEST_CP2=0')) {
 			return error("BERI tests need TEST_CP2=0 set")
 		}
 	}
-	return timeout(240) {
-		if (args.assembler != 'clang') {
-			copyArtifacts filter: 'binutils.tar.bz2', fingerprintArtifacts: true, projectName: 'CHERI-binutils/label=linux/'
-		}
-		def clangValue = args.assembler == 'clang' ? '1' : '0'
+	return timeout(120) {
+		copyArtifacts filter: args.binutilsArchiveName, fingerprintArtifacts: true, projectName: args.binutilsJobName
+		copyArtifacts filter: args.clangArchiveName, fingerprintArtifacts: true, projectName: args.clangJobName
 		stage('Build Simulator') {
 			// NOPRINTS=1 might to be required for successful builds? At least for CACHECORE
 			// This should speed up running the tests:
 			args.buildArgs += ' NOPRINTS=1'
+			// NOT_FLAT speeds up incremental builds but it might slow down the simulator
+			// args.buildArgs += ' NOT_FLAT=1'
 			sh '''#!/bin/bash
 set -xe
 . /local/ecad/setup.bash \$QUARTUS_DEFAULT
+
 #export PATH=\$WORKSPACE/binutils/bin:\$CHERITEST_TOOL_PATH:$PATH
 cd ctsrd/cheri/trunk
-make clean
-#rm sim sim.so
+# make clean
+rm -f sim sim.so
 # build the simulator
 ''' + "make ${args.buildArgs} sim || (make clean ; make ${args.buildArgs} sim)"
-		}
-		stage('Tests') {
-			sh '''#!/bin/bash
-set -xe
-cd $WORKSPACE
-. /local/ecad/setup.bash \$QUARTUS_DEFAULT
-tar xjf binutils.tar.bz2
-cd \$WORKSPACE/ctsrd/cheritest/trunk
-export PATH=\$WORKSPACE/binutils/bin:\$PATH
-make clean
-# Rebuild the clang tests every time, in case clang itself has changed
-rm -f obj/*clang* log/*clang*
-''' + "make CLANG=${clangValue} ${args.testArgs} -j8\npwd\nls -la log"
 			archiveArtifacts allowEmptyArchive: false, artifacts: 'ctsrd/cheri/trunk/sim, ctsrd/cheri/trunk/sim.so, ctsrd/cheri/trunk/sim.dtb, ctsrd/cheri/trunk/build_cap_tags_0_sim/sim, ctsrd/cheri/trunk/build_cap_tags_0_sim/sim.so, ctsrd/cheri/trunk/build_cap_tags_0_sim/sim.dtb, ctsrd/cherilibs/trunk/peripherals/*.so, ctsrd/cherilibs/trunk/tools/memConv.py', caseSensitive: true, defaultExcludes: true, excludes: 'ctsrd/cheritest/**/*', fingerprint: false, onlyIfSuccessful: true
-			// JUnit Results
-			junit 'ctsrd/cheritest/trunk/nosetests_*.xml'
 		}
+		runTests(args, "binutils")
+		runTests(args, "clang")
+		warnings canComputeNew: false, canResolveRelativePaths: false, consoleParsers: [[parserName: 'Clang (LLVM based)']]
+		step([$class: 'AnalysisPublisher', canComputeNew: false])
 	}
 }
 
@@ -115,7 +144,7 @@ def cheriHardwareTest() {
 	return node('llvm&&bluespec') {
 		echo "Computing job parameters for ${env.JOB_NAME}"
 		JobConfig args = getJobParameters()
-		echo "Found job config: BUILD_ARGS: '${args.buildArgs}'\nTEST_ARGS: '${args.testArgs}'\nASSEMBLER: ${args.assembler}"
+		echo "Found job config: BUILD_ARGS: '${args.buildArgs}'\nTEST_ARGS: '${args.testArgs}'"
 		stage('Checkout') {
 			// dir('ctsrd/cheritest/trunk') { git url: 'git@github.com:CTSRD-CHERI/cheritest.git', credentialsId: 'cheritest_key', branch: 'master'}
 			dir('ctsrd/cheritest/trunk') {
@@ -139,6 +168,13 @@ def cheriHardwareTest() {
 }
 
 try {
+	properties([
+			pipelineTriggers([
+					[$class: "GitHubPushTrigger"]
+			]),
+			disableConcurrentBuilds(),
+			[$class: 'CopyArtifactPermissionProperty', projectNames: '*'],
+	])
 	cheriHardwareTest()
 } catch (e) {
 	error(e.toString())
