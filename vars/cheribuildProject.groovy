@@ -151,6 +151,8 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 	env.CPU = proj.cpu
 	env.SDK_CPU = proj.sdkCPU
 
+	def gitCommitSHA = null
+
 	if (proj.skipInitialSetup) {
 		proj.skipScm = true
 		proj.skipArtifacts = true
@@ -165,6 +167,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			dir(proj.customGitCheckoutDir ? proj.customGitCheckoutDir : proj.target) {
 				def x = checkout scm
 				echo("${x}")
+				gitCommitSHA = x?.GIT_COMMIT
 			}
 			dir('cheribuild') {
 				git 'https://github.com/CTSRD-CHERI/cheribuild.git'
@@ -199,9 +202,15 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 	step([$class: 'AnalysisPublisher', canComputeNew: false])
 	if (proj.setGitHubStatus) {
 		def message = "${currentBuild.description} ${proj.cpu}"
-		step([
+		def githubCommitStatusContext = "ci/jenkins/build-status/${env.JOB_NAME}/${proj.cpu}"
+		if (proj.nodeLabel) {
+			message += " ${proj.nodeLabel}"
+			githubCommitStatusContext += "/${proj.nodeLabel}"
+		}
+		def githubNotifierOptions = [
 				$class: 'GitHubCommitStatusSetter',
 				errorHandlers: [[$class: 'ShallowAnyErrorHandler']],
+				contextSource: [$class: "ManuallyEnteredCommitContextSource", context: githubCommitStatusContext],
 				statusResultSource: [
 						$class: 'ConditionalStatusResultSource',
 						results: [
@@ -211,7 +220,12 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 								[$class: 'AnyBuildResult', state: 'FAILURE', message: 'Loophole']
 						]
 				]
-		])
+		]
+		if (gitCommitSHA) {
+			githubNotifierOptions['commitShaSource'] = [$class: "ManuallyEnteredShaSource", sha: gitCommitSHA]
+		}
+		// TODO? reposSource: [$class: "ManuallyEnteredRepositorySource", url: repoUrl],
+		step(githubNotifierOptions)
 	}
 
 	// TODO: clean up properly and remove the created artifacts?
@@ -300,7 +314,7 @@ if (env.get("RUN_UNIT_TESTS")) {
 		}
 	node ('linux') {
 		runCheribuild(target: 'qemu', cpu: 'native', skipArtifacts: true,
-				extraArgs: '---unified-sdk --without-sdk --install-prefix=/freebsd',
+				extraArgs: '--unified-sdk --without-sdk --install-prefix=/freebsd',
 				nodeLabel: null, skipTarball: true, afterBuild: archiveQEMU('freebsd'))
 	}
 }
