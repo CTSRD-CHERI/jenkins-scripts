@@ -34,6 +34,7 @@ class TestNewlibBaremetal extends BasePipelineTest {
         helper.registerAllowedMethod("git", [String.class], null)
         helper.registerAllowedMethod("ansiColor", [String.class, Closure.class], null)
         helper.registerAllowedMethod("copyArtifacts", [Map.class], /*{ args -> println "Copying $args" }*/null)
+        helper.registerAllowedMethod("warnings", [Map.class], /*{ args -> println "Copying $args" }*/null)
         binding.setVariable("env", ["JOB_NAME":"newlib-baremetal/master", "RUN_UNIT_TESTS": "1"])
         // binding.getVariable('env').JOB_NAME = "CHERI1-TEST-pipeline"
 		// def realCheribuildProject = cheribuildProject
