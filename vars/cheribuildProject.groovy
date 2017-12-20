@@ -228,8 +228,12 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 		]
 		if (gitHubCommitSHA)
 			githubNotifierOptions['commitShaSource'] = [$class: "ManuallyEnteredShaSource", sha: gitHubCommitSHA]
-		if (gitHubRepoURL)
+		if (gitHubRepoURL) {
+			if (gitHubRepoURL.endsWith('.git')) {
+				gitHubRepoURL = gitHubRepoURL.substring(0, gitHubRepoURL.indexOf('.git'))
+			}
 			githubNotifierOptions['reposSource'] = [$class: "ManuallyEnteredRepositorySource", url: gitHubRepoURL]
+		}
 		echo("${githubNotifierOptions}")
 		step(githubNotifierOptions)
 	}
