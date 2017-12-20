@@ -151,7 +151,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 	env.CPU = proj.cpu
 	env.SDK_CPU = proj.sdkCPU
 
-	def gitCommitSHA = null
+	def gitHubCommitSHA = null
 	def gitHubRepoURL = null
 
 	if (proj.skipInitialSetup) {
