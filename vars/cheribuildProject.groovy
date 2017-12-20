@@ -152,6 +152,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 	env.SDK_CPU = proj.sdkCPU
 
 	def gitCommitSHA = null
+	def gitHubRepoURL = null
 
 	if (proj.skipInitialSetup) {
 		proj.skipScm = true
@@ -167,7 +168,8 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			dir(proj.customGitCheckoutDir ? proj.customGitCheckoutDir : proj.target) {
 				def x = checkout scm
 				echo("${x}")
-				gitCommitSHA = x?.GIT_COMMIT
+				gitHubCommitSHA = x?.GIT_COMMIT
+				gitHubRepoURL = x?.GIT_URL
 			}
 			dir('cheribuild') {
 				git 'https://github.com/CTSRD-CHERI/cheribuild.git'
@@ -215,16 +217,16 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 						$class: 'ConditionalStatusResultSource',
 						results: [
 								[$class: 'BetterThanOrEqualBuildResult', result: 'SUCCESS', state: 'SUCCESS', message: message],
-								[$class: 'BetterThanOrEqualBuildResult', result: 'UNSTABLE', state: 'UNSTABLE', message: message],
+								[$class: 'BetterThanOrEqualBuildResult', result: 'UNSTABLE', state: 'FAILURE', message: message],
 								[$class: 'BetterThanOrEqualBuildResult', result: 'FAILURE', state: 'FAILURE', message: message],
-								[$class: 'AnyBuildResult', state: 'FAILURE', message: 'Loophole']
+								[$class: 'AnyBuildResult', message: 'Something went wrong', state: 'ERROR']
 						]
 				]
 		]
-		if (gitCommitSHA) {
-			githubNotifierOptions['commitShaSource'] = [$class: "ManuallyEnteredShaSource", sha: gitCommitSHA]
-		}
-		// TODO? reposSource: [$class: "ManuallyEnteredRepositorySource", url: repoUrl],
+		if (gitHubCommitSHA)
+			githubNotifierOptions['commitShaSource'] = [$class: "ManuallyEnteredShaSource", sha: gitHubCommitSHA]
+		if (gitHubRepoURL)
+			githubNotifierOptions['reposSource'] = [$class: "ManuallyEnteredRepositorySource", url: gitHubRepoURL]
 		step(githubNotifierOptions)
 	}
 
