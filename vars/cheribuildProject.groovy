@@ -212,8 +212,10 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 		def githubNotifierOptions = [
 				$class: 'GitHubCommitStatusSetter',
 				// errorHandlers: [[$class: 'ShallowAnyErrorHandler']],
+				errorHandlers: [[$class: "ChangingBuildStatusErrorHandler", result: "UNSTABLE"]],
+
 				contextSource: [$class: "ManuallyEnteredCommitContextSource", context: githubCommitStatusContext],
-				statusResultSource: [
+				/*statusResultSource: [
 						$class: 'ConditionalStatusResultSource',
 						results: [
 								[$class: 'BetterThanOrEqualBuildResult', result: 'SUCCESS', state: 'SUCCESS', message: message],
@@ -221,7 +223,8 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 								[$class: 'BetterThanOrEqualBuildResult', result: 'FAILURE', state: 'FAILURE', message: message],
 								[$class: 'AnyBuildResult', message: 'Something went wrong', state: 'ERROR']
 						]
-				]
+				]*/
+				// statusResultSource: [ $class: "ConditionalStatusResultSource", results: [[$class: "AnyBuildResult", message: message, state: 'SUCCESS']] ]
 		]
 		if (gitHubCommitSHA)
 			githubNotifierOptions['commitShaSource'] = [$class: "ManuallyEnteredShaSource", sha: gitHubCommitSHA]
