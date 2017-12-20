@@ -211,7 +211,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 		}
 		def githubNotifierOptions = [
 				$class: 'GitHubCommitStatusSetter',
-				errorHandlers: [[$class: 'ShallowAnyErrorHandler']],
+				// errorHandlers: [[$class: 'ShallowAnyErrorHandler']],
 				contextSource: [$class: "ManuallyEnteredCommitContextSource", context: githubCommitStatusContext],
 				statusResultSource: [
 						$class: 'ConditionalStatusResultSource',
