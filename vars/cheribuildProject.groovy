@@ -130,6 +130,7 @@ def runTests(CheribuildProjectParams proj) {
 }
 
 def runCheribuildImpl(CheribuildProjectParams proj) {
+	currentBuild.result = 'SUCCESS'
 	if (!proj.tarballName) {
 		proj.tarballName = "${proj.target}-${proj.cpu}.tar.xz"
 	}
@@ -209,13 +210,12 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			message += " ${proj.nodeLabel}"
 			githubCommitStatusContext += "/${proj.nodeLabel}"
 		}
-		def githubNotifierOptions = [
+		Map githubNotifierOptions = [
 				$class: 'GitHubCommitStatusSetter',
 				// errorHandlers: [[$class: 'ShallowAnyErrorHandler']],
 				errorHandlers: [[$class: "ChangingBuildStatusErrorHandler", result: "UNSTABLE"]],
-
 				contextSource: [$class: "ManuallyEnteredCommitContextSource", context: githubCommitStatusContext],
-				/*statusResultSource: [
+				statusResultSource: [
 						$class: 'ConditionalStatusResultSource',
 						results: [
 								[$class: 'BetterThanOrEqualBuildResult', result: 'SUCCESS', state: 'SUCCESS', message: message],
@@ -223,7 +223,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 								[$class: 'BetterThanOrEqualBuildResult', result: 'FAILURE', state: 'FAILURE', message: message],
 								[$class: 'AnyBuildResult', message: 'Something went wrong', state: 'ERROR']
 						]
-				]*/
+				]
 				// statusResultSource: [ $class: "ConditionalStatusResultSource", results: [[$class: "AnyBuildResult", message: message, state: 'SUCCESS']] ]
 		]
 		if (gitHubCommitSHA)
@@ -232,7 +232,8 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			if (gitHubRepoURL.endsWith('.git')) {
 				gitHubRepoURL = gitHubRepoURL.substring(0, gitHubRepoURL.indexOf('.git'))
 			}
-			githubNotifierOptions['reposSource'] = [$class: "ManuallyEnteredRepositorySource", url: gitHubRepoURL]
+			// reposSource: [$class: 'ManuallyEnteredRepositorySource', url: 'fsdfsd']
+			// githubNotifierOptions['reposSource'] = [$class: "ManuallyEnteredRepositorySource", url: gitHubRepoURL]
 		}
 		echo("${githubNotifierOptions}")
 		step(githubNotifierOptions)
