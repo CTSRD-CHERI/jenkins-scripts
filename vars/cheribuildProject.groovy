@@ -236,7 +236,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 				gitHubRepoURL = gitHubRepoURL.substring(0, gitHubRepoURL.indexOf('.git'))
 			}
 			// reposSource: [$class: 'ManuallyEnteredRepositorySource', url: 'fsdfsd']
-			// githubNotifierOptions['reposSource'] = [$class: "ManuallyEnteredRepositorySource", url: gitHubRepoURL]
+			githubNotifierOptions['reposSource'] = [$class: "ManuallyEnteredRepositorySource", url: gitHubRepoURL]
 		}
 		echo("${githubNotifierOptions}")
 		step(githubNotifierOptions)
