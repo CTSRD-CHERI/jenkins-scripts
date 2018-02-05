@@ -35,6 +35,8 @@ class CheribuildProjectParams implements Serializable {
 	// FIXME: implement this:
 	// List testOutputs  // if set these files will be scp'd from CheriBSD after running the tests (e.g. JUnit XML files)
 
+	String buildStage = null // Label for the build stage
+
 	/// hooks
 	def beforeSCM // callback before checking out the sources
 	def beforeBuild  // callback before starting docker
@@ -193,7 +195,8 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			sh 'ls -la'
 		}
 	}
-	stage("Build ${proj.target} for ${proj.cpu}") {
+	def buildStage = proj.buildStage ? proj.buildStage : "Build ${proj.target} for ${proj.cpu}"
+	stage(buildStage) {
 		build(proj)
 	}
 	if (proj.testScript) {
@@ -319,12 +322,12 @@ if (env.get("RUN_UNIT_TESTS")) {
 		}
 	}
 	node ('linux') {
-		runCheribuild(target: 'qemu', cpu: 'native', skipArtifacts: true,
+		runCheribuild(target: 'qemu', cpu: 'native', skipArtifacts: true, buildStage: "Build Linux",
 				extraArgs: '--unified-sdk --without-sdk --install-prefix=/linux',
 				nodeLabel: null, skipTarball: true, afterBuild: archiveQEMU('linux'))
-		}
+	}
 	node ('linux') {
-		runCheribuild(target: 'qemu', cpu: 'native', skipArtifacts: true,
+		runCheribuild(target: 'qemu', cpu: 'native', skipArtifacts: true, buildStage: "Build FreeBSD",
 				extraArgs: '--unified-sdk --without-sdk --install-prefix=/freebsd',
 				nodeLabel: null, skipTarball: true, afterBuild: archiveQEMU('freebsd'))
 	}
