@@ -175,7 +175,8 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 				gitHubRepoURL = x?.GIT_URL
 			}
 			dir('cheribuild') {
-				git 'https://github.com/CTSRD-CHERI/cheribuild.git'
+				def x = git 'https://github.com/CTSRD-CHERI/cheribuild.git'
+				echo("Checked out cheribuild: ${x}")
 			}
 		}
 	}

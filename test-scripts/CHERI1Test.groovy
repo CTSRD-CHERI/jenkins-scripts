@@ -24,13 +24,13 @@ JobConfig getJobParameters() {
 	echo "Computed base job names as $jobName"
 	Map config = [
 			"CHERI1-TEST": [buildArgs: 'CAP=True',
-					testArgs: 'NOFUZZR=1 GENERIC_L1=1 STATCOUNTERS=1 ALLOW_UNALIGNED=1 SIM_TRACE_OPTS= nosetest_cached nosetest'],
+					testArgs: 'NOFUZZR=1 GENERIC_L1=1 STATCOUNTERS=1 SIM_TRACE_OPTS= nosetest_cached nosetest'],
 			"CHERI1-CACHECORE-TEST": [
 					buildArgs: 'CAP=True ICACHECORE=1 DCACHECORE=1',
 					testArgs: 'NOFUZZR=1 GENERIC_L1=1 SIM_TRACE_OPTS= nosetest_cached'],
 			"CHERI1-FPU-TEST": [
 					buildArgs: 'CAP=True COP1=1',
-					testArgs: 'COP1=1 TEST_PS=1 CLANG=0 NOFUZZR=1 GENERIC_L1=1 SIM_TRACE_OPTS= nosetest_cached'],
+					testArgs: 'COP1=1 CLANG=0 NOFUZZR=1 GENERIC_L1=1 SIM_TRACE_OPTS= nosetest_cached'],
 			"CHERI1-CAP128-TEST": [
 					buildArgs: 'CAP128=True',
 					testArgs: 'GENERIC_L1=1 CAP_SIZE=128 PERM_SIZE=19 NOFUZZR=1 SIM_TRACE_OPTS= nosetest_cached nosetest'],
@@ -100,6 +100,7 @@ ${prepareAssembler}
 cd \$WORKSPACE/ctsrd/cheritest/trunk
 # always do a full clean in case the linker/compiler has changed
 make clean
+rm -f nose*.xml
 make ${assemblerTestFlag} ${args.testArgs} -j16
 """
 		// JUnit Results
