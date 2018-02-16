@@ -11,7 +11,7 @@ sourceSets {
         }
     }
     main {
-        groovy.srcDirs = [file('src'), file('vars')]
+        groovy.srcDirs = [file('src')]
     }
     test {
         groovy.srcDirs = [file('test')]
@@ -37,12 +37,12 @@ dependencies {
 
 }
 
-task copyTask(type: Copy,) {
+task copyTask(type: Copy) {
     from '.'
-    into 'build/libs/jenkins-scripts@master'
+    into 'build/libs/ctsrd-jenkins-scripts@master'
     include 'src/**'
     include 'vars/**'
 }
-tasks.withType(Test) {
+tasks.withType(GroovyCompile) {
     tasks.copyTask.execute()
 }
