@@ -28,10 +28,13 @@ class CheckCheribuildProjects extends BasePipelineTest {
         helper.registerSharedLibrary(library)
         helper.registerAllowedMethod("timeout", [Integer.class, Closure.class], null)
         helper.registerAllowedMethod("timeout", [Map.class, Closure.class], null)
+        helper.registerAllowedMethod("disableResume", [], null)
+        helper.registerAllowedMethod("githubPush", [], null)
         helper.registerAllowedMethod("ansiColor", [String.class, Closure.class], null)
         helper.registerAllowedMethod("copyArtifacts", [Map.class], /*{ args -> println "Copying $args" }*/null)
         helper.registerAllowedMethod("warnings", [Map.class], /*{ args -> println "Copying $args" }*/null)
         helper.registerAllowedMethod("git", [String.class], { url -> [GIT_URL:url, GIT_COMMIT:"abcdef123456"] })
+        helper.registerAllowedMethod("git", [Map.class], { args -> [GIT_URL:args.url, GIT_COMMIT:"abcdef123456"] })
         // binding.getVariable('env').JOB_NAME = "CHERI1-TEST-pipeline"
         // helper.registerAllowedMethod("cheriHardwareTest", [Map.class], { args -> cheriHardwareTest.call(args) })
         def scmBranch = "feature_test"
@@ -59,4 +62,12 @@ class CheckCheribuildProjects extends BasePipelineTest {
         // script.run()
         printCallStack()
     }
+
+	@Test
+	void llvm_test() throws Exception {
+		binding.setVariable("env", ["JOB_NAME":"LLVM-linux/cap-table", "BRANCH_NAME":"cap-table"])
+		def script = runScript("test-scripts/llvm.groovy")
+		// script.run()
+		printCallStack()
+	}
 }
