@@ -8,18 +8,20 @@ properties([disableConcurrentBuilds(),
         pipelineTriggers([githubPush()])
 ])
 
-
-def nodeLabel = null
-if (env.JOB_NAME.toLowerCase().contains("linux")) {
-    nodeLabel = "linux"
-} else if (env.JOB_NAME.toLowerCase().contains("freebsd")) {
-    nodeLabel = "freebsd"
-} else {/**/
-    error("Invalid job name: ${env.JOB_NAME}")
+def scmConfig(String url, String branch, String subdir) {
+    return [ changelog: true, poll: true, branches: [[name: '*/' + branch]],
+            scm: [$class: 'GitSCM', doGenerateSubmoduleConfigurations: false,
+                    extensions: [/* to skip polling: [$class: 'IgnoreNotifyCommit'], */
+                            [$class: 'RelativeTargetDirectory', relativeTargetDir: subdir],
+                            [$class: 'CloneOption', noTags: false, reference: '', shallow: true, timeout: 60]
+                    ],
+                    submoduleCfg: [],
+                    userRemoteConfigs: [[url: url, credentialsId: 'ctsrd-jenkins-api-token-with-username']]
+            ]
+    ]
 }
 
-node(nodeLabel) {
-
+def doBuild() {
     if (false) {
         stage("Print env") {
             env2 = env.getEnvironment()
@@ -31,36 +33,22 @@ node(nodeLabel) {
     def llvmRepo = null
     def clangRepo = null
     def lldRepo = null
-    def llvmBranch = env.BRANCH_NAME
-    def clangBranch = llvmBranch
-    def lldBranch = llvmBranch == 'cap-table' ? 'master' : llvmBranch
+    String llvmBranch = env.BRANCH_NAME
+    String clangBranch = llvmBranch
+    String lldBranch = llvmBranch == 'cap-table' ? 'master' : llvmBranch
     def gitCredentials = null
-
-    // TODO: proper time limit, etc:
-    // checkout([$class: 'GitSCM', branches: [[name: '*/asdas']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'CloneOption', noTags: false, reference: '', shallow: true, timeout: 60]], submoduleCfg: [], userRemoteConfigs: [[url: 'dasdasda']]])
-
-    // TODO: special case for cap-table where lld uses master and not cap-table
     stage("Checkout sources") {
-        echo("scm=${scm}")
-        dir ("llvm") {
-            llvmRepo = git(url: 'https://github.com/CTSRD-CHERI/llvm', branch: llvmBranch,
-                    changelog: true, credentialsId: gitCredentials, poll: true)
+        timestamps {
+            echo("scm=${scm}")
+            llvmRepo = checkout(scmConfig('https://github.com/CTSRD-CHERI/llvm', llvmBranch, 'llvm'))
             echo("LLVM = ${llvmRepo}")
-        }
-        dir ("llvm/tools/clang") {
-            clangRepo = git(url: 'https://github.com/CTSRD-CHERI/llvm', branch: clangBranch,
-                    changelog: true, credentialsId: gitCredentials, poll: true)
+            clangRepo = checkout(scmConfig('https://github.com/CTSRD-CHERI/clang', clangBranch, 'llvm/tools/clang'))
             echo("CLANG = ${clangRepo}")
-        }
-        dir ("llvm/tools/lld") {
-            lldRepo = git(url: 'https://github.com/CTSRD-CHERI/lld', branch: lldBranch,
-                    changelog: true, credentialsId: gitCredentials, poll: true)
+            lldRepo = checkout(scmConfig('https://github.com/CTSRD-CHERI/lld', lldBranch, 'llvm/tools/lld'))
             echo("LLD = ${lldRepo}")
         }
     }
     env.LLVM_ARTIFACT = "cheri-${llvmBranch}-clang-llvm.tar.xz"
-    env.SDKROOT = "${env.WORKSPACE}/sdk"
-    env.label = nodeLabel
 
     stage("Build") {
         sh '''#!/usr/bin/env bash 
@@ -69,7 +57,7 @@ set -xe
 #remove old artifact
 rm -fv "$LLVM_ARTIFACT"
 
-if [ -e "${WORKSPACE}/sdk" ]; then
+if [ -e "${SDKROOT_DIR}" ]; then
    echo "ERROR, old SDK was not deleted!" && exit 1
 fi
 # if [ -e "${WORKSPACE}/llvm/Build" ]; then
@@ -88,12 +76,6 @@ mkdir -p Build
 cd Build || exit 1
 CMAKE_ARGS=("-DCMAKE_INSTALL_PREFIX=${SDKROOT_DIR}" "-DLLVM_OPTIMIZED_TABLEGEN=OFF")
 if [ "$label" == "linux" ] ; then
-    #export LIBCXX=/local/scratch/jenkins/libc++
-    #export LIBCXX_LIB=$LIBCXX/Release/lib
-    #export LIBSTDCXX=/usr/include/c++/4.6
-    #export LD_LIBRARY_PATH=$LIBCXX/Release/lib
-    #export CMAKE_CXX_FLAGS="-std=c++11 -stdlib=libc++ -isystem $LIBCXX/src/include -isystem $LIBSTDCXX -isystem $LIBSTDCXX/x86_64-linux-gnu"
-    #export CMAKE_FLAGS="${CMAKE_FLAGS} -DLLVM_NO_OLD_LIBSTDCXX=YES"
     export CMAKE_CXX_COMPILER=clang++-4.0
     export CMAKE_C_COMPILER=clang-4.0
 else
@@ -112,10 +94,10 @@ rm -f CMakeCache.txt
 cmake -G Ninja "${CMAKE_ARGS[@]}" ..
 
 # build
-echo ninja -v ${JFLAG}
+ninja -v ${JFLAG}
 
 # install
-echo ninja install
+ninja install
 '''
     }
     stage("Run tests (128)") {
@@ -129,8 +111,8 @@ rm -fv "${WORKSPACE}/llvm-test-output.xml"
 ninja check-all-cheri128 ${JFLAG} || echo "Some CHERI128 tests failed!"
 mv -fv "${WORKSPACE}/llvm-test-output.xml" "${WORKSPACE}/llvm-test-output-cheri128.xml"
 echo "Done running 128 tests"
-
 '''
+        junit healthScaleFactor: 2.0, testResults: 'llvm-test-output-cheri128.xml'
     }
     stage("Run tests (256)") {
         sh '''#!/usr/bin/env bash 
@@ -143,6 +125,7 @@ ninja check-all-cheri256 ${JFLAG} || echo "Some CHERI256 tests failed!"
 mv -fv "${WORKSPACE}/llvm-test-output.xml" "${WORKSPACE}/llvm-test-output-cheri256.xml"
 echo "Done running 256 tests"
 '''
+        junit healthScaleFactor: 2.0, testResults: 'llvm-test-output-cheri256.xml'
     }
     stage("Archive artifacts") {
         sh '''#!/usr/bin/env bash 
@@ -193,5 +176,26 @@ tar -cJf $LLVM_ARCHIVE `basename ${SDKROOT_DIR}`
 rm -rf "$SDKROOT_DIR"
 '''
     }
+}
 
+
+def nodeLabel = null
+if (env.JOB_NAME.toLowerCase().contains("linux")) {
+    nodeLabel = "linux"
+} else if (env.JOB_NAME.toLowerCase().contains("freebsd")) {
+    nodeLabel = "freebsd"
+} else {
+    error("Invalid job name: ${env.JOB_NAME}")
+}
+
+node(nodeLabel) {
+    try {
+        env.label = nodeLabel
+        env.SDKROOT_DIR = "${env.WORKSPACE}/sdk"
+        doBuild()
+    } finally {
+        dir(env.SDKROOT_DIR) {
+            deleteDir()
+        }
+    }
 }

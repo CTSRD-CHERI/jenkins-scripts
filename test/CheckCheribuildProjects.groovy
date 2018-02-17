@@ -30,6 +30,7 @@ class CheckCheribuildProjects extends BasePipelineTest {
         helper.registerAllowedMethod("timeout", [Map.class, Closure.class], null)
         helper.registerAllowedMethod("disableResume", [], null)
         helper.registerAllowedMethod("githubPush", [], null)
+        helper.registerAllowedMethod("timestamps", [Closure.class], null)
         helper.registerAllowedMethod("ansiColor", [String.class, Closure.class], null)
         helper.registerAllowedMethod("copyArtifacts", [Map.class], /*{ args -> println "Copying $args" }*/null)
         helper.registerAllowedMethod("warnings", [Map.class], /*{ args -> println "Copying $args" }*/null)
