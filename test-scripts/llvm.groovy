@@ -1,10 +1,12 @@
 @Library('ctsrd-jenkins-scripts') _
 
 properties([disableConcurrentBuilds(),
+        compressBuildLog(),
         disableResume(),
         [$class: 'GithubProjectProperty', displayName: '', projectUrlStr: 'https://github.com/CTSRD-CHERI/llvm/'],
         [$class: 'CopyArtifactPermissionProperty', projectNames: '*'],
         [$class: 'JobPropertyImpl', throttle: [count: 2, durationName: 'hour', userBoost: true]],
+        durabilityHint('PERFORMANCE_OPTIMIZED'),
         pipelineTriggers([githubPush()])
 ])
 
