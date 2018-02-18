@@ -9,6 +9,7 @@ properties([disableConcurrentBuilds(),
 ])
 
 def scmConfig(String url, String branch, String subdir) {
+    def credentials = 'ctsrd-jenkins-new-github-api-key'
     return [ changelog: true, poll: true, branches: [[name: '*/' + branch]],
             scm: [$class: 'GitSCM', doGenerateSubmoduleConfigurations: false,
                     extensions: [/* to skip polling: [$class: 'IgnoreNotifyCommit'], */
@@ -16,9 +17,25 @@ def scmConfig(String url, String branch, String subdir) {
                             [$class: 'CloneOption', noTags: false, reference: '', shallow: true, timeout: 60]
                     ],
                     submoduleCfg: [],
-                    userRemoteConfigs: [[url: url, credentialsId: 'ctsrd-jenkins-api-token-with-username']]
+                    userRemoteConfigs: [[url: url, credentialsId: credentials]]
             ]
     ]
+}
+
+def runTests(int bits) {
+    stage("Run tests (${bits})") {
+        sh """#!/usr/bin/env bash 
+set -xe
+
+cd \${WORKSPACE}/llvm/Build
+# run tests
+rm -fv "\${WORKSPACE}/llvm-test-output.xml"
+ninja check-all-cheri${bits} \${JFLAG} || echo "Some CHERI${bits} tests failed!"
+mv -fv "\${WORKSPACE}/llvm-test-output.xml" "\${WORKSPACE}/llvm-test-output-cheri${bits}.xml"
+echo "Done running CHERI${bits} tests"
+"""
+        junit healthScaleFactor: 2.0, testResults: "llvm-test-output-cheri${bits}.xml"
+    }
 }
 
 def doBuild() {
@@ -36,7 +53,6 @@ def doBuild() {
     String llvmBranch = env.BRANCH_NAME
     String clangBranch = llvmBranch
     String lldBranch = llvmBranch == 'cap-table' ? 'master' : llvmBranch
-    def gitCredentials = null
     stage("Checkout sources") {
         timestamps {
             echo("scm=${scm}")
@@ -48,14 +64,12 @@ def doBuild() {
             echo("LLD = ${lldRepo}")
         }
     }
-    env.LLVM_ARTIFACT = "cheri-${llvmBranch}-clang-llvm.tar.xz"
-
     stage("Build") {
         sh '''#!/usr/bin/env bash 
 set -xe
 
-#remove old artifact
-rm -fv "$LLVM_ARTIFACT"
+#remove old artifacts
+rm -fv cheri-*-clang-*.tar.xz
 
 if [ -e "${SDKROOT_DIR}" ]; then
    echo "ERROR, old SDK was not deleted!" && exit 1
@@ -88,7 +102,7 @@ CMAKE_ARGS+=("-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}" "-DCMAKE_C_COMPILER=${
 CMAKE_ARGS+=("-DCMAKE_BUILD_TYPE=Release" "-DLLVM_ENABLE_ASSERTIONS=ON")
 # Also don't set the default target or default sysroot when running tests as it breaks quite a few
 # max 1 hour total and max 2 minutes per test
-CMAKE_ARGS+=("-DLLVM_LIT_ARGS=--xunit-xml-output ${WORKSPACE}/llvm-test-output.xml --max-time 3600 --timeout 240")
+CMAKE_ARGS+=("-DLLVM_LIT_ARGS=--xunit-xml-output ${WORKSPACE}/llvm-test-output.xml --max-time 3600 --timeout 240 ${JFLAG}")
 
 rm -f CMakeCache.txt
 cmake -G Ninja "${CMAKE_ARGS[@]}" ..
@@ -100,33 +114,9 @@ ninja -v ${JFLAG}
 ninja install
 '''
     }
-    stage("Run tests (128)") {
-        sh '''#!/usr/bin/env bash 
-set -xe
+    runTests(128)
+    runTests(256)
 
-pwd
-cd ${WORKSPACE}/llvm/Build
-# run tests
-rm -fv "${WORKSPACE}/llvm-test-output.xml"
-ninja check-all-cheri128 ${JFLAG} || echo "Some CHERI128 tests failed!"
-mv -fv "${WORKSPACE}/llvm-test-output.xml" "${WORKSPACE}/llvm-test-output-cheri128.xml"
-echo "Done running 128 tests"
-'''
-        junit healthScaleFactor: 2.0, testResults: 'llvm-test-output-cheri128.xml'
-    }
-    stage("Run tests (256)") {
-        sh '''#!/usr/bin/env bash 
-set -xe
-
-pwd
-cd ${WORKSPACE}/llvm/Build
-rm -fv "${WORKSPACE}/llvm-test-output.xml"
-ninja check-all-cheri256 ${JFLAG} || echo "Some CHERI256 tests failed!"
-mv -fv "${WORKSPACE}/llvm-test-output.xml" "${WORKSPACE}/llvm-test-output-cheri256.xml"
-echo "Done running 256 tests"
-'''
-        junit healthScaleFactor: 2.0, testResults: 'llvm-test-output-cheri256.xml'
-    }
     stage("Archive artifacts") {
         sh '''#!/usr/bin/env bash 
 set -xe
@@ -151,30 +141,33 @@ ln -fs clang-cpp cheri-unknown-freebsd-cpp
 
 # clean & bundle up
 cd ${WORKSPACE}
-tar -cJf cheri-$BRANCH-clang-include.tar.xz -C ${SDKROOT_DIR} lib/clang
+ls -laS "${SDKROOT_DIR}/bin"
+tar -cJf cheri-${BRANCH_NAME}-clang-include.tar.xz -C ${SDKROOT_DIR} lib/clang
 # We can remove all the libraries because we link them statically (but they need to exist)
 truncate -s 0 ${SDKROOT_DIR}/lib/lib*
 # remove the binaries that are not needed by downstream jobs (saves a lot of archiving and unpacking time)
 (cd ${SDKROOT_DIR}/bin && rm -vf clang-check opt llc lli llvm-lto2 llvm-lto llvm-c-test \\
-         llvm-dsymutil llvm-dwp llvm-nm llvm-ar llvm-rtdyld \\
+         llvm-dsymutil llvm-dwp llvm-rc llvm-rtdyld clang-func-mapping clang-refactor clang-rename \\
          llvm-extract llvm-xray llvm-split llvm-cov llvm-symbolizer llvm-dwarfdump \\
-         llvm-link llvm-stress llvm-cxxdump llvm-cvtres llvm-cat llvm-as \\
-         llvm-diff llvm-modextract llvm-dis llvm-pdbdump llvm-profdata \\
+         llvm-link llvm-stress llvm-cxxdump llvm-cvtres llvm-cat llvm-as llvm-pdbutil \\
+         llvm-diff llvm-modextract llvm-dis llvm-pdbdump llvm-profdata llvm-mt llvm-cfi-verify \\
          llvm-opt-report llvm-bcanalyzer llvm-mcmarkup llvm-lib llvm-ranlib \\
          verify-uselistorder sanstats clang-offload-bundler c-index-test \\
          clang-import-test bugpoint sancov obj2yaml yaml2obj)
 # Cmake files need tblgen
 truncate -s 0 ${SDKROOT_DIR}/bin/llvm-tblgen
+ls -laS "${SDKROOT_DIR}/bin"
 # remove more useless stuff
 rm -rf ${SDKROOT_DIR}/share
 rm -rf ${SDKROOT_DIR}/include
 cd ${SDKROOT_DIR}/..
-tar -cJf $LLVM_ARCHIVE `basename ${SDKROOT_DIR}`
+tar -cJf "cheri-${BRANCH_NAME}-clang-llvm.tar.xz" `basename ${SDKROOT_DIR}`
 
 # clean up to save some disk space
 # rm -rf "${WORKSPACE}/llvm/Build"
 rm -rf "$SDKROOT_DIR"
 '''
+        archiveArtifacts artifacts: 'cheri-*-clang-*.tar.xz', onlyIfSuccessful: true
     }
 }
 
@@ -193,6 +186,9 @@ node(nodeLabel) {
         env.label = nodeLabel
         env.SDKROOT_DIR = "${env.WORKSPACE}/sdk"
         doBuild()
+        // Scan for compiler warnings
+        warnings canComputeNew: false, canResolveRelativePaths: true, consoleParsers: [[parserName: 'Clang (LLVM based)']]
+        step([$class: 'AnalysisPublisher', canComputeNew: false])
     } finally {
         dir(env.SDKROOT_DIR) {
             deleteDir()

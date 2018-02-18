@@ -30,6 +30,8 @@ class CheckCheribuildProjects extends BasePipelineTest {
         helper.registerAllowedMethod("timeout", [Map.class, Closure.class], null)
         helper.registerAllowedMethod("disableResume", [], null)
         helper.registerAllowedMethod("githubPush", [], null)
+        helper.registerAllowedMethod("deleteDir", [], null)
+        helper.registerAllowedMethod("junit", [Map.class], null)
         helper.registerAllowedMethod("timestamps", [Closure.class], null)
         helper.registerAllowedMethod("ansiColor", [String.class, Closure.class], null)
         helper.registerAllowedMethod("copyArtifacts", [Map.class], /*{ args -> println "Copying $args" }*/null)
@@ -66,7 +68,11 @@ class CheckCheribuildProjects extends BasePipelineTest {
 
 	@Test
 	void llvm_test() throws Exception {
-		binding.setVariable("env", ["JOB_NAME":"LLVM-linux/cap-table", "BRANCH_NAME":"cap-table"])
+		binding.setVariable("env", [
+                JOB_NAME:"LLVM-linux/cap-table",
+                BRANCH_NAME:"cap-table",
+                WORKSPACE:"/workspace",
+        ])
 		def script = runScript("test-scripts/llvm.groovy")
 		// script.run()
 		printCallStack()
