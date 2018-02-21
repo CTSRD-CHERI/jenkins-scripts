@@ -1,3 +1,15 @@
+/*
+
+If it's not working see https://issues.jenkins-ci.org/browse/JENKINS-39482?focusedCommentId=323486&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-323486
+
+Note: The GitHubCommitStatusSetter requires that the Git Server is defined under *Manage Jenkins > Configure System > GitHub > GitHub Servers*. Otherwise the GitHubCommitStatusSetter is not able to resolve the repository name properly and you would see an empty list of repos:
+
+[...]
+[Set GitHub commit status (universal)] PENDING on repos [] (sha:xxxxxxx) with context:test/mycontext
+[...]
+ */
+
+
 def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result, String message) {
     if (result == null)
         result = currentBuild.result

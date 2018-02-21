@@ -31,6 +31,7 @@ class CheckCheribuildProjects extends BasePipelineTest {
         helper.registerAllowedMethod("disableResume", [], null)
         helper.registerAllowedMethod("githubPush", [], null)
         helper.registerAllowedMethod("deleteDir", [], null)
+        helper.registerAllowedMethod("checkout", [Map.class], { args -> [GIT_URL:args.url, GIT_COMMIT:"abcdef123456"] })
         helper.registerAllowedMethod("compressBuildLog", [], null)
         helper.registerAllowedMethod("junit", [Map.class], null)
         helper.registerAllowedMethod("durabilityHint", [String.class], null)
@@ -43,7 +44,7 @@ class CheckCheribuildProjects extends BasePipelineTest {
         // binding.getVariable('env').JOB_NAME = "CHERI1-TEST-pipeline"
         // helper.registerAllowedMethod("cheriHardwareTest", [Map.class], { args -> cheriHardwareTest.call(args) })
         def scmBranch = "feature_test"
-        binding.setVariable('scm', [branch: 'master'])
+        binding.setVariable('scm', [branch: 'master', url:'scm.git'])
         /* binding.setVariable('scm', [
                 $class                           : 'GitSCM',
                 branches                         : [[name: scmBranch]],
