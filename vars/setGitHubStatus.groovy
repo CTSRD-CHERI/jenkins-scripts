@@ -33,6 +33,6 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result)
 	step(githubNotifierOptions)
 }
 
-def call(Map scmInfo, Map<String, String> args) {
+def call(Map scmInfo, Map<String, String> args = []) {
 	setGitHubStatusBasedOnCurrentResult(scmInfo, args.get('context', null), args.get('result', null))
 }
