@@ -27,12 +27,12 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result,
     def gitHubCommitSHA = args?.GIT_COMMIT
     def gitHubRepoURL = args?.GIT_URL
     if (gitHubCommitSHA)
-        githubNotifierOptions['commitShaSource'] = [$class: "ManuallyEnteredShaSource", sha: gitHubCommitSHA]
+        options['commitShaSource'] = [$class: "ManuallyEnteredShaSource", sha: gitHubCommitSHA]
     if (gitHubRepoURL) {
         if (gitHubRepoURL.endsWith('.git')) {
             gitHubRepoURL = gitHubRepoURL.substring(0, gitHubRepoURL.indexOf('.git'))
         }
-        githubNotifierOptions['reposSource'] = [$class: "ManuallyEnteredRepositorySource", url: gitHubRepoURL]
+        options['reposSource'] = [$class: "ManuallyEnteredRepositorySource", url: gitHubRepoURL]
     }
     echo("GitHub notifier options = ${options}")
     step(options)
