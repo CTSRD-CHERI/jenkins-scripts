@@ -29,7 +29,7 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result)
 		}
 		githubNotifierOptions['reposSource'] = [$class: "ManuallyEnteredRepositorySource", url: gitHubRepoURL]
 	}
-	echo("${githubNotifierOptions}")
+	echo("GitHub notifier options = ${githubNotifierOptions}")
 	step(githubNotifierOptions)
 }
 
