@@ -8,7 +8,7 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result,
     def githubCommitStatusContext = context ? context : "jenkins/${env.JOB_NAME}"
 
     Map options = [$class            : 'GitHubCommitStatusSetter',
-                   errorHandlers     : [[$class: 'ShallowAnyErrorHandler']],
+                   // errorHandlers     : [[$class: 'ShallowAnyErrorHandler']],
                    // errorHandlers: [[$class: "ChangingBuildStatusErrorHandler", result: "UNSTABLE"]],
                    contextSource     : [$class: "ManuallyEnteredCommitContextSource", context: githubCommitStatusContext],
                    /*statusResultSource: [
@@ -25,9 +25,10 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result,
                    // statusResultSource: [ $class: "ConditionalStatusResultSource", results: [[$class: "AnyBuildResult", message: message, state: 'SUCCESS']] ]
     ]
     def gitHubCommitSHA = args?.GIT_COMMIT
-    def gitHubRepoURL = args?.GIT_URL
     if (gitHubCommitSHA)
         options['commitShaSource'] = [$class: "ManuallyEnteredShaSource", sha: gitHubCommitSHA]
+    // Require GIT_URL to exist (can be null though)
+    def gitHubRepoURL = args.GIT_URL
     if (gitHubRepoURL) {
         if (gitHubRepoURL.endsWith('.git')) {
             gitHubRepoURL = gitHubRepoURL.substring(0, gitHubRepoURL.indexOf('.git'))
