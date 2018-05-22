@@ -7,6 +7,7 @@ class CheribuildProjectParams implements Serializable {
 	// Whether to skip the copy artifacts stage (useful if there are multiple cheribuild invocations)
 	boolean skipInitialSetup = false // skip both the copy artifacts and clone stage
 	boolean skipTarball = false // don't create a tarball to archive
+	boolean skipArchiving = false // don't archive the artifacts
 	String nodeLabel = "linux" // if non-null allocate a new jenkins node using node()
 	boolean setGitHubStatus = true
 
@@ -95,7 +96,7 @@ def build(CheribuildProjectParams proj) {
 		runCallback(proj, proj.afterBuildInDocker)
 	}
 	// }
-	if (!proj.skipTarball) {
+	if (!proj.skipTarball && !proj.skipArchiving) {
 		archiveArtifacts allowEmptyArchive: false, artifacts: proj.tarballName, fingerprint: true, onlyIfSuccessful: true
 	}
 	runCallback(proj, proj.afterBuild)
