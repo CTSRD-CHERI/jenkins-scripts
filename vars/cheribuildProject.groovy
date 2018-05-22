@@ -140,13 +140,10 @@ def runTests(CheribuildProjectParams proj) {
 	cheribsdImage.pull()
 	runCallback(proj, proj.beforeTests)
 	cheribsdImage.inside('-u 0') {
-		// ./boot_cheribsd.py --qemu-cmd ~/cheri/output/sdk256/bin/qemu-system-cheri --disk-image ./cheribsd-jenkins_bluehive.img.xz --kernel cheribsd-cheri-malta64-kernel.bz2 -i
-		// TODO: allow booting the minimal bluehive disk-image
 		def testCommand = "'export CPU=${proj.cpu}; " + proj.testScript.replaceAll('\'', '\\\'') + "'"
 		ansiColor('xterm') {
-			sh "wget https://raw.githubusercontent.com/RichardsonAlex/cheri-sdk-docker/master/cheribsd/boot_cheribsd.py -O /usr/local/bin/boot_cheribsd.py"
 			runCallback(proj, proj.beforeTestsInDocker)
-			sh "boot_cheribsd.py ${testImageArg} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
+			sh "\$WORKSPACE/cheribuild/test-scripts/boot_cheribsd.py ${testImageArg} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
 		}
 		runCallback(proj, proj.afterTestsInDocker)
 	}
