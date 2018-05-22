@@ -102,19 +102,41 @@ def build(CheribuildProjectParams proj) {
 }
 
 def runTests(CheribuildProjectParams proj) {
-	def imageName
+	if (proj.cpu != "mips" && proj.cpu != "cheri128" && proj.cpu != "cheri256")
+		error("Running tests for target ${proj.cpu} not supported yet")
+
+	String baseABI = 'n64'
+	String imagePrefix = "ERROR"
+	String kernelPrefix = "ERROR"
+	String qemuCommand = "ERROR"
 	if (proj.cpu == 'mips') {
-		imageName = 'cheri256-cheribsd-mips'
+		kernelPrefix = 'freebsd'
+		imagePrefix = 'freebsd'
+		qemuCommand = "qemu-system-cheri256"
 	} else {
+		CPU_PARAM = proj.cpu
+		kernelPrefix = proj.cpu == 'cheri256' ? 'cheribsd-cheri' : 'cheribsd128-cheri128'
+		imagePrefix = proj.cpu == 'cheri256' ? 'cheribsd' : 'cheribsd128'
+		qemuCommand = "qemu-system-${proj.cpu}"
+	}
+
+	stage("Copy ${proj.cpu} CheriBSD image") {
 		// boot a world with a hybrid userspace (it contains all the necessary shared libs)
 		// There is no need for the binaries to be CHERIABI
-		imageName = "${proj.sdkCPU}-cheribsd-hybrid"
+		diskImageProjectName = "CheriBSD-allkernels-multi/BASE_ABI=${baseABI},CPU=${proj.cpu},ISA=vanilla,label=freebsd"
+
+		copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-full.img.xz", target: 'cheribsd-full.img.xz', fingerprintArtifacts: false
+		copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-jenkins_bluehive.img.xz", target: 'cheribsd-minimal.img.xz', fingerprintArtifacts: false
+		copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-kernel.bz2", target: 'cheribsd-malta64-kernel.bz2', fingerprintArtifacts: false
 	}
 	def testImageArg = ''
 	if (proj.minimalTestImage) {
-		testImageArg = "--disk-image /usr/local/share/cheribsd/cheribsd-minimal.img"
+		testImageArg = "--disk-image \$WORKSPACE/cheribsd-minimal.img"
+	} else {
+		testImageArg = "--disk-image \$WORKSPACE/cheribsd-full.img"
 	}
-	def cheribsdImage = docker.image("ctsrd/${imageName}:latest")
+	testImageArg += " --qemu ${qemuCommand} --kernel \$WORKSPACE/cheribsd-malta64-kernel.bz2"
+	def cheribsdImage = docker.image("ctsrd/qemu-cheri:latest")
 	cheribsdImage.pull()
 	runCallback(proj, proj.beforeTests)
 	cheribsdImage.inside('-u 0') {
@@ -184,7 +206,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 		stage("Setup SDK for ${proj.target} (${proj.cpu})") {
 			// now copy all the artifacts
 			for (artifacts in proj.artifactsToCopy) {
-				copyArtifacts projectName: artifacts.job, filter: artifacts.filter, fingerprintArtifacts: true
+				copyArtifacts projectName: artifacts.job, filter: artifacts.filter, fingerprintArtifacts: false
 			}
 			if (proj.needsFullCheriSDK) {
 				copyArtifacts projectName: "CHERI-SDK/ALLOC=jemalloc,ISA=vanilla,SDK_CPU=${proj.sdkCPU},label=${proj.label}", filter: '*-sdk.tar.xz', fingerprintArtifacts: true

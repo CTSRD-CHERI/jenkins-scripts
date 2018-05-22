@@ -9,6 +9,22 @@ import static com.lesfurets.jenkins.unit.global.lib.LocalSource.localSource
 
 class CheckCheribuildProjects extends BasePipelineTest {
 
+    class DockerMock {
+        class Image {
+            String name;
+            public Image(String name) { this.name = name; }
+            public void pull() { println("docker.pull " + this.name); }
+            public void inside(String args, Closure C) {
+                C();
+            }
+        }
+
+        public Image image(String name) {
+            println()
+            return new Image(name)
+        }
+    }
+
     @Rule
     public TemporaryFolder folder = new TemporaryFolder()
 
@@ -45,6 +61,7 @@ class CheckCheribuildProjects extends BasePipelineTest {
         // helper.registerAllowedMethod("cheriHardwareTest", [Map.class], { args -> cheriHardwareTest.call(args) })
         def scmBranch = "feature_test"
         binding.setVariable('scm', [branch: 'master', url:'scm.git'])
+        binding.setVariable('docker', new DockerMock())
         /* binding.setVariable('scm', [
                 $class                           : 'GitSCM',
                 branches                         : [[name: scmBranch]],
@@ -77,6 +94,18 @@ class CheckCheribuildProjects extends BasePipelineTest {
                 WORKSPACE:"/workspace",
         ])
 		def script = runScript("test-scripts/llvm.groovy")
+		// script.run()
+		printCallStack()
+	}
+
+    @Test
+	void posgres_test() throws Exception {
+		binding.setVariable("env", [
+                JOB_NAME:"postgres-with-asserts/96-cheri",
+                BRANCH_NAME:"96-cheri",
+                WORKSPACE:"/workspace",
+        ])
+		def script = runScript("test-scripts/postgres.groovy")
 		// script.run()
 		printCallStack()
 	}
