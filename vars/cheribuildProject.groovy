@@ -135,12 +135,13 @@ def runTests(CheribuildProjectParams proj) {
 	} else {
 		testImageArg = "--disk-image \$WORKSPACE/cheribsd-full.img"
 	}
-	testImageArg += " --qemu ${qemuCommand} --kernel \$WORKSPACE/cheribsd-malta64-kernel.bz2"
+	testImageArg += " --qemu-cmd ${qemuCommand} --kernel \$WORKSPACE/cheribsd-malta64-kernel.bz2"
 	def cheribsdImage = docker.image("ctsrd/qemu-cheri:latest")
 	cheribsdImage.pull()
 	runCallback(proj, proj.beforeTests)
 	cheribsdImage.inside('-u 0') {
 		def testCommand = "'export CPU=${proj.cpu}; " + proj.testScript.replaceAll('\'', '\\\'') + "'"
+		echo "Test command = ${testCommand}"
 		ansiColor('xterm') {
 			runCallback(proj, proj.beforeTestsInDocker)
 			sh "\$WORKSPACE/cheribuild/test-scripts/boot_cheribsd.py ${testImageArg} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
