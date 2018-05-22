@@ -125,9 +125,15 @@ def runTests(CheribuildProjectParams proj) {
 		// There is no need for the binaries to be CHERIABI
 		diskImageProjectName = "CheriBSD-allkernels-multi/BASE_ABI=${baseABI},CPU=${proj.cpu},ISA=vanilla,label=freebsd"
 
-		copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-full.img.xz", target: 'cheribsd-full.img.xz', fingerprintArtifacts: false
-		copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-jenkins_bluehive.img.xz", target: 'cheribsd-minimal.img.xz', fingerprintArtifacts: false
-		copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-kernel.bz2", target: 'cheribsd-malta64-kernel.bz2', fingerprintArtifacts: false
+		copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-full.img.xz", target: '.', fingerprintArtifacts: false
+		copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-jenkins_bluehive.img.xz", target: '.', fingerprintArtifacts: false
+		copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-kernel.bz2", target: '.', fingerprintArtifacts: false
+		sh """
+mv -f ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-full.img.xz \$WORKSPACE/cheribsd-full.img.xz
+mv -f ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-jenkins_bluehive.img.xz \$WORKSPACE/cheribsd-minimal.img.xz
+mv -f ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/cheribsd-malta64-kernel.bz2
+"""
+
 	}
 	def testImageArg = ''
 	if (proj.minimalTestImage) {
