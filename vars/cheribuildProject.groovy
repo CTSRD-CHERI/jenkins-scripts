@@ -124,7 +124,7 @@ def runTests(CheribuildProjectParams proj) {
 		// boot a world with a hybrid userspace (it contains all the necessary shared libs)
 		// There is no need for the binaries to be CHERIABI
 		diskImageProjectName = "CheriBSD-allkernels-multi/BASE_ABI=${baseABI},CPU=${proj.cpu},ISA=vanilla,label=freebsd"
-
+		sh 'rm -rf $WORKSPACE/cheribsd-full.img.xz $WORKSPACE/cheribsd-minimal.img.xz $WORKSPACE/cheribsd-malta64-kernel.bz2'
 		copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-full.img.xz", target: '.', fingerprintArtifacts: false
 		copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-jenkins_bluehive.img.xz", target: '.', fingerprintArtifacts: false
 		copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-kernel.bz2", target: '.', fingerprintArtifacts: false
@@ -132,6 +132,7 @@ def runTests(CheribuildProjectParams proj) {
 mv -f ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-full.img.xz \$WORKSPACE/cheribsd-full.img.xz
 mv -f ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-jenkins_bluehive.img.xz \$WORKSPACE/cheribsd-minimal.img.xz
 mv -f ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/cheribsd-malta64-kernel.bz2
+ls -la \$WORKSPACE
 """
 
 	}
