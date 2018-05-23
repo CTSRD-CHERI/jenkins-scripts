@@ -99,11 +99,12 @@ class CheckCheribuildProjects extends BasePipelineTest {
 	}
 
     @Test
-	void posgres_test() throws Exception {
+	void postgres_test() throws Exception {
 		binding.setVariable("env", [
                 JOB_NAME:"postgres-with-asserts/96-cheri",
                 BRANCH_NAME:"96-cheri",
                 WORKSPACE:"/workspace",
+                EXECUTOR_NUMBER:"8",
         ])
 		def script = runScript("test-scripts/postgres.groovy")
 		// script.run()
