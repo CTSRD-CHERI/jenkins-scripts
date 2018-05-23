@@ -148,7 +148,7 @@ ls -la \$WORKSPACE
 	cheribsdImage.pull()
 	runCallback(proj, proj.beforeTests)
 	// Currently the full image is 5.59G
-	cheribsdImage.inside('-u 0 --tmpfs /images:rw,noexec,nosuid,size=7g') {
+	cheribsdImage.inside('-u 0 --rm --tmpfs /images:rw,noexec,nosuid,size=7g') {
 		def testCommand = "'export CPU=${proj.cpu}; " + proj.testScript.replaceAll('\'', '\\\'') + "'"
 		echo "Test command = ${testCommand}"
 		ansiColor('xterm') {
