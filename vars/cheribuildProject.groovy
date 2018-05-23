@@ -139,9 +139,9 @@ ls -la \$WORKSPACE
 	}
 	def testImageArg = ''
 	if (proj.minimalTestImage) {
-		testImageArg = "--disk-image \$WORKSPACE/cheribsd-minimal.img"
+		testImageArg = "--disk-image \$WORKSPACE/cheribsd-minimal.img.xz"
 	} else {
-		testImageArg = "--disk-image \$WORKSPACE/cheribsd-full.img"
+		testImageArg = "--disk-image \$WORKSPACE/cheribsd-full.img.xz"
 	}
 	testImageArg += " --qemu-cmd ${qemuCommand} --kernel \$WORKSPACE/cheribsd-malta64-kernel.bz2 --extract-images-to /images"
 	def cheribsdImage = docker.image("ctsrd/qemu-cheri:latest")
@@ -153,6 +153,7 @@ ls -la \$WORKSPACE
 		echo "Test command = ${testCommand}"
 		ansiColor('xterm') {
 			runCallback(proj, proj.beforeTestsInDocker)
+			sh 'df -h /images'
 			sh "\$WORKSPACE/cheribuild/test-scripts/boot_cheribsd.py ${testImageArg} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
 		}
 		runCallback(proj, proj.afterTestsInDocker)
