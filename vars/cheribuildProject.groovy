@@ -143,11 +143,12 @@ ls -la \$WORKSPACE
 	} else {
 		testImageArg = "--disk-image \$WORKSPACE/cheribsd-full.img"
 	}
-	testImageArg += " --qemu-cmd ${qemuCommand} --kernel \$WORKSPACE/cheribsd-malta64-kernel.bz2"
+	testImageArg += " --qemu-cmd ${qemuCommand} --kernel \$WORKSPACE/cheribsd-malta64-kernel.bz2 --extract-images-to /images"
 	def cheribsdImage = docker.image("ctsrd/qemu-cheri:latest")
 	cheribsdImage.pull()
 	runCallback(proj, proj.beforeTests)
-	cheribsdImage.inside('-u 0') {
+	// Currently the full image is 5.59G
+	cheribsdImage.inside('-u 0 --tmpfs /images:rw,noexec,nosuid,size=7g') {
 		def testCommand = "'export CPU=${proj.cpu}; " + proj.testScript.replaceAll('\'', '\\\'') + "'"
 		echo "Test command = ${testCommand}"
 		ansiColor('xterm') {
