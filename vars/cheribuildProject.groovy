@@ -172,7 +172,7 @@ ls -la \$WORKSPACE
 		copyArtifacts projectName: "qemu/qemu-cheri", filter: "qemu-linux/**", target: '.', fingerprintArtifacts: false
 		// We may need to create a dummy ssh key and use a unique port number:
 		int sshPort = 12345 + Integer.parseInt(env.EXECUTOR_NUMBER)
-		sh 'test -e $WORKSPACE/id_ed25519.pub || ssh-keygen -t ed25519 -N \'\' -f $WORKSPACE/id_ed25519.pub < /dev/null'
+		sh 'test -e $WORKSPACE/id_ed25519 || ssh-keygen -t ed25519 -N \'\' -f $WORKSPACE/id_ed25519 < /dev/null'
 		testImageArgs += " --ssh-key \$WORKSPACE/id_ed25519.pub --ssh-port ${sshPort}"
 		runTestsImpl(proj, testImageArgs, "\$WORKSPACE/qemu-linux/bin/${qemuCommand}")
 
