@@ -33,6 +33,7 @@ class CheribuildProjectParams implements Serializable {
 	boolean minimalTestImage
 	String testScript  // if set this will be invoked by ./boot_cheribsd.py in the test stage. If not tests are skipped
 	String testExtraArgs = ''  // Additional command line options to be passed to ./boot_cheribsd.py
+	boolean runTestsInDocker = false // Seems to be really slow (1 min 44 until init instead of 15 secs)
 	// FIXME: implement this:
 	// List testOutputs  // if set these files will be scp'd from CheriBSD after running the tests (e.g. JUnit XML files)
 
@@ -102,6 +103,16 @@ def build(CheribuildProjectParams proj) {
 	runCallback(proj, proj.afterBuild)
 }
 
+def runTestsImpl(CheribuildProjectParams proj, String testImageArgs, String qemuPath) {
+	def testCommand = "'export CPU=${proj.cpu}; " + proj.testScript.replaceAll('\'', '\\\'') + "'"
+	echo "Test command = ${testCommand}"
+	ansiColor('xterm') {
+		runCallback(proj, proj.beforeTestsInDocker)
+		sh "\$WORKSPACE/cheribuild/test-scripts/boot_cheribsd.py --qemu-cmd ${qemuPath} ${testImageArgs} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
+		runCallback(proj, proj.afterTestsInDocker)
+	}
+}
+
 def runTests(CheribuildProjectParams proj) {
 	if (proj.cpu != "mips" && proj.cpu != "cheri128" && proj.cpu != "cheri256")
 		error("Running tests for target ${proj.cpu} not supported yet")
@@ -125,7 +136,7 @@ def runTests(CheribuildProjectParams proj) {
 		// boot a world with a hybrid userspace (it contains all the necessary shared libs)
 		// There is no need for the binaries to be CHERIABI
 		diskImageProjectName = "CheriBSD-allkernels-multi/BASE_ABI=${baseABI},CPU=${proj.cpu},ISA=vanilla,label=freebsd"
-		sh 'rm -rf $WORKSPACE/cheribsd-full.* $WORKSPACE/cheribsd-minimal.* $WORKSPACE/cheribsd-malta64-kernel*'
+		sh 'rm -rfv $WORKSPACE/cheribsd-full.* $WORKSPACE/cheribsd-minimal.* $WORKSPACE/cheribsd-malta64-kernel*'
 		copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-full.img.xz", target: '.', fingerprintArtifacts: false
 		copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-jenkins_bluehive.img.xz", target: '.', fingerprintArtifacts: false
 		copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-kernel.bz2", target: '.', fingerprintArtifacts: false
@@ -137,26 +148,30 @@ ls -la \$WORKSPACE
 """
 
 	}
-	def testImageArg = ''
+	def testImageArgs = ''
 	if (proj.minimalTestImage) {
-		testImageArg = "--disk-image \$WORKSPACE/cheribsd-minimal.img.xz"
+		testImageArgs = "--disk-image \$WORKSPACE/cheribsd-minimal.img.xz"
 	} else {
-		testImageArg = "--disk-image \$WORKSPACE/cheribsd-full.img.xz"
+		testImageArgs = "--disk-image \$WORKSPACE/cheribsd-full.img.xz"
 	}
-	testImageArg += " --qemu-cmd ${qemuCommand} --kernel \$WORKSPACE/cheribsd-malta64-kernel.bz2 --extract-images-to /images"
-	def cheribsdImage = docker.image("ctsrd/qemu-cheri:latest")
-	cheribsdImage.pull()
+	testImageArgs += " --kernel \$WORKSPACE/cheribsd-malta64-kernel.bz2 --no-keep-compressed-images"
 	runCallback(proj, proj.beforeTests)
-	// Currently the full image is 5.59G
-	cheribsdImage.inside('-u 0 --rm --tmpfs /images:rw,noexec,nosuid,size=7g') {
-		def testCommand = "'export CPU=${proj.cpu}; " + proj.testScript.replaceAll('\'', '\\\'') + "'"
-		echo "Test command = ${testCommand}"
-		ansiColor('xterm') {
-			runCallback(proj, proj.beforeTestsInDocker)
+	if (proj.runTestsInDocker) {
+		// Try to speed it up by extracting to tmpfs
+		testImageArgs += " --extract-images-to /images"
+		def cheribsdImage = docker.image("ctsrd/qemu-cheri:latest")
+		cheribsdImage.pull()
+		// Currently the full image is 5.59G
+		cheribsdImage.inside('-u 0 --rm --tmpfs /images:rw,noexec,nosuid,size=7g') {
 			sh 'df -h /images'
-			sh "\$WORKSPACE/cheribuild/test-scripts/boot_cheribsd.py ${testImageArg} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
+			runTestsImpl(proj, testImageArgs, "/usr/local/bin/${qemuCommand}")
 		}
-		runCallback(proj, proj.afterTestsInDocker)
+	} else {
+		// copy qemu archive and run directly on the host
+		dir ('qemu-linux') { deleteDir() }
+		copyArtifacts projectName: "qemu/qemu-cheri", filter: "qemu-linux/**", target: '.', fingerprintArtifacts: false
+		runTestsImpl(proj, testImageArgs, "\$WORKSPACE/qemu-linux/bin/${qemuCommand}")
+
 	}
 	runCallback(proj, proj.afterTests)
 }
