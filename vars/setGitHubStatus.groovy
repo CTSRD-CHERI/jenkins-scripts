@@ -10,13 +10,19 @@ Note: The GitHubCommitStatusSetter requires that the Git Server is defined under
  */
 
 
-def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result, String message) {
+def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result, String message, boolean includeTestStatus) {
     if (result == null)
         result = currentBuild.result
     if (result == null)
         result = 'PENDING'
+    String description = currentBuild.description
+    if (description == null)
+        description = ''
     if (message == null || message.isEmpty())
-        message = "${env.JOB_NAME}: ${currentBuild.description}"
+        message = "${env.JOB_NAME}: ${description}"
+    if (includeTestStatus)
+        message += getTestStatus()
+
     def githubCommitStatusContext = context ? context : "jenkins/${env.JOB_NAME}"
 
     Map options = [$class            : 'GitHubCommitStatusSetter',
@@ -53,5 +59,5 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result,
 
 def call(Map scmInfo, Map<String, String> args = [:]) {
     setGitHubStatusBasedOnCurrentResult(scmInfo, args.get('context', null),
-            args.get('result', null), args.get('message', ''))
+            args.get('result', null), args.get('message', ''), args.get('includeTestStatus', true))
 }
