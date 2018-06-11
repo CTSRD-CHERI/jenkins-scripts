@@ -5,7 +5,10 @@ import hudson.tasks.test.AbstractTestResultAction
 @NonCPS
 def testStatuses() {
     def testStatus = ""
-    AbstractTestResultAction testResultAction = currentBuild.rawBuild.getAction(AbstractTestResultAction.class)
+    def rawBuild = currentBuild.rawBuild;
+    if (rawBuild == null)
+        return testStatus
+    AbstractTestResultAction testResultAction = rawBuild.getAction(AbstractTestResultAction.class)
     if (testResultAction != null) {
         def total = testResultAction.totalCount
         def failed = testResultAction.failCount
