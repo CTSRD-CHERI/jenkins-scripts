@@ -15,15 +15,25 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result,
         result = currentBuild.result
     if (result == null)
         result = 'PENDING'
-    String description = currentBuild.description
-    if (description == null)
-        description = ''
-    if (message == null || message.isEmpty())
-        message = "${env.JOB_NAME}: ${description}"
+    // Strip the -pipeline from JOB_NAME
+    String prettyJobName = "${env.JOB_NAME}".replace('-pipeline/', '/')
+    if (message == null || message.isEmpty()) {
+        String description = currentBuild.displayName
+        if (description == null)
+            description = ''
+        message = "${prettyJobName}: ${description}"
+    }
     if (includeTestStatus)
         message += getTestStatus()
 
-    def githubCommitStatusContext = context ? context : "jenkins/${env.JOB_NAME}"
+    if (currentBuild.durationString && result != 'PENDING') {
+        message += "\n${result} after ${currentBuild.durationString}"
+    }
+
+    String githubCommitStatusContext = context ? context : "jenkins/${prettyJobName}"
+    // Remove the unnecessary -pipeline suffix
+    if (githubCommitStatusContext.indexOf('-pipeline/') > 0)
+        githubCommitStatusContext = githubCommitStatusContext.replace('-pipeline/', '/')
 
     Map options = [$class            : 'GitHubCommitStatusSetter',
                    // errorHandlers     : [[$class: 'ShallowAnyErrorHandler']],

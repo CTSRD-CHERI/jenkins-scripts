@@ -1,0 +1,55 @@
+<org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject>
+    <actions/>
+    <description/>
+    <properties/>
+    <icon class="com.cloudbees.hudson.plugins.folder.icons.StockFolderIcon"/>
+    <views>
+        <hudson.model.AllView>
+            <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../../.."/>
+            <name>All</name>
+            <filterExecutors>false</filterExecutors>
+            <filterQueue>false</filterQueue>
+            <properties class="hudson.model.View$PropertyList"/>
+        </hudson.model.AllView>
+    </views>
+    <viewsTabBar class="hudson.views.DefaultViewsTabBar"/>
+    <primaryView>All</primaryView>
+    <healthMetrics>
+        <com.cloudbees.hudson.plugins.folder.health.WorstChildHealthMetric/>
+    </healthMetrics>
+    <orphanedItemStrategy class="com.cloudbees.hudson.plugins.folder.computed.DefaultOrphanedItemStrategy">
+        <pruneDeadBranches>false</pruneDeadBranches>
+        <daysToKeep>-1</daysToKeep>
+        <numToKeep>-1</numToKeep>
+    </orphanedItemStrategy>
+    <triggers/>
+    <sources class="jenkins.branch.MultiBranchProject$BranchSourceList">
+        <data>
+            <jenkins.branch.BranchSource plugin="branch-api@2.0.19">
+                <source plugin="github-branch-source@2.3.3" class="org.jenkinsci.plugins.github_branch_source.GitHubSCMSource">
+                    <credentialsId>ctsrd-jenkins-new-github-api-key</credentialsId>
+                    <repoOwner>CTSRD-CHERI</repoOwner>
+                    <repository>cheritest</repository>
+                    <traits>
+                        <jenkins.plugins.git.traits.CloneOptionTrait plugin="git@3.8.0">
+                            <extension class="hudson.plugins.git.extensions.impl.CloneOption">
+                                <shallow>false</shallow>
+                                <noTags>true</noTags>
+                                <reference>/var/tmp/git-reference-repos/cheritest</reference>
+                                <timeout>0</timeout>
+                                <depth>0</depth>
+                                <honorRefspec>true</honorRefspec>
+                            </extension>
+                        </jenkins.plugins.git.traits.CloneOptionTrait>
+                        <com.adobe.jenkins.disable__github__multibranch__status.DisableStatusUpdateTrait plugin="disable-github-multibranch-status@1.1"/>
+                    </traits>
+                </source>
+            </jenkins.branch.BranchSource>
+        </data>
+        <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+    </sources>
+    <factory class="org.jenkinsci.plugins.workflow.multibranch.WorkflowBranchProjectFactory">
+        <owner class="org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject" reference="../.."/>
+        <scriptPath>jenkins/sail2/Jenkinsfile</scriptPath>
+    </factory>
+</org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject>
