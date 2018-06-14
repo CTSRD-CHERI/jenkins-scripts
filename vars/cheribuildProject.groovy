@@ -180,6 +180,11 @@ ls -la \$WORKSPACE
 	runCallback(proj, proj.afterTests)
 }
 
+def fileOutsideWorkspaceExists(String path) {
+	def returncode = sh returnStatus: true, script: "stat ${path}'
+	return returncode == 0
+}
+
 def runCheribuildImpl(CheribuildProjectParams proj) {
 	currentBuild.result = 'SUCCESS'
 	if (!proj.tarballName) {
@@ -210,8 +215,8 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 		proj.skipScm = true
 		proj.skipArtifacts = true
 	}
-	if (!proj.skipScm) {
-		stage("Checkout") {
+	stage("Checkout") {
+		if (!proj.skipScm) {
 			echo "Target CPU: ${proj.cpu}, SDK CPU: ${proj.sdkCPU}, output: ${proj.tarballName}"
 			// def sdkImage = docker.image("ctsrd/cheri-sdk-${proj.sdkCPU}:latest")
 			// sdkImage.pull() // make sure we have the latest available from Docker Hub
@@ -223,10 +228,24 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 				gitHubCommitSHA = x?.GIT_COMMIT
 				gitHubRepoURL = x?.GIT_URL
 			}
-			dir('cheribuild') {
-				def x = git 'https://github.com/CTSRD-CHERI/cheribuild.git'
-				echo("Checked out cheribuild: ${x}")
+		}
+		dir('cheribuild') {
+			def cheribuildSCM = [
+				$class: 'GitSCM',
+				branches: [[name: '*/master']],
+				doGenerateSubmoduleConfigurations: false,
+				submoduleCfg: [],
+				userRemoteConfigs: [[url: 'https://github.com/CTSRD-CHERI/cheribuild.git']]
+			]
+			if (fileOutsideWorkspaceExists('/var/tmp/git-reference-repos/cheribuild')) {
+				cheribuildSCM["extensions"] = [
+					[$class: 'CloneOption', depth: 0, noTags: true, reference: '/var/tmp/git-reference-repos/', shallow: false, timeout: 5]
+				]
+				echo("Using reference repo for cheribuild")
 			}
+			def x = checkout changelog: false, poll: false, scm: cheribuildSCM
+			// def x = git 'https://github.com/CTSRD-CHERI/cheribuild.git', changelog: false, poll: false
+			echo("Checked out cheribuild: ${x}")
 		}
 	}
 	if (!proj.skipArtifacts) {
