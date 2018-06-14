@@ -239,7 +239,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			]
 			if (fileOutsideWorkspaceExists('/var/tmp/git-reference-repos/cheribuild')) {
 				cheribuildSCM["extensions"] = [
-					[$class: 'CloneOption', depth: 0, noTags: true, reference: '/var/tmp/git-reference-repos/', shallow: false, timeout: 5]
+					[$class: 'CloneOption', depth: 0, noTags: true, reference: '/var/tmp/git-reference-repos/cheribuild', shallow: false, timeout: 5]
 				]
 				echo("Using reference repo for cheribuild")
 			}
