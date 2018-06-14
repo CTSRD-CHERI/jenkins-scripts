@@ -181,7 +181,7 @@ ls -la \$WORKSPACE
 }
 
 def fileOutsideWorkspaceExists(String path) {
-	def returncode = sh returnStatus: true, script: "stat ${path}'
+	def returncode = sh returnStatus: true, script: "stat ${path}"
 	return returncode == 0
 }
 
