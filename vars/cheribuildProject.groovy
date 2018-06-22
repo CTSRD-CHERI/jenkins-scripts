@@ -226,7 +226,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 
 			dir(proj.customGitCheckoutDir ? proj.customGitCheckoutDir : proj.target) {
 				def realScm = proj.scmOverride != null ? proj.scmOverride : scm
-				proj.gitInfo = checkout changelog: true, poll: true, scm: realScm
+				proj.gitInfo = checkout realScm
 				echo("Checkout result: ${proj.gitInfo}")
 				gitHubCommitSHA = proj.gitInfo?.GIT_COMMIT
 				gitHubRepoURL = proj.gitInfo?.GIT_URL
