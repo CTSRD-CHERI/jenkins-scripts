@@ -15,6 +15,7 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result,
         result = currentBuild.result
     if (result == null)
         result = 'PENDING'
+    echo("ARGS=${args}")
     // Strip the -pipeline from JOB_NAME
     String prettyJobName = "${env.JOB_NAME}".replace('-pipeline/', '/')
     if (message == null || message.isEmpty()) {
@@ -55,13 +56,16 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result,
     def gitHubCommitSHA = args?.GIT_COMMIT
     if (gitHubCommitSHA)
         options['commitShaSource'] = [$class: "ManuallyEnteredShaSource", sha: gitHubCommitSHA]
-    // Require GIT_URL to exist (can be null though)
+    // Require GIT_URL to exist (must not be null)
     def gitHubRepoURL = args.GIT_URL
     if (gitHubRepoURL) {
         if (gitHubRepoURL.endsWith('.git')) {
             gitHubRepoURL = gitHubRepoURL.substring(0, gitHubRepoURL.indexOf('.git'))
         }
         options['reposSource'] = [$class: "ManuallyEnteredRepositorySource", url: gitHubRepoURL]
+    } else {
+        echo("GIT_URL not set, args = ${args}")
+        error("GIT_URL")
     }
     echo("GitHub notifier options = ${options}")
     step(options)
