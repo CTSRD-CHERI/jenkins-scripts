@@ -113,9 +113,8 @@ def doBuild(JobConfig args) {
     def qemuGitOptions = [ changelog: true, poll: true,
                     scm: [$class: 'GitSCM',
                           doGenerateSubmoduleConfigurations: false,
-                          branches: [[name: "refs/heads/master"]],
+                          branches: [[name: "refs/heads/qemu-cheri"]],
                           extensions: [/* to skip polling: [$class: 'IgnoreNotifyCommit'], */
-                                       [$class: 'RelativeTargetDirectory', relativeTargetDir: 'qemu'],
                                        [$class: 'CloneOption', noTags: false, reference: '/var/tmp/git-reference-repos/qemu', shallow: false, depth: 10, timeout: 60],
                           ],
                           userRemoteConfigs: [[url: 'https://github.com/CTSRD-CHERI/qemu.git', credentialsId: 'ctsrd-jenkins-api-token-with-username']]
@@ -125,7 +124,7 @@ def doBuild(JobConfig args) {
     def proj = cheribuildProject(target: 'qemu', cpu: 'native', skipArtifacts: true, scmOverride: qemuGitOptions,
                     buildStage: "Build QEMU with coverage", nodeLabel: null, noIncrementalBuild: true,
                     gitInfoMap: JobConfig.QEMUgitInfo, // will be updated by the project
-                    extraArgs: '--unified-sdk --without-sdk --install-prefix=/ --qemu/debug-info --qemu/configure-options=--enable-gcov --output-path=qemu-linux',
+                    extraArgs: '--unified-sdk --without-sdk --install-prefix=/ --qemu/no-use-lto --qemu/debug-info --qemu/configure-options=--enable-gcov --output-path=qemu-linux',
                     skipTarball: true, setGitHubStatus: false // This is done manually later
                 )
     if (!JobConfig.QEMUgitInfo || JobConfig.QEMUgitInfo.isEmpty())
