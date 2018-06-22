@@ -287,7 +287,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			message += " ${proj.nodeLabel}"
 			githubCommitStatusContext += "/${proj.nodeLabel}"
 		}
-		setGitHubStatus(proj.gitInfo, message: message, context: githubCommitStatusContext)
+		setGitHubStatus(proj.gitInfo + [message: message, context: githubCommitStatusContext])
 	}
 	// TODO: clean up properly and remove the created artifacts?
 }
