@@ -11,6 +11,8 @@ class CheribuildProjectParams implements Serializable {
 	String nodeLabel = "linux" // if non-null allocate a new jenkins node using node()
 	boolean setGitHubStatus = true
 
+	Object scmOverride = null // Set this to use something other than the default scm variable for checkout
+	Object gitInfo = null  // This will be set the the git info from the checkout stage
 
 	/// general/build parameters
 	String target // the cheribuild project name
@@ -223,10 +225,11 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			runCallback(proj, proj.beforeSCM)
 
 			dir(proj.customGitCheckoutDir ? proj.customGitCheckoutDir : proj.target) {
-				def x = checkout scm
-				echo("${x}")
-				gitHubCommitSHA = x?.GIT_COMMIT
-				gitHubRepoURL = x?.GIT_URL
+				def realScm = proj.scmOverride != null ? proj.scmOverride : scm
+				proj.gitInfo = checkout realScm
+				echo("Checkout result: ${proj.gitInfo}")
+				gitHubCommitSHA = proj.gitInfo?.GIT_COMMIT
+				gitHubRepoURL = proj.gitInfo?.GIT_URL
 			}
 		}
 		dir('cheribuild') {
@@ -350,6 +353,7 @@ def runCheribuild(Map args) {
 	} else {
 		runCheribuildImpl(params)
 	}
+	return params
 }
 
 // This is what gets called from jenkins
