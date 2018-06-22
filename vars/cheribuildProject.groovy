@@ -369,39 +369,3 @@ def archiveQEMU(String target) {
 		archiveArtifacts allowEmptyArchive: false, artifacts: "${target}/bin/qemu-system-*", fingerprint: true, onlyIfSuccessful: true
 	}
 }
-
-// TODO: this should move to a separate file but it doesn't seem possible with PipelineUnit
-if (env.get("RUN_UNIT_TESTS")) {
-	if (false) {
-		runCheribuild(target: "newlib-baremetal", cpu: "mips", extraArgs: '--install-prefix=/')
-		def doBuild = { args ->
-			def commonArgs = [
-					target: 'libcxxrt',
-					nodeLabel: null,
-					skipScm: true,  // only the first run handles the SCM
-					extraArgs: '--install-prefix=/']
-			// runCheribuild(commonArgs + args)
-		}
-
-		node('linux') {
-			doBuild(target: 'libcxxrt-baremetal', cpu: 'mips', skipScm: false,
-					artifactsToCopy: [[job: 'Newlib-baremetal-mips/master', filter: 'newlib-baremetal-mips.tar.xz']],
-					beforeBuild: 'mkdir -p cherisdk/baremetal && tar xzf newlib-baremetal-mips.tar.xz -C cherisdk/baremetal; ls -laR cheribsd/baremetal')
-			doBuild([cpu: 'mips', skipArtifacts: true]) // we can reuse artifacts from last build
-			doBuild([target: 'libcxxrt', cpu: 'cheri128', skipScm: true])
-			doBuild([target: 'libcxxrt', cpu: 'cheri256', skipScm: true])
-			doBuild([target: 'libcxxrt', cpu: 'native', skipScm: true])
-
-		}
-	}
-	node ('linux') {
-		runCheribuild(target: 'qemu', cpu: 'native', skipArtifacts: true, buildStage: "Build Linux",
-				extraArgs: '--unified-sdk --without-sdk --install-prefix=/linux',
-				nodeLabel: null, skipTarball: true, afterBuild: archiveQEMU('linux'))
-	}
-	node ('linux') {
-		runCheribuild(target: 'qemu', cpu: 'native', skipArtifacts: true, buildStage: "Build FreeBSD",
-				extraArgs: '--unified-sdk --without-sdk --install-prefix=/freebsd',
-				nodeLabel: null, skipTarball: true, afterBuild: archiveQEMU('freebsd'))
-	}
-}
