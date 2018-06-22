@@ -89,7 +89,6 @@ def build(CheribuildProjectParams proj) {
 		// this behaviour can be disabled by passing noIncrementalBuild: true
 		if (proj.noIncrementalBuild) {
 			sh "${cheribuildCmd}"
-			throw new RuntimeException("ASDF")
 		} else {
 			sh "${cheribuildCmd} --no-clean || (echo 'incremental build failed!' && ${cheribuildCmd})"
 		}
@@ -190,7 +189,6 @@ def fileOutsideWorkspaceExists(String path) {
 }
 
 def runCheribuildImpl(CheribuildProjectParams proj) {
-	currentBuild.result = 'SUCCESS'
 	if (!proj.tarballName) {
 		proj.tarballName = "${proj.target}-${proj.cpu}.tar.xz"
 	}
@@ -338,11 +336,4 @@ def call(Map args) {
 	// just call the real method here so that I can run the tests
 	// the problem is that if I invoke call I get endless recursion
 	return runCheribuild(args)
-}
-
-def archiveQEMU(String target) {
-	return {
-		sh "rm -rf \$WORKSPACE/${target} && mv \$WORKSPACE/tarball/${target} \$WORKSPACE/${target}"
-		archiveArtifacts allowEmptyArchive: false, artifacts: "${target}/bin/qemu-system-*", fingerprint: true, onlyIfSuccessful: true
-	}
 }
