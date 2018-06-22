@@ -285,35 +285,8 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			message += " ${proj.nodeLabel}"
 			githubCommitStatusContext += "/${proj.nodeLabel}"
 		}
-		Map githubNotifierOptions = [
-				$class: 'GitHubCommitStatusSetter',
-				// errorHandlers: [[$class: 'ShallowAnyErrorHandler']],
-				errorHandlers: [[$class: "ChangingBuildStatusErrorHandler", result: "UNSTABLE"]],
-				contextSource: [$class: "ManuallyEnteredCommitContextSource", context: githubCommitStatusContext],
-				statusResultSource: [
-						$class: 'ConditionalStatusResultSource',
-						results: [
-								[$class: 'BetterThanOrEqualBuildResult', result: 'SUCCESS', state: 'SUCCESS', message: message],
-								[$class: 'BetterThanOrEqualBuildResult', result: 'UNSTABLE', state: 'FAILURE', message: message],
-								[$class: 'BetterThanOrEqualBuildResult', result: 'FAILURE', state: 'FAILURE', message: message],
-								[$class: 'AnyBuildResult', message: 'Something went wrong', state: 'ERROR']
-						]
-				]
-				// statusResultSource: [ $class: "ConditionalStatusResultSource", results: [[$class: "AnyBuildResult", message: message, state: 'SUCCESS']] ]
-		]
-		if (gitHubCommitSHA)
-			githubNotifierOptions['commitShaSource'] = [$class: "ManuallyEnteredShaSource", sha: gitHubCommitSHA]
-		if (gitHubRepoURL) {
-			if (gitHubRepoURL.endsWith('.git')) {
-				gitHubRepoURL = gitHubRepoURL.substring(0, gitHubRepoURL.indexOf('.git'))
-			}
-			// reposSource: [$class: 'ManuallyEnteredRepositorySource', url: 'fsdfsd']
-			githubNotifierOptions['reposSource'] = [$class: "ManuallyEnteredRepositorySource", url: gitHubRepoURL]
-		}
-		echo("${githubNotifierOptions}")
-		step(githubNotifierOptions)
+		setGitHubStatus(proj.gitInfo, message: message, context: githubCommitStatusContext)
 	}
-
 	// TODO: clean up properly and remove the created artifacts?
 }
 
@@ -324,13 +297,13 @@ def runCheribuild(Map args) {
 			params[it.key] = it.value
 		} catch (MissingPropertyException e) {
 			error("cheribuildProject: Unknown argument ${it.key}: ${e}")
-			return
+			return params
 		} catch (IllegalArgumentException e) {
 			error("cheribuildProject: Bad value ${it.value} for argument ${it.key}: ${e.getMessage()}")
-			return
+			return params
 		} catch (e) {
 			error("cheribuildProject: Could not set argument ${it.key} to ${it.value}: ${e}")
-			return
+			return params
 		}
 	}
 	try {
@@ -360,7 +333,7 @@ def runCheribuild(Map args) {
 def call(Map args) {
 	// just call the real method here so that I can run the tests
 	// the problem is that if I invoke call I get endless recursion
-	runCheribuild(args)
+	return runCheribuild(args)
 }
 
 def archiveQEMU(String target) {
