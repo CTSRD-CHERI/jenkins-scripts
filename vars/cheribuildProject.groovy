@@ -13,6 +13,7 @@ class CheribuildProjectParams implements Serializable {
 
 	Object scmOverride = null // Set this to use something other than the default scm variable for checkout
 	Object gitInfo = null  // This will be set the the git info from the checkout stage
+	Map gitInfoMap = null  // Can be used to pass in a map that will be updated with the git info
 
 	/// general/build parameters
 	String target // the cheribuild project name
@@ -88,6 +89,7 @@ def build(CheribuildProjectParams proj) {
 		// this behaviour can be disabled by passing noIncrementalBuild: true
 		if (proj.noIncrementalBuild) {
 			sh "${cheribuildCmd}"
+			throw new RuntimeException("ASDF")
 		} else {
 			sh "${cheribuildCmd} --no-clean || (echo 'incremental build failed!' && ${cheribuildCmd})"
 		}
@@ -230,6 +232,8 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 				echo("Checkout result: ${proj.gitInfo}")
 				gitHubCommitSHA = proj.gitInfo?.GIT_COMMIT
 				gitHubRepoURL = proj.gitInfo?.GIT_URL
+				if (proj.gitInfoMap != null)
+					proj.gitInfoMap << proj.gitInfo  // store it so it exists even on exception
 			}
 		}
 		dir('cheribuild') {

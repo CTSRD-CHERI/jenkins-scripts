@@ -121,12 +121,16 @@ def doBuild(JobConfig args) {
                           userRemoteConfigs: [[url: 'https://github.com/CTSRD-CHERI/qemu.git', credentialsId: 'ctsrd-jenkins-api-token-with-username']]
                     ]
     ]
+    JobConfig.QEMUgitInfo = [:]
     def proj = cheribuildProject(target: 'qemu', cpu: 'native', skipArtifacts: true, scmOverride: qemuGitOptions,
-                    buildStage: "Build QEMU with coverage", nodeLabel: null,
+                    buildStage: "Build QEMU with coverage", nodeLabel: null, noIncrementalBuild: true,
+                    gitInfoMap: JobConfig.QEMUgitInfo, // will be updated by the project
                     extraArgs: '--unified-sdk --without-sdk --install-prefix=/ --qemu/debug-info --qemu/configure-options=--enable-gcov --output-path=qemu-linux',
                     skipTarball: true, setGitHubStatus: false // This is done manually later
                 )
-    JobConfig.QEMUgitInfo = proj.gitInfo  // save the qemu git info for setting commit status
+    if (!JobConfig.QEMUgitInfo || JobConfig.QEMUgitInfo.isEmpty())
+        JobConfig.QEMUgitInfo = proj.gitInfo  // save the qemu git info for setting commit status
+    echo("QEMU git info: ${JobConfig.QEMUgitInfo}")
     timeout(90) {
         runTests(args)
     }
