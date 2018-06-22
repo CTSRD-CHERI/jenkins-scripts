@@ -152,6 +152,7 @@ def cheriHardwareTest() {
             setGitHubStatus(args.gitInfo) // set PENDING status
             doBuild(args)
         } catch (e) {
+            currentBuild.result = 'FAILURE'
             error("Failure detected: ${e}")
         } finally {
             echo("result = ${currentBuild.result} currentResult = ${currentBuild.currentResult}")

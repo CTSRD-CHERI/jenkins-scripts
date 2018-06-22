@@ -338,7 +338,6 @@ def call(Map args) {
 	try {
 		return runCheribuild(args)
 	} catch (e) {
-		error("${e}")
 		currentBuild.result = 'FAILURE'
 		throw e
 	}
