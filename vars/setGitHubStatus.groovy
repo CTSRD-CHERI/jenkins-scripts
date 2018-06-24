@@ -29,6 +29,15 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result,
 
     if (currentBuild.durationString && result != 'PENDING') {
         message += "\n${result} after ${currentBuild.durationString}"
+        if (' and counting' in message) {
+            message = message.replace(' and counting', '')
+        }
+    }
+
+    // Maximum github message length is
+    if (message.length() > 140) {
+        echo("Truncating ${message} to 140 chars")
+        message = message.substring(0, 139)
     }
 
     String githubCommitStatusContext = context ? context : "jenkins/${prettyJobName}"
@@ -72,6 +81,12 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result,
 }
 
 def call(Map scmInfo, Map<String, String> args = [:]) {
-    setGitHubStatusBasedOnCurrentResult(scmInfo, args.get('context', null),
-            args.get('result', null), args.get('message', ''), args.get('includeTestStatus', true))
+    try {
+        setGitHubStatusBasedOnCurrentResult(scmInfo, args.get('context', null),
+                args.get('result', null), args.get('message', ''), args.get('includeTestStatus', true))
+    } catch (e) {
+        e.printStackTrace()
+        echo("Could not set GitHub commit status: ${e}")
+        currentBuild.result = 'FAILURE'
+    }
 }
