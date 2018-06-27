@@ -20,6 +20,7 @@ class CheribuildProjectParams implements Serializable {
 	String extraArgs = '' // additional arguments to pass to cheribuild.py
 	String cpu // --cpu flag for cheribuild
 	String sdkCPU  // the SDK used to build (e.g. for cheri256-hybrid will use the cheri256 sdk to build MIPS code)
+	String capTableABI = 'pcrel'
 	boolean needsFullCheriSDK = true
 	String label = 'linux'  // Used when copying artifacts (the label parameter for those other jobs)
 	// otherwise pull just a specific set of artifacts
@@ -83,7 +84,7 @@ def build(CheribuildProjectParams proj) {
 	ansiColor('xterm') {
 		sh "rm -fv ${proj.tarballName}; pwd"
 		runCallback(proj, proj.beforeBuildInDocker)
-		def cheribuildArgs = "${proj.target} --cpu ${proj.cpu} ${proj.extraArgs}"
+		def cheribuildArgs = "${proj.target} --cpu ${proj.cpu} ${proj.extraArgs} --cap-table-abi=${proj.capTableABI}"
 		def cheribuildCmd = "./cheribuild/jenkins-cheri-build.py --build ${cheribuildArgs}"
 		// by default try an incremental build first and if that fails fall back to a clean build
 		// this behaviour can be disabled by passing noIncrementalBuild: true
@@ -260,9 +261,19 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 				copyArtifacts projectName: artifacts.job, filter: artifacts.filter, fingerprintArtifacts: false
 			}
 			if (proj.needsFullCheriSDK) {
-				copyArtifacts projectName: "CHERI-SDK/ALLOC=jemalloc,ISA=vanilla,SDK_CPU=${proj.sdkCPU},label=${proj.label}", filter: '*-sdk.tar.xz', fingerprintArtifacts: true
+				// copyArtifacts projectName: "CHERI-SDK/ALLOC=jemalloc,ISA=vanilla,SDK_CPU=${proj.sdkCPU},label=${proj.label}", filter: '*-sdk.tar.xz', fingerprintArtifacts: true
+				if (proj.capTableABI == "legacy") {
+					cheribsdProject = "CHERIBSD-WORLD/CPU=${proj.sdkCPU},ISA=legacy"
+
+				} else if (proj.capTableABI == "pcrel") {
+					cheribsdProject = "CHERIBSD-WORLD/CPU=${proj.sdkCPU},ISA=legacy"
+				} else {
+					error("Cannot infer SDK name for proj.capTableABI=${proj.capTableABI}")
+				}
+				copyArtifacts projectName: cheribsdProject, flatten: true, optional: false, filter: '*', selector: lastSuccessful()
+				copyArtifacts projectName: "CLANG-LLVM-master/CPU=cheri-multi,label=${proj.label}", flatten: true, optional: false, filter: 'cheri-multi-master-clang-llvm.tar.xz', selector: lastSuccessful()
 				ansiColor('xterm') {
-					sh "./cheribuild/jenkins-cheri-build.py extract-sdk --cpu ${proj.cpu} ${proj.extraArgs}"
+					sh "./cheribuild/jenkins-cheri-build.py extract-sdk --cpu ${proj.cpu} ${proj.extraArgs} --cap-table-abi=${proj.capTableABI}"
 				}
 			}
 			echo 'WORKSPACE after checkout:'
