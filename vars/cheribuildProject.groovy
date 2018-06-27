@@ -266,7 +266,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 					cheribsdProject = "CHERIBSD-WORLD/CPU=${proj.sdkCPU},ISA=legacy"
 
 				} else if (proj.capTableABI == "pcrel") {
-					cheribsdProject = "CHERIBSD-WORLD/CPU=${proj.sdkCPU},ISA=legacy"
+					cheribsdProject = "CHERIBSD-WORLD/CPU=${proj.sdkCPU},ISA=cap-table-pcrel"
 				} else {
 					error("Cannot infer SDK name for proj.capTableABI=${proj.capTableABI}")
 				}
