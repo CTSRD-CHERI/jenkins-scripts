@@ -293,7 +293,8 @@ def runCheribuild(Map args) {
 						[$class: "GitHubPushTrigger"]
 				]),
 				disableConcurrentBuilds(),
-				[$class: 'CopyArtifactPermissionProperty', projectNames: '*'],
+				copyArtifactPermission('*'), // New in copyartifacts version 1.41
+				// [$class: 'CopyArtifactPermissionProperty', projectNames: '*'],
 		])
 	} catch(e) {
 		echo("FAILED TO SET GitHub push trigger in Jenkinsfile: ${e}")
