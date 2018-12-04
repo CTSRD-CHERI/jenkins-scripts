@@ -59,4 +59,8 @@ task copyTask(type: Copy) {
     include 'src/**'
     include 'vars/**'
 }
-build.dependsOn(copyTask)
+compileJava.dependsOn(copyTask)
+compileGroovy.dependsOn(copyTask)
+compileTestJava.dependsOn(copyTask)
+compileTestGroovy.dependsOn(copyTask)
+// build.dependsOn(copyTask)
