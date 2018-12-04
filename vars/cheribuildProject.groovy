@@ -184,11 +184,6 @@ ls -la \$WORKSPACE
 	runCallback(proj, proj.afterTests)
 }
 
-def fileOutsideWorkspaceExists(String path) {
-	def returncode = sh returnStatus: true, script: "stat ${path}"
-	return returncode == 0
-}
-
 def runCheribuildImpl(CheribuildProjectParams proj) {
 	if (!proj.tarballName) {
 		proj.tarballName = "${proj.target}-${proj.cpu}.tar.xz"
@@ -236,21 +231,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			}
 		}
 		dir('cheribuild') {
-			def cheribuildSCM = [
-				$class: 'GitSCM',
-				branches: [[name: '*/master']],
-				doGenerateSubmoduleConfigurations: false,
-				submoduleCfg: [],
-				userRemoteConfigs: [[url: 'https://github.com/CTSRD-CHERI/cheribuild.git']]
-			]
-			if (fileOutsideWorkspaceExists('/var/tmp/git-reference-repos/cheribuild')) {
-				cheribuildSCM["extensions"] = [
-					[$class: 'CloneOption', depth: 0, noTags: true, reference: '/var/tmp/git-reference-repos/cheribuild', shallow: false, timeout: 5]
-				]
-				echo("Using reference repo for cheribuild")
-			}
-			def x = checkout changelog: false, poll: false, scm: cheribuildSCM
-			// def x = git 'https://github.com/CTSRD-CHERI/cheribuild.git', changelog: false, poll: false
+			def x = cloneGitRepoWithReference(url: "https://github.com/CTSRD-CHERI/cheribuild.git", changelog: false, poll: false)
 			echo("Checked out cheribuild: ${x}")
 		}
 	}
