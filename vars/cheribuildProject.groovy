@@ -256,25 +256,12 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 	}
 	if (!proj.skipArtifacts) {
 		stage("Setup SDK for ${proj.target} (${proj.cpu})") {
-			// now copy all the artifacts
 			for (artifacts in proj.artifactsToCopy) {
 				copyArtifacts projectName: artifacts.job, filter: artifacts.filter, fingerprintArtifacts: false
 			}
+			// now copy all the artifacts
 			if (proj.needsFullCheriSDK) {
-				// copyArtifacts projectName: "CHERI-SDK/ALLOC=jemalloc,ISA=vanilla,SDK_CPU=${proj.sdkCPU},label=${proj.label}", filter: '*-sdk.tar.xz', fingerprintArtifacts: true
-				if (proj.capTableABI == "legacy") {
-					cheribsdProject = "CHERIBSD-WORLD/CPU=${proj.sdkCPU},ISA=legacy"
-
-				} else if (proj.capTableABI == "pcrel") {
-					cheribsdProject = "CHERIBSD-WORLD/CPU=${proj.sdkCPU},ISA=cap-table-pcrel"
-				} else {
-					error("Cannot infer SDK name for proj.capTableABI=${proj.capTableABI}")
-				}
-				copyArtifacts projectName: cheribsdProject, flatten: true, optional: false, filter: '*', selector: lastSuccessful()
-				copyArtifacts projectName: "CLANG-LLVM-master/CPU=cheri-multi,label=${proj.label}", flatten: true, optional: false, filter: 'cheri-multi-master-clang-llvm.tar.xz', selector: lastSuccessful()
-				ansiColor('xterm') {
-					sh "./cheribuild/jenkins-cheri-build.py extract-sdk --cpu ${proj.cpu} ${proj.extraArgs} --cap-table-abi=${proj.capTableABI}"
-				}
+				fetchCheriSDK(target: proj.target, cpu: proj.cpu, compilerOnly: false, buildOS: proj.label, capTableABI: proj.capTableABI, extraCheribuildArgs: proj.extraArgs)
 			}
 			echo 'WORKSPACE after checkout:'
 			sh 'ls -la'
