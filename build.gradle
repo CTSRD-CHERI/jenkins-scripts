@@ -23,7 +23,9 @@ sourceSets {
         }
     }
     main {
-        groovy.srcDirs = [file('src')]
+        groovy.srcDirs = [file('src'),
+                          // file('vars')
+        ]
     }
     test {
         groovy.srcDirs = [file('test')]
@@ -42,12 +44,16 @@ repositories {
 }
 
 dependencies {
-    compile 'org.jenkins-ci.plugins:job-dsl-core:+'
     compile 'org.codehaus.groovy:groovy-all:2.4.7'
     // compile 'org.jenkins-ci.plugins:junit:jar:1.24'
     // compile group: 'org.jenkins-ci.main', name: 'jenkins-core', version: '2.89.4'
     // For AbstractTestResultAction (doesn't work properly)
-    //compile group: 'org.jenkins-ci.plugins', name: 'junit', version: '1.24'
+    // compile group: 'org.jenkins-ci.plugins', name: 'junit', version: '1.24'
+    // compile(group: 'org.jenkins-ci.plugins', name: 'job-dsl-core', version: '1.70', classifier: 'sources')
+    // compile(group: 'org.jenkins-ci.plugins', name: 'junit', version: '1.26.1', classifier: 'sources')
+    compile(group: 'org.jenkins-ci.plugins', name: 'junit', version: '1.26.1', ext: 'jar')
+    compile(group: 'org.jenkins-ci.plugins', name: 'job-dsl-core', version: '1.70', ext: 'jar')
+    // compile(group: 'org.jenkins-ci.main', name: 'jenkins-core', version: '2.138.3')
     testCompile 'junit:junit:4.12'
     testCompile group:'com.lesfurets', name:'jenkins-pipeline-unit', version: '+'
 
