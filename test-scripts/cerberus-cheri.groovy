@@ -16,6 +16,7 @@ node("linux") {
             cloneGitRepoWithReference(url: "https://github.com/CTSRD-CHERI/cheribuild.git", changelog: false, poll: false)
         }
     }
+    def kernelFile = 'cheribsd128-cheri128-malta64-mfs-root-minimal-cheribuild-kernel.bz2'
     stage("copy artifacts") {
         fetchCheriSDK(cpu: "cheri128", capTableABI: "pcrel")
         sh 'rm -rfv $WORKSPACE/*kernel.bz2 qemu-linux'
@@ -24,11 +25,24 @@ node("linux") {
         // https://ctsrd-build.cl.cam.ac.uk/job/CheriBSD-allkernels-multi/BASE_ABI=n64,CPU=cheri128,ISA=vanilla,label=freebsd/lastSuccessfulBuild/artifact/
         // ctsrd/cheribsd/trunk/bsdtools/cheribsd128-cheri128-malta64-mfs-root-minimal-cheribuild-kernel.bz2
         def diskImageProjectName = 'CheriBSD-allkernels-multi/BASE_ABI=n64,CPU=cheri128,ISA=vanilla,label=freebsd'
-        def diskImagePath = 'ctsrd/cheribsd/trunk/bsdtools/cheribsd128-cheri128-malta64-mfs-root-minimal-cheribuild-kernel.bz2'
+        def diskImagePath = "ctsrd/cheribsd/trunk/bsdtools/${kernelFile}"
         copyArtifacts projectName: diskImageProjectName, filter: diskImagePath, target: '.', fingerprintArtifacts: false, flatten: true
     }
-    stage("build") {
-    }
-    stage("run") {
+    dir ("charon2") {
+        env.CHERI_CC="${env.WORKSPACE}/cherisdk/bin/clang"
+        env.CHERI_SYSROOT="${env.WORKSPACE}/cherisdk/sysroot"
+        env.HOST_CC="cc"
+        env.CHERIBUILD_DIR="${env.WORKSPACE}/cheribuild"
+        env.CHERIBUILD_KERNEL="${env.WORKSPACE}/${kernelFile}"
+        env.CHERIBUILD_QEMU="${env.WORKSPACE}/qemu-linux/bin/qemu-system-cheri128"
+        sh "env | sort"
+        stage("build") {
+            sh "make -f Makefile-cheri run_tarball.tar.xz"
+        }
+        stage("run") {
+            sh "make -f Makefile-cheri run"
+            sh "cp cheribsd-test/run_Tarball/tests.log/all.log \$WORKSPACE/all.log"
+        }
+        archiveArtifacts allowEmptyArchive: false, artifacts: "all.log", fingerprint: true, onlyIfSuccessful: true
     }
 }
