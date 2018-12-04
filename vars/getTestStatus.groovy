@@ -1,6 +1,7 @@
 // https://stackoverflow.com/questions/39920437/how-to-access-junit-test-counts-in-jenkins-pipeline-project
 
 import hudson.tasks.test.AbstractTestResultAction
+import com.cloudbees.groovy.cps.NonCPS
 
 @NonCPS
 def testStatuses() {
