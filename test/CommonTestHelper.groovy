@@ -5,7 +5,6 @@ import static com.lesfurets.jenkins.unit.global.lib.LibraryConfiguration.library
 import static com.lesfurets.jenkins.unit.global.lib.LocalSource.localSource
 
 class CommonTestHelper {
-
     static class DockerMock {
         class Image {
             String name;
@@ -72,7 +71,19 @@ class CommonTestHelper {
                                                             url          : 'github.com/lesfurets/JenkinsPipelineUnit.git'
                                                     ]]
         ]) */
+
+        binding.setVariable('env', [NODE_LABELS: "linux14 linux docker"])
         binding.setVariable('currentBuild', [result: 'SUCCESS', currentResult: 'SUCCESS', durationString: "XXX seconds"])
+    }
+
+    static void addEnvVars(BasePipelineTest test, Map<String, String> vars) {
+        def x = test.binding.getVariable("env")
+        // print("Before: ")
+        // println(x)
+        x << vars
+        x = test.binding.getVariable("env")
+        // print("After: ")
+        // println(x)
     }
 
 }

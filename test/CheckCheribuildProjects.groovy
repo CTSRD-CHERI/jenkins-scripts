@@ -25,7 +25,7 @@ class CheckCheribuildProjects extends BasePipelineTest {
 //        def script = loadScript("test-scripts/qemu.groovy")
 //        script.run()
 //        printCallStack()
-        binding.setVariable("env", ["JOB_NAME":"QEMU/qemu-cheri"])
+        CommonTestHelper.addEnvVars(this, ["JOB_NAME":"QEMU/qemu-cheri"])
         def script = runScript("test-scripts/qemu.groovy")
         // script.run()
         printCallStack()
@@ -33,7 +33,7 @@ class CheckCheribuildProjects extends BasePipelineTest {
 
 	@Test
 	void llvm_test() throws Exception {
-		binding.setVariable("env", [
+		CommonTestHelper.addEnvVars(this, [
                 JOB_NAME:"LLVM-linux/cap-table",
                 BRANCH_NAME:"cap-table",
                 WORKSPACE:"/workspace",
@@ -45,7 +45,7 @@ class CheckCheribuildProjects extends BasePipelineTest {
 
     @Test
 	void postgres_test() throws Exception {
-		binding.setVariable("env", [
+		CommonTestHelper.addEnvVars(this, [
                 JOB_NAME:"postgres-with-asserts/96-cheri",
                 BRANCH_NAME:"96-cheri",
                 WORKSPACE:"/workspace",
@@ -55,4 +55,16 @@ class CheckCheribuildProjects extends BasePipelineTest {
 		// script.run()
 		printCallStack()
 	}
+
+    @Test
+    void cerberus_test() throws Exception {
+        CommonTestHelper.addEnvVars(this, [
+                JOB_NAME:"cerberus-CHERI",
+                WORKSPACE:"/workspace",
+                EXECUTOR_NUMBER:"8",
+        ])
+        def script = runScript("test-scripts/cerberus-cheri.groovy")
+        // script.run()
+        printCallStack()
+    }
 }
