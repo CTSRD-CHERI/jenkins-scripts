@@ -124,8 +124,10 @@ def runTestsImpl(CheribuildProjectParams proj, String testImageArgs, String qemu
 }
 
 def runTests(CheribuildProjectParams proj) {
-	if (proj.cpu != "mips" && proj.cpu != "cheri128" && proj.cpu != "cheri256")
-		error("Running tests for target ${proj.cpu} not supported yet")
+	// Custom test script only support for CheriBSD
+	if (proj.testScript)
+		if (proj.cpu != "mips" && proj.cpu != "cheri128" && proj.cpu != "cheri256")
+			error("Running tests for target ${proj.cpu} not supported yet")
 
 	String baseABI = 'n64'
 	String imagePrefix = "ERROR"
