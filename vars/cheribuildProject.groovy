@@ -44,6 +44,7 @@ class CheribuildProjectParams implements Serializable {
 	// List testOutputs  // if set these files will be scp'd from CheriBSD after running the tests (e.g. JUnit XML files)
 
 	String buildStage = null // Label for the build stage
+	String stageSuffix = null // Suffix for the build/test stage
 
 	/// hooks
 	def beforeSCM // callback before checking out the sources
@@ -258,12 +259,14 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			sh 'ls -la'
 		}
 	}
-	def buildStage = proj.buildStage ? proj.buildStage : "Build ${proj.target} for ${proj.cpu}"
+	def buildSuffix = proj.stageSuffix ? proj.stageSuffix : " for ${proj.cpu}"
+	def buildStage = proj.buildStage ? proj.buildStage : "Build ${proj.target} ${buildSuffix}"
 	stage(buildStage) {
 		build(proj)
 	}
 	if (proj.testScript || proj.runTests) {
-		stage("run tests for ${proj.cpu}") {
+		def testSuffix = proj.stageSuffix ? proj.stageSuffix : " for ${proj.cpu}"
+		stage("Run ${proj.target} tests ${testSuffix}") {
 			runTests(proj)
 		}
 	}
