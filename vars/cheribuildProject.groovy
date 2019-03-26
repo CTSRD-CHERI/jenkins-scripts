@@ -145,26 +145,28 @@ def runTests(CheribuildProjectParams proj) {
 	}
 
 	def testImageArgs = ''
-	stage("Copy ${proj.cpu} CheriBSD image") {
-		// boot a world with a hybrid userspace (it contains all the necessary shared libs)
-		// There is no need for the binaries to be CHERIABI
-		diskImageProjectName = "CheriBSD-allkernels-multi/BASE_ABI=${baseABI},CPU=${proj.cpu},ISA=vanilla,label=freebsd"
-		sh 'rm -rfv $WORKSPACE/cheribsd-full.* $WORKSPACE/cheribsd-minimal.* $WORKSPACE/cheribsd-malta64-kernel*'
-		if (proj.minimalTestImage) {
-			copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-mfs-root-minimal-cheribuild-kernel.bz2", target: '.', fingerprintArtifacts: false
-			sh "ln -sfn ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-mfs-root-minimal-cheribuild-kernel.bz2 \$WORKSPACE/cheribsd-malta64-minimal-kernel.bz2"
-			testImageArgs = " --kernel cheribsd-malta64-minimal-kernel.bz2"
-		} else {
-			copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-full.img.xz", target: '.', fingerprintArtifacts: false
-			copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-kernel.bz2", target: '.', fingerprintArtifacts: false
-			sh """
-ln -sfn ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-full.img.xz \$WORKSPACE/cheribsd-full.img.xz
-ln -sfn ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/cheribsd-malta64-kernel.bz2
+	if (proj.cpu != "native") {
+		stage("Copy ${proj.cpu} CheriBSD image") {
+			// boot a world with a hybrid userspace (it contains all the necessary shared libs)
+			// There is no need for the binaries to be CHERIABI
+			diskImageProjectName = "CheriBSD-allkernels-multi/BASE_ABI=${baseABI},CPU=${proj.cpu},ISA=vanilla,label=freebsd"
+			sh 'rm -rfv $WORKSPACE/cheribsd-full.* $WORKSPACE/cheribsd-minimal.* $WORKSPACE/cheribsd-malta64-kernel*'
+			if (proj.minimalTestImage) {
+				copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-mfs-root-minimal-cheribuild-kernel.bz2", target: '.', fingerprintArtifacts: false, flatten: true, selector: lastSuccessful()
+				sh "ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-mfs-root-minimal-cheribuild-kernel.bz2 \$WORKSPACE/cheribsd-malta64-minimal-kernel.bz2"
+				testImageArgs = " --kernel cheribsd-malta64-minimal-kernel.bz2"
+			} else {
+				copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-full.img.xz", target: '.', fingerprintArtifacts: false, flatten: true, selector: lastSuccessful()
+				copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-kernel.bz2", target: '.', fingerprintArtifacts: false, flatten: true, selector: lastSuccessful()
+				sh """
+ln -sfn \$WORKSPACE/${imagePrefix}-full.img.xz \$WORKSPACE/cheribsd-full.img.xz
+ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/cheribsd-malta64-kernel.bz2
 """
-			testImageArgs += " --kernel \$WORKSPACE/cheribsd-malta64-kernel.bz2 --no-keep-compressed-images"
-			testImageArgs = "--disk-image \$WORKSPACE/cheribsd-full.img.xz"
+				testImageArgs += " --kernel \$WORKSPACE/cheribsd-malta64-kernel.bz2 --no-keep-compressed-images"
+				testImageArgs = "--disk-image \$WORKSPACE/cheribsd-full.img.xz"
+			}
+			sh "ls -la \$WORKSPACE"
 		}
-		sh "ls -la \$WORKSPACE"
 	}
 
 	runCallback(proj, proj.beforeTests)
