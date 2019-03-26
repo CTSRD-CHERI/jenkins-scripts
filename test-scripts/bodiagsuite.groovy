@@ -16,66 +16,72 @@ mv -f ${buildDir}/test-results.xml ${outputXml}
 	}
 }
 
-// Use the native compiler instead of CHERI clang so that we can find the ASAN runtime
-cheribuildProject(target: 'bodiagsuite', cpu: 'native', skipArtifacts: true,
-		stageSuffix: "Linux (insecure)", nodeLabel: 'linux',
-		sdkCompilerOnly: true,
-		extraArgs: '--bodiagsuite-native/no-use-asan --without-sdk',
-		skipTarball: true, runTests: true, noIncrementalBuild: true,
-		afterTests: archiveTestResults("bodiagsuite-native-build", "native-insecure"))
+class Globals {
+	static Object gitInfo = null
+}
 
-cheribuildProject(target: 'bodiagsuite', cpu: 'native', skipArtifacts: true,
-		stageSuffix: "Linux (_FORTIFY_SOURCE)", nodeLabel: 'linux',
-		sdkCompilerOnly: true,
-		extraArgs: '--bodiagsuite-native/no-use-asan --without-sdk --bodiagsuite-native/cmake-options=-DWITH_FORTIFY_SOURCE=ON',
-		skipTarball: true, runTests: true, noIncrementalBuild: true,
-		afterTests: archiveTestResults("bodiagsuite-native-build", "native-fortify"))
+def process(String cpu, String xmlSuffix, Map args) {
+	String buildDir = null
+	if (cpu == "cheri128") {
+		buildDir = "bodiagsuite-128-build"
+	} else if (cpu == "native") {
+		if (args["extraArgs"].contains('/no-use-asan')) {
+			buildDir = "bodiagsuite-native-build"
+		} else {
+			assert(args["extraArgs"].contains('/use-asan'))
+			buildDir = "bodiagsuite-asan-native-build"
+		}
+	} else {
+		error("Invalid cpu: ${cpu}")
+	}
+	def commonArgs = [
+			target: 'bodiagsuite', cpu: cpu, nodeLabel: null,
+			skipScm: true, // only the first run handles the SCM
+			skipTarball: true, runTests: true, noIncrementalBuild: true,
+			afterTests: archiveTestResults(buildDir, cpu + "-" + xmlSuffix),
+	]
+	if (Globals.gitInfo)
+		commonArgs.gitInfo = Globals.gitInfo
+	if (cpu == "native") {
+		// Use the native compiler instead of CHERI clang so that we can find the ASAN runtime (--without-sdk)
+		commonArgs["skipArtifacts"] = true
+		commonArgs["sdkCompilerOnly"] = true
+		assert(args["extraArgs"].contains('--without-sdk'))
+	}
+	return cheribuildProject(commonArgs + args)
+}
+node('linux') {
+	// native
+	result = process('native', 'insecure',
+			[stageSuffix: "Linux (insecure)", skipScm: false, // first run so we check out the scm
+			 extraArgs: '--bodiagsuite-native/no-use-asan --without-sdk'])
+	Globals.gitInfo = result.gitInfo  // store it for the following runs
 
-cheribuildProject(target: 'bodiagsuite', cpu: 'native', skipArtifacts: true,
-		stageSuffix: "Linux (stack-protector)", nodeLabel: 'linux',
-		sdkCompilerOnly: true,
-		extraArgs: '--bodiagsuite-native/no-use-asan --without-sdk --bodiagsuite-native/cmake-options=-DWITH_STACK_PROTECTOR=ON',
-		skipTarball: true, runTests: true, noIncrementalBuild: true,
-		afterTests: archiveTestResults("bodiagsuite-native-build", "native-stack-protector"))
+	process('native', 'fortify-source',
+			[stageSuffix: "Linux (_FORTIFY_SOURCE)",
+			 extraArgs: '--bodiagsuite-native/no-use-asan --without-sdk --bodiagsuite-native/cmake-options=-DWITH_FORTIFY_SOURCE=ON'])
+	process('native', 'stack-protector',
+			[stageSuffix: "Linux (stack-protector)",
+			 extraArgs: '--bodiagsuite-native/no-use-asan --without-sdk --bodiagsuite-native/cmake-options=-DWITH_STACK_PROTECTOR=ON'])
+	process('native', 'stack-protector-and-fortify-source',
+			[stageSuffix: "Linux (stack-protector+_FORTIFY_SOURCE)",
+			 extraArgs: '--bodiagsuite-native/no-use-asan --without-sdk --bodiagsuite-native/cmake-options="-DWITH_FORTIFY_SOURCE=ON -DWITH_STACK_PROTECTOR=ON"'])
+	// native+ASAN
+	process('native', 'asan',
+			[stageSuffix: "Linux (ASAN)",
+			 extraArgs: '--bodiagsuite-native/use-asan --without-sdk'])
+	process('native', 'asan-stack-protector-fortify-source',
+			[stageSuffix: "Linux (ASAN+stack-protector+_FORTIFY_SOURCE)",
+			 extraArgs: '--bodiagsuite-native/use-asan --without-sdk --bodiagsuite-native/cmake-options="-DWITH_FORTIFY_SOURCE=ON -DWITH_STACK_PROTECTOR=ON"'])
 
-cheribuildProject(target: 'bodiagsuite', cpu: 'native', skipArtifacts: true,
-		stageSuffix: "Linux (stack-protector+_FORTIFY_SOURCE)", nodeLabel: 'linux',
-		sdkCompilerOnly: true,
-		extraArgs: '--bodiagsuite-native/no-use-asan --without-sdk --bodiagsuite-native/cmake-options="-DWITH_FORTIFY_SOURCE=ON -DWITH_STACK_PROTECTOR=ON"',
-		skipTarball: true, runTests: true, noIncrementalBuild: true,
-		afterTests: archiveTestResults("bodiagsuite-native-build", "native-stack-protector-fortify"))
-
-// native + ASAN
-cheribuildProject(target: 'bodiagsuite', cpu: 'native', skipArtifacts: true,
-		stageSuffix: "Linux (ASAN)", nodeLabel: 'linux',
-		sdkCompilerOnly: true,
-		extraArgs: '--bodiagsuite-native/use-asan --without-sdk',
-		skipTarball: true, runTests: true, noIncrementalBuild: true,
-		afterTests: archiveTestResults("bodiagsuite-asan-native-build", "native-asan"))
-
-cheribuildProject(target: 'bodiagsuite', cpu: 'native', skipArtifacts: true,
-		stageSuffix: "Linux (ASAN+stack-protector+_FORTIFY_SOURCE)", nodeLabel: 'linux',
-		sdkCompilerOnly: true,
-		extraArgs: '--bodiagsuite-native/use-asan --without-sdk --bodiagsuite-native/cmake-options="-DWITH_FORTIFY_SOURCE=ON -DWITH_STACK_PROTECTOR=ON"',
-		skipTarball: true, runTests: true, noIncrementalBuild: true,
-		afterTests: archiveTestResults("bodiagsuite-asan-native-build", "native-asan-stack-protector-fortify"))
-
-// CHERI128:
-
-cheribuildProject(target: 'bodiagsuite', cpu: 'cheri128',
-		stageSuffix: "CHERI128", nodeLabel: 'linux',
-		extraArgs: '',
-		skipTarball: true, runTests: true, noIncrementalBuild: true,
-		afterTests: archiveTestResults("bodiagsuite-128-build", "cheri128"))
-
-cheribuildProject(target: 'bodiagsuite', cpu: 'cheri128',
-		stageSuffix: "CHERI128 (subobject default)", nodeLabel: 'linux',
-		extraArgs: '--subobject-bounds=subobject-safe',
-		skipTarball: true, runTests: true, noIncrementalBuild: true,
-		afterTests: archiveTestResults("bodiagsuite-128-build", "cheri128-subobject-safe"))
-
-cheribuildProject(target: 'bodiagsuite', cpu: 'cheri128',
-		stageSuffix: "CHERI128 (subobject everywhere)", nodeLabel: 'linux',
-		extraArgs: '--subobject-bounds=everywhere-unsafe',
-		skipTarball: true, runTests: true, noIncrementalBuild: true,
-		afterTests: archiveTestResults("bodiagsuite-128-build", "cheri128-subobject-aggressive"))
+	// CHERI128
+	process('cheri128', 'cheriabi',
+			[stageSuffix: "CHERI128 (subobject default)",
+			 extraArgs: ''])
+	process('cheri128', 'subobject-safe',
+			[stageSuffix: "CHERI128 (subobject default)",
+			 extraArgs: '--subobject-bounds=subobject-safe'])
+	process('cheri128', 'subobject-everywhere',
+			[stageSuffix: "CHERI128 (subobject everywhere)",
+			 extraArgs: '--subobject-bounds=everywhere-unsafe'])
+}
