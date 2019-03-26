@@ -48,6 +48,14 @@ class TestCHERI1Test extends BasePipelineTest {
     }
 
     @Test
+    void bodiagsuite_test() throws Exception {
+        binding.setVariable("env", ["JOB_NAME":"bodiagsuite/master"])
+        def script = loadScript("test-scripts/bodiagsuite.groovy")
+        script.run()
+        printCallStack()
+    }
+
+    @Test
     void ber1_test() throws Exception {
         binding.setVariable("env", ["JOB_NAME":"BERI1-TEST-pipeline/master"])
         def script = loadScript("test-scripts/CHERI1Test.groovy")

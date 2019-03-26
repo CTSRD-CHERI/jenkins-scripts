@@ -34,7 +34,8 @@ class CheribuildProjectParams implements Serializable {
 
 	/// Test parameters:
 	def testTimeout = 120 * 60 // timeout for running tests (default 2 hours)
-	boolean minimalTestImage
+	boolean minimalTestImage = true
+	boolean runTests = false
 	String testScript  // if set this will be invoked by ./boot_cheribsd.py in the test stage. If not tests are skipped
 	String testExtraArgs = ''  // Additional command line options to be passed to ./boot_cheribsd.py
 	boolean runTestsInDocker = false // Seems to be really slow (1 min 44 until init instead of 15 secs)
@@ -108,11 +109,15 @@ def build(CheribuildProjectParams proj) {
 }
 
 def runTestsImpl(CheribuildProjectParams proj, String testImageArgs, String qemuPath) {
-	def testCommand = "'export CPU=${proj.cpu}; " + proj.testScript.replaceAll('\'', '\\\'') + "'"
-	echo "Test command = ${testCommand}"
 	ansiColor('xterm') {
 		runCallback(proj, proj.beforeTestsInDocker)
-		sh "\$WORKSPACE/cheribuild/test-scripts/boot_cheribsd.py --qemu-cmd ${qemuPath} ${testImageArgs} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
+		if (proj.testScript) {
+			def testCommand = "'export CPU=${proj.cpu}; " + proj.testScript.replaceAll('\'', '\\\'') + "'"
+			echo "Test command = ${testCommand}"
+			sh "\$WORKSPACE/cheribuild/test-scripts/run_simple_tests.py --qemu-cmd ${qemuPath} ${testImageArgs} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
+		} else {
+			sh "\$WORKSPACE/cheribuild/jenkins-cheri-build.py --test ${proj.target} ${proj.extraArgs} --test-extra-args=\"--test-timeout ${proj.testTimeout} ${proj.testExtraArgs}\""
+		}
 		runCallback(proj, proj.afterTestsInDocker)
 	}
 }
@@ -136,29 +141,29 @@ def runTests(CheribuildProjectParams proj) {
 		qemuCommand = "qemu-system-${proj.cpu}"
 	}
 
+	def testImageArgs = ''
 	stage("Copy ${proj.cpu} CheriBSD image") {
 		// boot a world with a hybrid userspace (it contains all the necessary shared libs)
 		// There is no need for the binaries to be CHERIABI
 		diskImageProjectName = "CheriBSD-allkernels-multi/BASE_ABI=${baseABI},CPU=${proj.cpu},ISA=vanilla,label=freebsd"
 		sh 'rm -rfv $WORKSPACE/cheribsd-full.* $WORKSPACE/cheribsd-minimal.* $WORKSPACE/cheribsd-malta64-kernel*'
-		copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-full.img.xz", target: '.', fingerprintArtifacts: false
-		copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-jenkins_bluehive.img.xz", target: '.', fingerprintArtifacts: false
-		copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-kernel.bz2", target: '.', fingerprintArtifacts: false
-		sh """
-mv -f ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-full.img.xz \$WORKSPACE/cheribsd-full.img.xz
-mv -f ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-jenkins_bluehive.img.xz \$WORKSPACE/cheribsd-minimal.img.xz
-mv -f ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/cheribsd-malta64-kernel.bz2
-ls -la \$WORKSPACE
+		if (proj.minimalTestImage) {
+			copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-mfs-root-minimal-cheribuild-kernel.bz2", target: '.', fingerprintArtifacts: false
+			sh "ln -sfn ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-mfs-root-minimal-cheribuild-kernel.bz2 \$WORKSPACE/cheribsd-malta64-minimal-kernel.bz2"
+			testImageArgs = " --kernel cheribsd-malta64-minimal-kernel.bz2"
+		} else {
+			copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-full.img.xz", target: '.', fingerprintArtifacts: false
+			copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-kernel.bz2", target: '.', fingerprintArtifacts: false
+			sh """
+ln -sfn ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-full.img.xz \$WORKSPACE/cheribsd-full.img.xz
+ln -sfn ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/cheribsd-malta64-kernel.bz2
 """
+			testImageArgs += " --kernel \$WORKSPACE/cheribsd-malta64-kernel.bz2 --no-keep-compressed-images"
+			testImageArgs = "--disk-image \$WORKSPACE/cheribsd-full.img.xz"
+		}
+		sh "ls -la \$WORKSPACE"
+	}
 
-	}
-	def testImageArgs = ''
-	if (proj.minimalTestImage) {
-		testImageArgs = "--disk-image \$WORKSPACE/cheribsd-minimal.img.xz"
-	} else {
-		testImageArgs = "--disk-image \$WORKSPACE/cheribsd-full.img.xz"
-	}
-	testImageArgs += " --kernel \$WORKSPACE/cheribsd-malta64-kernel.bz2 --no-keep-compressed-images"
 	runCallback(proj, proj.beforeTests)
 	if (proj.runTestsInDocker) {
 		// Try to speed it up by extracting to tmpfs
@@ -174,10 +179,8 @@ ls -la \$WORKSPACE
 		// copy qemu archive and run directly on the host
 		dir ('qemu-linux') { deleteDir() }
 		copyArtifacts projectName: "qemu/qemu-cheri", filter: "qemu-linux/**", target: '.', fingerprintArtifacts: false
-		// We may need to create a dummy ssh key and use a unique port number:
-		int sshPort = 12345 + Integer.parseInt(env.EXECUTOR_NUMBER)
 		sh 'test -e $WORKSPACE/id_ed25519 || ssh-keygen -t ed25519 -N \'\' -f $WORKSPACE/id_ed25519 < /dev/null'
-		testImageArgs += " --ssh-key \$WORKSPACE/id_ed25519.pub --ssh-port ${sshPort}"
+		testImageArgs += " --ssh-key \$WORKSPACE/id_ed25519.pub"
 		runTestsImpl(proj, testImageArgs, "\$WORKSPACE/qemu-linux/bin/${qemuCommand}")
 
 	}
@@ -252,7 +255,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 	stage(buildStage) {
 		build(proj)
 	}
-	if (proj.testScript) {
+	if (proj.testScript || proj.runTests) {
 		stage("run tests for ${proj.cpu}") {
 			runTests(proj)
 		}
