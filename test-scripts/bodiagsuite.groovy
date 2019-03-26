@@ -13,11 +13,11 @@ cheribuildProject(target: 'bodiagsuite', cpu: 'native',
 		sdkCompilerOnly: true,
 		extraArgs: '--bodiagsuite-native/no-use-asan',
 		skipTarball: true, runTests: true, noIncrementalBuild: true,
-		afterBuild: archiveTestResults("bodiagsuite-native-build"))
+		afterTests: archiveTestResults("bodiagsuite-native-build"))
 
 cheribuildProject(target: 'bodiagsuite', cpu: 'native',
 		buildStage: "Build Linux (ASAN)", nodeLabel: 'linux',
 		sdkCompilerOnly: true,
 		extraArgs: '--bodiagsuite-native/use-asan',
 		skipTarball: true, runTests: true, noIncrementalBuild: true,
-		afterBuild: archiveTestResults("bodiagsuite-native-asan-build"))
+		afterTests: archiveTestResults("bodiagsuite-native-asan-build"))
