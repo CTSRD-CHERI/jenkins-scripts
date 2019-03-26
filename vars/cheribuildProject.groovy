@@ -22,6 +22,7 @@ class CheribuildProjectParams implements Serializable {
 	String sdkCPU  // the SDK used to build (e.g. for cheri256-hybrid will use the cheri256 sdk to build MIPS code)
 	String capTableABI = 'pcrel'
 	boolean needsFullCheriSDK = true
+	boolean sdkCompilerOnly = false
 	String label = 'linux'  // Used when copying artifacts (the label parameter for those other jobs)
 	// otherwise pull just a specific set of artifacts
 	List artifactsToCopy = [] // List of (job:filter) for artifacts which need copying
@@ -245,7 +246,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			}
 			// now copy all the artifacts
 			if (proj.needsFullCheriSDK) {
-				fetchCheriSDK(target: proj.target, cpu: proj.cpu, compilerOnly: false, buildOS: proj.label, capTableABI: proj.capTableABI, extraCheribuildArgs: proj.extraArgs)
+				fetchCheriSDK(target: proj.target, cpu: proj.cpu, compilerOnly: proj.sdkCompilerOnly, buildOS: proj.label, capTableABI: proj.capTableABI, extraCheribuildArgs: proj.extraArgs)
 			}
 			echo 'WORKSPACE after checkout:'
 			sh 'ls -la'

@@ -8,14 +8,16 @@ def archiveTestResults(String buildDir) {
 	}
 }
 
-cheribuildProject(target: 'bodiagsuite', cpu: 'native', skipArtifacts: true,
-		buildStage: "Build Linux", nodeLabel: 'linux',
+cheribuildProject(target: 'bodiagsuite', cpu: 'native',
+		buildStage: "Build Linux (insecure)", nodeLabel: 'linux',
+		sdkCompilerOnly: true,
 		extraArgs: '--bodiagsuite-native/no-use-asan',
 		skipTarball: true, runTests: true, noIncrementalBuild: true,
 		afterBuild: archiveTestResults("bodiagsuite-native-build"))
 
-cheribuildProject(target: 'bodiagsuite', cpu: 'native', skipArtifacts: true,
-		buildStage: "Build Linux", nodeLabel: 'linux',
+cheribuildProject(target: 'bodiagsuite', cpu: 'native',
+		buildStage: "Build Linux (ASAN)", nodeLabel: 'linux',
+		sdkCompilerOnly: true,
 		extraArgs: '--bodiagsuite-native/use-asan',
 		skipTarball: true, runTests: true, noIncrementalBuild: true,
 		afterBuild: archiveTestResults("bodiagsuite-native-asan-build"))
