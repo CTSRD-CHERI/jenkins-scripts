@@ -181,11 +181,13 @@ ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/cheribsd-malt
 			runTestsImpl(proj, testImageArgs, "/usr/local/bin/${qemuCommand}")
 		}
 	} else {
-		// copy qemu archive and run directly on the host
-		dir ('qemu-linux') { deleteDir() }
-		copyArtifacts projectName: "qemu/qemu-cheri", filter: "qemu-linux/**", target: '.', fingerprintArtifacts: false
-		sh 'test -e $WORKSPACE/id_ed25519 || ssh-keygen -t ed25519 -N \'\' -f $WORKSPACE/id_ed25519 < /dev/null'
-		testImageArgs += " --ssh-key \$WORKSPACE/id_ed25519.pub"
+		if (proj.cpu != "native") {
+			// copy qemu archive and run directly on the host
+			dir('qemu-linux') { deleteDir() }
+			copyArtifacts projectName: "qemu/qemu-cheri", filter: "qemu-linux/**", target: '.', fingerprintArtifacts: false
+			sh 'test -e $WORKSPACE/id_ed25519 || ssh-keygen -t ed25519 -N \'\' -f $WORKSPACE/id_ed25519 < /dev/null'
+			testImageArgs += " --ssh-key \$WORKSPACE/id_ed25519.pub"
+		}
 		runTestsImpl(proj, testImageArgs, "\$WORKSPACE/qemu-linux/bin/${qemuCommand}")
 
 	}
