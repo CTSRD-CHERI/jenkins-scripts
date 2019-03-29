@@ -119,7 +119,7 @@ def runTestsImpl(CheribuildProjectParams proj, String testImageArgs, String qemu
 			echo "Test command = ${testCommand}"
 			sh "\$WORKSPACE/cheribuild/test-scripts/run_simple_tests.py --qemu-cmd ${qemuPath} ${testImageArgs} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
 		} else {
-			sh "\$WORKSPACE/cheribuild/jenkins-cheri-build.py --test ${proj.target} ${proj.extraArgs} --test-extra-args=\"${testImageArgs} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}\""
+			sh "\$WORKSPACE/cheribuild/jenkins-cheri-build.py --test ${proj.target} ${proj.extraArgs} --test-extra-args=\"--qemu-cmd ${qemuPath} ${testImageArgs} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}\""
 		}
 		runCallback(proj, proj.afterTestsInDocker)
 	}
