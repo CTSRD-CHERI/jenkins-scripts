@@ -283,8 +283,9 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			runTests(proj)
 		}
 	}
-	warnings canComputeNew: false, canResolveRelativePaths: false, consoleParsers: [[parserName: 'Clang (LLVM based)']]
-	step([$class: 'AnalysisPublisher', canComputeNew: false])
+	recordIssues aggregatingResults: true, blameDisabled: true, enabledForFailure: true, tools: [clang()]
+	//warnings canComputeNew: false, canResolveRelativePaths: false, consoleParsers: [[parserName: 'Clang (LLVM based)']]
+	//step([$class: 'AnalysisPublisher', canComputeNew: false])
 	if (proj.setGitHubStatus) {
 		def message = "${currentBuild.description} ${proj.cpu}"
 		def githubCommitStatusContext = "ci/jenkins/build-status/${env.JOB_NAME}/${proj.cpu}"

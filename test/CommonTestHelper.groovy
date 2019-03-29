@@ -28,7 +28,7 @@ class CommonTestHelper {
             parts = it.split('=')
             assert (parts.length == 2)
             newEnv[parts[0]] = parts[1]
-            println("env[${parts[0]}] = ${parts[1]}")
+            // println("env[${parts[0]}] = ${parts[1]}")
         }
         binding.setVariable("env", newEnv)
         def res = closure.call()
@@ -68,6 +68,8 @@ class CommonTestHelper {
         helper.registerAllowedMethod("withEnv", [List.class, Closure.class], withEnvInterceptor)
         helper.registerAllowedMethod("copyArtifacts", [Map.class], /*{ args -> println "Copying $args" }*/null)
         helper.registerAllowedMethod("warnings", [Map.class], /*{ args -> println "Copying $args" }*/null)
+        helper.registerAllowedMethod("recordIssues", [Map.class], /*{ args -> println "Copying $args" }*/null)
+        helper.registerAllowedMethod("clang", [], { args -> ["clang"]})
         helper.registerAllowedMethod("git", [String.class], { url -> [GIT_URL:url, GIT_COMMIT:"abcdef123456"] })
         helper.registerAllowedMethod("git", [Map.class], { args -> [GIT_URL:args.url, GIT_COMMIT:"abcdef123456"] })
         // binding.getVariable('env').JOB_NAME = "CHERI1-TEST-pipeline"
