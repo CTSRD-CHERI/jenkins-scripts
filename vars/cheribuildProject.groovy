@@ -81,7 +81,7 @@ def runCallback(CheribuildProjectParams proj, cb) {
 	}
 }
 
-def build(CheribuildProjectParams proj) {
+def build(CheribuildProjectParams proj, String stageSuffix) {
 	runCallback(proj, proj.beforeBuild)
 	// No docker yet
 	// sdkImage.inside('-u 0') {
@@ -93,14 +93,14 @@ def build(CheribuildProjectParams proj) {
 		// by default try an incremental build first and if that fails fall back to a clean build
 		// this behaviour can be disabled by passing noIncrementalBuild: true
 		if (proj.noIncrementalBuild) {
-			sh label: 'Create tarball', script:  "${cheribuildCmd}"
+			sh label: "Building with cheribuild ${stageSuffix}", script:  "${cheribuildCmd}"
 		} else {
-			sh label: 'Building with cheribuild (incremental)', script: "${cheribuildCmd} --no-clean || (echo 'incremental build failed!' && ${cheribuildCmd})"
+			sh label: "Building with cheribuild (incremental) ${stageSuffix}", script: "${cheribuildCmd} --no-clean || (echo 'incremental build failed!' && ${cheribuildCmd})"
 		}
 		if (!proj.skipTarball) {
 			runCallback(proj, proj.beforeTarball)
-			sh label: 'Create tarball', script: "./cheribuild/jenkins-cheri-build.py --tarball --tarball-name ${proj.tarballName} --no-build ${cheribuildArgs}"
-			sh label: 'List tarball', script: 'ls -lah; ls -lah tarball || true'
+			sh label: "Create tarball ${stageSuffix}", script: "./cheribuild/jenkins-cheri-build.py --tarball --tarball-name ${proj.tarballName} --no-build ${cheribuildArgs}"
+			sh label: "List tarball  ${stageSuffix}", script: 'ls -lah; ls -lah tarball || true'
 		}
 		runCallback(proj, proj.afterBuildInDocker)
 	}
@@ -111,21 +111,21 @@ def build(CheribuildProjectParams proj) {
 	runCallback(proj, proj.afterBuild)
 }
 
-def runTestsImpl(CheribuildProjectParams proj, String testImageArgs, String qemuPath) {
+def runTestsImpl(CheribuildProjectParams proj, String testImageArgs, String qemuPath, String testSuffix) {
 	ansiColor('xterm') {
 		runCallback(proj, proj.beforeTestsInDocker)
 		if (proj.testScript) {
 			def testCommand = "'export CPU=${proj.cpu}; " + proj.testScript.replaceAll('\'', '\\\'') + "'"
 			echo "Test command = ${testCommand}"
-			sh label: "Running simple test (${proj.cpu})", script: "\$WORKSPACE/cheribuild/test-scripts/run_simple_tests.py --qemu-cmd ${qemuPath} ${testImageArgs} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
+			sh label: "Running simple test (${testSuffix})", script: "\$WORKSPACE/cheribuild/test-scripts/run_simple_tests.py --qemu-cmd ${qemuPath} ${testImageArgs} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
 		} else {
-			sh label: "Running tests with cheribuild ${proj.cpu}", script: "\$WORKSPACE/cheribuild/jenkins-cheri-build.py --cpu=${proj.cpu} --test ${proj.target} ${proj.extraArgs} --test-extra-args=\"--qemu-cmd ${qemuPath} ${testImageArgs} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}\""
+			sh label: "Running tests with cheribuild ${testSuffix}", script: "\$WORKSPACE/cheribuild/jenkins-cheri-build.py --cpu=${proj.cpu} --test ${proj.target} ${proj.extraArgs} --test-extra-args=\"--qemu-cmd ${qemuPath} ${testImageArgs} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}\""
 		}
 		runCallback(proj, proj.afterTestsInDocker)
 	}
 }
 
-def runTests(CheribuildProjectParams proj) {
+def runTests(CheribuildProjectParams proj, String testSuffix) {
 	// Custom test script only support for CheriBSD
 	if (proj.testScript)
 		if (proj.cpu != "mips" && proj.cpu != "cheri128" && proj.cpu != "cheri256")
@@ -182,7 +182,7 @@ ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/${test_cpu}-m
 		// Currently the full image is 5.59G
 		cheribsdImage.inside('-u 0 --rm --tmpfs /images:rw,noexec,nosuid,size=7g') {
 			sh 'df -h /images'
-			runTestsImpl(proj, testImageArgs, "/usr/local/bin/${qemuCommand}")
+			runTestsImpl(proj, testImageArgs, "/usr/local/bin/${qemuCommand}", testSuffix)
 		}
 	} else {
 		if (test_cpu != "native") {
@@ -192,7 +192,7 @@ ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/${test_cpu}-m
 			sh label: 'generate SSH key', script: 'test -e $WORKSPACE/id_ed25519 || ssh-keygen -t ed25519 -N \'\' -f $WORKSPACE/id_ed25519 < /dev/null'
 			testImageArgs += " --ssh-key \$WORKSPACE/id_ed25519.pub"
 		}
-		runTestsImpl(proj, testImageArgs, "\$WORKSPACE/qemu-linux/bin/${qemuCommand}")
+		runTestsImpl(proj, testImageArgs, "\$WORKSPACE/qemu-linux/bin/${qemuCommand}", testSuffix)
 
 	}
 	runCallback(proj, proj.afterTests)
@@ -275,12 +275,12 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 	def buildSuffix = proj.stageSuffix ? proj.stageSuffix : " for ${proj.cpu}"
 	def buildStage = proj.buildStage ? proj.buildStage : "Build ${proj.target} ${buildSuffix}"
 	stage(buildStage) {
-		build(proj)
+		build(proj, buildSuffix)
 	}
 	if (proj.testScript || proj.runTests) {
 		def testSuffix = proj.stageSuffix ? proj.stageSuffix : " for ${proj.cpu}"
 		stage("Run ${proj.target} tests ${testSuffix}") {
-			runTests(proj)
+			runTests(proj, testSuffix)
 		}
 	}
 	def analysisId = proj.stageSuffix ? proj.stageSuffix : "${proj.cpu}"
