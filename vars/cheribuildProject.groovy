@@ -76,7 +76,7 @@ def runCallback(CheribuildProjectParams proj, cb) {
 	} else {
 		assert cb instanceof String
 		if (!cb.allWhitespace) {
-			sh cb
+			sh label: 'callback', script: cb
 		}
 	}
 }
@@ -93,14 +93,14 @@ def build(CheribuildProjectParams proj) {
 		// by default try an incremental build first and if that fails fall back to a clean build
 		// this behaviour can be disabled by passing noIncrementalBuild: true
 		if (proj.noIncrementalBuild) {
-			sh "${cheribuildCmd}"
+			sh label: 'Create tarball', script:  "${cheribuildCmd}"
 		} else {
-			sh "${cheribuildCmd} --no-clean || (echo 'incremental build failed!' && ${cheribuildCmd})"
+			sh label: 'Building with cheribuild (incremental)', script: "${cheribuildCmd} --no-clean || (echo 'incremental build failed!' && ${cheribuildCmd})"
 		}
 		if (!proj.skipTarball) {
 			runCallback(proj, proj.beforeTarball)
-			sh "./cheribuild/jenkins-cheri-build.py --tarball --tarball-name ${proj.tarballName} --no-build ${cheribuildArgs}"
-			sh 'ls -lah; ls -lah tarball || true'
+			sh label: 'Create tarball', script: "./cheribuild/jenkins-cheri-build.py --tarball --tarball-name ${proj.tarballName} --no-build ${cheribuildArgs}"
+			sh label: 'List tarball', script: 'ls -lah; ls -lah tarball || true'
 		}
 		runCallback(proj, proj.afterBuildInDocker)
 	}
@@ -117,9 +117,9 @@ def runTestsImpl(CheribuildProjectParams proj, String testImageArgs, String qemu
 		if (proj.testScript) {
 			def testCommand = "'export CPU=${proj.cpu}; " + proj.testScript.replaceAll('\'', '\\\'') + "'"
 			echo "Test command = ${testCommand}"
-			sh "\$WORKSPACE/cheribuild/test-scripts/run_simple_tests.py --qemu-cmd ${qemuPath} ${testImageArgs} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
+			sh label: "Running simple test (${proj.cpu})", script: "\$WORKSPACE/cheribuild/test-scripts/run_simple_tests.py --qemu-cmd ${qemuPath} ${testImageArgs} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
 		} else {
-			sh "\$WORKSPACE/cheribuild/jenkins-cheri-build.py --cpu=${proj.cpu} --test ${proj.target} ${proj.extraArgs} --test-extra-args=\"--qemu-cmd ${qemuPath} ${testImageArgs} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}\""
+			sh label: "Running tests with cheribuild ${proj.cpu}", script: "\$WORKSPACE/cheribuild/jenkins-cheri-build.py --cpu=${proj.cpu} --test ${proj.target} ${proj.extraArgs} --test-extra-args=\"--qemu-cmd ${qemuPath} ${testImageArgs} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}\""
 		}
 		runCallback(proj, proj.afterTestsInDocker)
 	}
@@ -189,7 +189,7 @@ ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/${test_cpu}-m
 			// copy qemu archive and run directly on the host
 			dir('qemu-linux') { deleteDir() }
 			copyArtifacts projectName: "qemu/qemu-cheri", filter: "qemu-linux/**", target: '.', fingerprintArtifacts: false
-			sh 'test -e $WORKSPACE/id_ed25519 || ssh-keygen -t ed25519 -N \'\' -f $WORKSPACE/id_ed25519 < /dev/null'
+			sh label: 'generate SSH key', script: 'test -e $WORKSPACE/id_ed25519 || ssh-keygen -t ed25519 -N \'\' -f $WORKSPACE/id_ed25519 < /dev/null'
 			testImageArgs += " --ssh-key \$WORKSPACE/id_ed25519.pub"
 		}
 		runTestsImpl(proj, testImageArgs, "\$WORKSPACE/qemu-linux/bin/${qemuCommand}")
