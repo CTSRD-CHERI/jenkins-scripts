@@ -217,9 +217,9 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 	// env.CPU = proj.cpu
 	// env.SDK_CPU = proj.sdkCPU
 
-	echo("env before =${env}")
+	// echo("env before =${env}")
 	withEnv(["CPU=${proj.cpu}", "SDK_CPU=${proj.sdkCPU}"]) {
-		echo("env in block=${env}")
+		// echo("env in block=${env}")
 		runCheribuildImplWithEnv(proj)
 	}
 }
