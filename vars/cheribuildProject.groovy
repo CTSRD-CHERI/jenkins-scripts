@@ -261,7 +261,8 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 	}
 	if (!proj.skipArtifacts) {
 		stage("Setup SDK for ${proj.target} (${proj.cpu})") {
-			for (artifacts in proj.artifactsToCopy) {
+			// Can't use a for loop here: https://issues.jenkins-ci.org/browse/JENKINS-49732
+			proj.artifactsToCopy.each { artifacts ->
 				copyArtifacts projectName: artifacts.job, filter: artifacts.filter, fingerprintArtifacts: false
 			}
 			// now copy all the artifacts
@@ -302,7 +303,8 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 
 def runCheribuild(Map args) {
 	def params = new CheribuildProjectParams()
-	for (it in args) {
+	// Can't use a for loop here: https://issues.jenkins-ci.org/browse/JENKINS-49732
+	args.each { it ->
 		try {
 			params[it.key] = it.value
 		} catch (MissingPropertyException e) {

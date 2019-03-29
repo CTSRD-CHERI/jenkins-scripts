@@ -25,7 +25,8 @@ def call(Map args) {
         args["buildOS"] = inferBuildOS()
 
     def params = new FetchCheriSDKArgs()
-    for (it in args) {
+    // Can't use a for loop here: https://issues.jenkins-ci.org/browse/JENKINS-49732
+    args.each { it ->
         try {
             params[it.key] = it.value
         } catch (MissingPropertyException e) {
