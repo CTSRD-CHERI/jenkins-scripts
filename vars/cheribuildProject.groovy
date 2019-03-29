@@ -37,6 +37,7 @@ class CheribuildProjectParams implements Serializable {
 	def testTimeout = 120 * 60 // timeout for running tests (default 2 hours)
 	boolean minimalTestImage = true
 	boolean runTests = false
+	boolean useCheriKernelForMipsTests = false
 	String testScript  // if set this will be invoked by ./boot_cheribsd.py in the test stage. If not tests are skipped
 	String testExtraArgs = ''  // Additional command line options to be passed to ./boot_cheribsd.py
 	boolean runTestsInDocker = false // Seems to be really slow (1 min 44 until init instead of 15 secs)
@@ -118,7 +119,7 @@ def runTestsImpl(CheribuildProjectParams proj, String testImageArgs, String qemu
 			echo "Test command = ${testCommand}"
 			sh "\$WORKSPACE/cheribuild/test-scripts/run_simple_tests.py --qemu-cmd ${qemuPath} ${testImageArgs} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
 		} else {
-			sh "\$WORKSPACE/cheribuild/jenkins-cheri-build.py --test ${proj.target} ${proj.extraArgs} --test-extra-args=\"--test-timeout ${proj.testTimeout} ${proj.testExtraArgs}\""
+			sh "\$WORKSPACE/cheribuild/jenkins-cheri-build.py --test ${proj.target} ${proj.extraArgs} --test-extra-args=\"${testImageArgs} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}\""
 		}
 		runCallback(proj, proj.afterTestsInDocker)
 	}
@@ -134,27 +135,31 @@ def runTests(CheribuildProjectParams proj) {
 	String imagePrefix = "ERROR"
 	String kernelPrefix = "ERROR"
 	String qemuCommand = "ERROR"
-	if (proj.cpu == 'mips') {
+	test_cpu = proj.cpu
+	if (test_cpu == 'mips' && proj.useCheriKernelForMipsTests) {
+		test_cpu = 'cheri128'
+	}
+	if (test_cpu == 'mips') {
 		kernelPrefix = 'freebsd'
 		imagePrefix = 'freebsd'
 		qemuCommand = "qemu-system-cheri256"
 	} else {
-		CPU_PARAM = proj.cpu
-		kernelPrefix = proj.cpu == 'cheri256' ? 'cheribsd-cheri' : 'cheribsd128-cheri128'
-		imagePrefix = proj.cpu == 'cheri256' ? 'cheribsd' : 'cheribsd128'
-		qemuCommand = "qemu-system-${proj.cpu}"
+		CPU_PARAM = test_cpu
+		kernelPrefix = test_cpu == 'cheri256' ? 'cheribsd-cheri' : 'cheribsd128-cheri128'
+		imagePrefix = test_cpu == 'cheri256' ? 'cheribsd' : 'cheribsd128'
+		qemuCommand = "qemu-system-${test_cpu}"
 	}
 
 	def testImageArgs = ''
-	if (proj.cpu != "native") {
+	if (test_cpu != "native") {
 		// boot a world with a hybrid userspace (it contains all the necessary shared libs)
 		// There is no need for the binaries to be CHERIABI
-		diskImageProjectName = "CheriBSD-allkernels-multi/BASE_ABI=${baseABI},CPU=${proj.cpu},ISA=vanilla,label=freebsd"
+		diskImageProjectName = "CheriBSD-allkernels-multi/BASE_ABI=${baseABI},CPU=${test_cpu},ISA=vanilla,label=freebsd"
 		sh 'rm -rfv $WORKSPACE/cheribsd-full.* $WORKSPACE/cheribsd-minimal.* $WORKSPACE/cheribsd-malta64-kernel*'
 		if (proj.minimalTestImage) {
 			copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-mfs-root-minimal-cheribuild-kernel.bz2", target: '.', fingerprintArtifacts: false, flatten: true, selector: lastSuccessful()
-			sh "ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-mfs-root-minimal-cheribuild-kernel.bz2 \$WORKSPACE/cheribsd-malta64-minimal-kernel.bz2"
-			testImageArgs = " --kernel cheribsd-malta64-minimal-kernel.bz2"
+			sh "ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-mfs-root-minimal-cheribuild-kernel.bz2 \$WORKSPACE/${test_cpu}-malta64-minimal-kernel.bz2"
+			testImageArgs = "--kernel ${test_cpu}-malta64-minimal-kernel.bz2"
 		} else {
 			copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-full.img.xz", target: '.', fingerprintArtifacts: false, flatten: true, selector: lastSuccessful()
 			copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-kernel.bz2", target: '.', fingerprintArtifacts: false, flatten: true, selector: lastSuccessful()
@@ -162,8 +167,8 @@ def runTests(CheribuildProjectParams proj) {
 ln -sfn \$WORKSPACE/${imagePrefix}-full.img.xz \$WORKSPACE/cheribsd-full.img.xz
 ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/cheribsd-malta64-kernel.bz2
 """
-			testImageArgs += " --kernel \$WORKSPACE/cheribsd-malta64-kernel.bz2 --no-keep-compressed-images"
 			testImageArgs = "--disk-image \$WORKSPACE/cheribsd-full.img.xz"
+			testImageArgs += " --kernel \$WORKSPACE/cheribsd-malta64-kernel.bz2 --no-keep-compressed-images"
 		}
 		sh "ls -la \$WORKSPACE"
 	}
@@ -180,7 +185,7 @@ ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/cheribsd-malt
 			runTestsImpl(proj, testImageArgs, "/usr/local/bin/${qemuCommand}")
 		}
 	} else {
-		if (proj.cpu != "native") {
+		if (test_cpu != "native") {
 			// copy qemu archive and run directly on the host
 			dir('qemu-linux') { deleteDir() }
 			copyArtifacts projectName: "qemu/qemu-cheri", filter: "qemu-linux/**", target: '.', fingerprintArtifacts: false
