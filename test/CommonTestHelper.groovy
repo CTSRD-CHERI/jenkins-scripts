@@ -21,6 +21,20 @@ class CommonTestHelper {
         }
     }
 
+    static def withEnvInterceptor = { list, closure ->
+        oldEnv = binding.getVariable("env")
+        newEnv = oldEnv.clone()
+        list.forEach {
+            parts = it.split('=')
+            assert (parts.length == 2)
+            newEnv[parts[0]] = parts[1]
+            println("env[${parts[0]}] = ${parts[1]}")
+        }
+        binding.setVariable("env", newEnv)
+        def res = closure.call()
+        binding.setVariable("env", oldEnv)
+        return res
+    }
 
     static void setupTestEnv(TemporaryFolder folder, BasePipelineTest test) {
         def helper = test.helper
@@ -51,6 +65,7 @@ class CommonTestHelper {
         helper.registerAllowedMethod("durabilityHint", [String.class], null)
         helper.registerAllowedMethod("timestamps", [Closure.class], null)
         helper.registerAllowedMethod("ansiColor", [String.class, Closure.class], null)
+        helper.registerAllowedMethod("withEnv", [List.class, Closure.class], withEnvInterceptor)
         helper.registerAllowedMethod("copyArtifacts", [Map.class], /*{ args -> println "Copying $args" }*/null)
         helper.registerAllowedMethod("warnings", [Map.class], /*{ args -> println "Copying $args" }*/null)
         helper.registerAllowedMethod("git", [String.class], { url -> [GIT_URL:url, GIT_COMMIT:"abcdef123456"] })

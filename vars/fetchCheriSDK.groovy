@@ -55,7 +55,7 @@ def call(Map args) {
             }
             copyArtifacts projectName: cheribsdProject, flatten: true, optional: false, filter: '*', selector: lastSuccessful()
             ansiColor('xterm') {
-                sh "${params.cheribuildPath}/jenkins-cheri-build.py extract-sdk --cpu ${params.cpu} ${params.extraCheribuildArgs} --cap-table-abi=${params.capTableABI}"
+                sh "env SDK_CPU=${params.cpu} ${params.cheribuildPath}/jenkins-cheri-build.py extract-sdk --cpu ${params.cpu} ${params.extraCheribuildArgs} --cap-table-abi=${params.capTableABI}"
             }
         }
     }

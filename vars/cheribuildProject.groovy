@@ -197,7 +197,6 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 	if (!proj.tarballName) {
 		proj.tarballName = "${proj.target}-${proj.cpu}.tar.xz"
 	}
-
 	if (!proj.cpu) {
 		error("cpu parameter was not set!")
 	}
@@ -212,9 +211,20 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			proj.sdkCPU = 'mips'
 		}
 	}
-	env.CPU = proj.cpu
-	env.SDK_CPU = proj.sdkCPU
+	// Note: env.FOO = ... sets the environment globally across all nodes
+	// so it cannot be used if we want to support cheribuildProject inside
+	// parallel blocks
+	// env.CPU = proj.cpu
+	// env.SDK_CPU = proj.sdkCPU
 
+	echo("env before =${env}")
+	withEnv(["CPU=${proj.cpu}", "SDK_CPU=${proj.sdkCPU}"]) {
+		echo("env in block=${env}")
+		runCheribuildImplWithEnv(proj)
+	}
+}
+
+def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 	def gitHubCommitSHA = null
 	def gitHubRepoURL = null
 
