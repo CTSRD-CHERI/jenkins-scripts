@@ -70,6 +70,7 @@ class CommonTestHelper {
         helper.registerAllowedMethod("warnings", [Map.class], /*{ args -> println "Copying $args" }*/null)
         helper.registerAllowedMethod("recordIssues", [Map.class], /*{ args -> println "Copying $args" }*/null)
         helper.registerAllowedMethod("clang", [], { args -> ["clang"]})
+        helper.registerAllowedMethod("clang", [Map.class], { args -> ["clang"]})
         helper.registerAllowedMethod("git", [String.class], { url -> [GIT_URL:url, GIT_COMMIT:"abcdef123456"] })
         helper.registerAllowedMethod("git", [Map.class], { args -> [GIT_URL:args.url, GIT_COMMIT:"abcdef123456"] })
         // binding.getVariable('env').JOB_NAME = "CHERI1-TEST-pipeline"
