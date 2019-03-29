@@ -119,7 +119,7 @@ def runTestsImpl(CheribuildProjectParams proj, String testImageArgs, String qemu
 			echo "Test command = ${testCommand}"
 			sh "\$WORKSPACE/cheribuild/test-scripts/run_simple_tests.py --qemu-cmd ${qemuPath} ${testImageArgs} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
 		} else {
-			sh "\$WORKSPACE/cheribuild/jenkins-cheri-build.py --test ${proj.target} ${proj.extraArgs} --test-extra-args=\"--qemu-cmd ${qemuPath} ${testImageArgs} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}\""
+			sh "\$WORKSPACE/cheribuild/jenkins-cheri-build.py --cpu=${proj.cpu} --test ${proj.target} ${proj.extraArgs} --test-extra-args=\"--qemu-cmd ${qemuPath} ${testImageArgs} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}\""
 		}
 		runCallback(proj, proj.afterTestsInDocker)
 	}
@@ -164,11 +164,11 @@ def runTests(CheribuildProjectParams proj) {
 			copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-full.img.xz", target: '.', fingerprintArtifacts: false, flatten: true, selector: lastSuccessful()
 			copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-kernel.bz2", target: '.', fingerprintArtifacts: false, flatten: true, selector: lastSuccessful()
 			sh """
-ln -sfn \$WORKSPACE/${imagePrefix}-full.img.xz \$WORKSPACE/cheribsd-full.img.xz
-ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/cheribsd-malta64-kernel.bz2
+ln -sfn \$WORKSPACE/${imagePrefix}-full.img.xz \$WORKSPACE/${test_cpu}-full.img.xz
+ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/${test_cpu}-malta64-kernel.bz2
 """
-			testImageArgs = "--disk-image \$WORKSPACE/cheribsd-full.img.xz"
-			testImageArgs += " --kernel \$WORKSPACE/cheribsd-malta64-kernel.bz2 --no-keep-compressed-images"
+			testImageArgs = "--disk-image \$WORKSPACE/${test_cpu}-full.img.xz"
+			testImageArgs += " --kernel \$WORKSPACE/${test_cpu}-malta64-kernel.bz2 --no-keep-compressed-images"
 		}
 		sh "ls -la \$WORKSPACE"
 	}
