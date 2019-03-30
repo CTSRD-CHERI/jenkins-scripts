@@ -31,7 +31,7 @@ class CheribuildProjectParams implements Serializable {
 	String customGitCheckoutDir
 	// by default we try to do an incremental build and if that fails fall back to a full build
 	// FIXME: not sure this is actually working, it seems to rebuild all the time
-	boolean noIncrementalBuild = false // whether to force a clean build (i.e. don't pass --no-clean to cheribuild)
+	boolean incrementalBuild = false // whether to force a clean build (i.e. don't pass --no-clean to cheribuild)
 
 	/// Test parameters:
 	def testTimeout = 120 * 60 // timeout for running tests (default 2 hours)
@@ -90,12 +90,11 @@ def build(CheribuildProjectParams proj, String stageSuffix) {
 		runCallback(proj, proj.beforeBuildInDocker)
 		def cheribuildArgs = "${proj.target} --cpu ${proj.cpu} ${proj.extraArgs} --cap-table-abi=${proj.capTableABI}"
 		def cheribuildCmd = "./cheribuild/jenkins-cheri-build.py --build ${cheribuildArgs}"
-		// by default try an incremental build first and if that fails fall back to a clean build
-		// this behaviour can be disabled by passing noIncrementalBuild: true
-		if (proj.noIncrementalBuild) {
-			sh label: "Building with cheribuild ${stageSuffix}", script:  "${cheribuildCmd}"
-		} else {
+		// By default do a full rebuild. This can be disabled by passing incrementalBuild: true
+		if (proj.incrementalBuild) {
 			sh label: "Building with cheribuild (incremental) ${stageSuffix}", script: "${cheribuildCmd} --no-clean || (echo 'incremental build failed!' && ${cheribuildCmd})"
+		} else {
+			sh label: "Building with cheribuild ${stageSuffix}", script:  "${cheribuildCmd}"
 		}
 		if (!proj.skipTarball) {
 			runCallback(proj, proj.beforeTarball)
