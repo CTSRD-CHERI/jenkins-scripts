@@ -46,7 +46,7 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result,
         githubCommitStatusContext = githubCommitStatusContext.replace('-pipeline/', '/')
 
     Map options = [$class            : 'GitHubCommitStatusSetter',
-                   // errorHandlers     : [[$class: 'ShallowAnyErrorHandler']],
+                   errorHandlers     : [[$class: 'ShallowAnyErrorHandler']],
                    // errorHandlers: [[$class: "ChangingBuildStatusErrorHandler", result: "UNSTABLE"]],
                    contextSource     : [$class: "ManuallyEnteredCommitContextSource", context: githubCommitStatusContext],
                    /*statusResultSource: [
@@ -86,7 +86,9 @@ def call(Map scmInfo, Map<String, String> args = [:]) {
                 args.get('result', null), args.get('message', ''), args.get('includeTestStatus', true))
     } catch (e) {
         e.printStackTrace()
+
         echo("Could not set GitHub commit status: ${e}")
-        currentBuild.result = 'FAILURE'
+        // TODO: mark the current build as failed if github is unreachable?
+        // currentBuild.result = 'FAILURE'
     }
 }
