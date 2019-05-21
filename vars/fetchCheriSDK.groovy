@@ -11,6 +11,7 @@ class FetchCheriSDKArgs implements Serializable {
 
 def inferBuildOS() {
     def labels = "${env.NODE_LABELS}"
+    echo("inferring build OS, node labels: ${labels}")
     if (labels.contains("linux"))
         return "linux"
     if (labels.contains("freebsd"))
