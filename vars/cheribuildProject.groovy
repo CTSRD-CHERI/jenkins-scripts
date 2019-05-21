@@ -9,6 +9,7 @@ class CheribuildProjectParams implements Serializable {
 	boolean skipTarball = false // don't create a tarball to archive
 	boolean skipArchiving = false // don't archive the artifacts
 	String nodeLabel = "linux" // if non-null allocate a new jenkins node using node()
+	String buildOS = null // if non-null fetch SDK/QEMU for this OS (freebsd/linux)
 	boolean setGitHubStatus = true
 
 	Object scmOverride = null // Set this to use something other than the default scm variable for checkout
@@ -204,6 +205,11 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 	if (!proj.cpu) {
 		error("cpu parameter was not set!")
 	}
+
+	if (proj.buildOS) {
+		proj.buildOS = inferBuildOS()
+		echo("Inferred build OS: ${proj.buildOS}")
+	}
 	// compute sdkCPU from args
 	if (!proj.sdkCPU) {
 		proj.sdkCPU = proj.cpu
@@ -266,7 +272,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			}
 			// now copy all the artifacts
 			if (proj.needsFullCheriSDK) {
-				fetchCheriSDK(target: proj.target, cpu: proj.cpu, compilerOnly: proj.sdkCompilerOnly, buildOS: proj.label, capTableABI: proj.capTableABI, extraCheribuildArgs: proj.extraArgs)
+				fetchCheriSDK(target: proj.target, cpu: proj.cpu, compilerOnly: proj.sdkCompilerOnly, buildOS: proj.buildOS, capTableABI: proj.capTableABI, extraCheribuildArgs: proj.extraArgs)
 			}
 			echo 'WORKSPACE after checkout:'
 			sh 'ls -la'

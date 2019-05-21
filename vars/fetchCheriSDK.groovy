@@ -9,20 +9,10 @@ class FetchCheriSDKArgs implements Serializable {
     String cheribuildPath = '$WORKSPACE/cheribuild'
 }
 
-def inferBuildOS() {
-    def labels = "${env.NODE_LABELS}"
-    echo("inferring build OS, node labels: ${labels}")
-    if (labels.contains("linux"))
-        return "linux"
-    if (labels.contains("freebsd"))
-        return "freebsd"
-    error("Could not determine node label from '${env.NODE_LABELS}'")
-}
-
 def call(Map args) {
     if (!args.get("target"))
         args["target"] = env.JOB_NAME
-    if (!args.get("buildOS"))
+    if (args.get("buildOS") == null || args.get("buildOS").isEmpty())
         args["buildOS"] = inferBuildOS()
 
     def params = new FetchCheriSDKArgs()
