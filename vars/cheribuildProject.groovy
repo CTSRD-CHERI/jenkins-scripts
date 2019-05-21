@@ -9,7 +9,7 @@ class CheribuildProjectParams implements Serializable {
 	boolean skipTarball = false // don't create a tarball to archive
 	boolean skipArchiving = false // don't archive the artifacts
 	String nodeLabel = "linux" // if non-null allocate a new jenkins node using node()
-	String buildOS = null // if non-null fetch SDK/QEMU for this OS (freebsd/linux)
+	String buildOS = null // Used when copying artifacts (the label parameter for those other jobs)
 	boolean setGitHubStatus = true
 
 	Object scmOverride = null // Set this to use something other than the default scm variable for checkout
@@ -24,7 +24,6 @@ class CheribuildProjectParams implements Serializable {
 	String capTableABI = 'pcrel'
 	boolean needsFullCheriSDK = true
 	boolean sdkCompilerOnly = false
-	String label = 'linux'  // Used when copying artifacts (the label parameter for those other jobs)
 	// otherwise pull just a specific set of artifacts
 	List artifactsToCopy = [] // List of (job:filter) for artifacts which need copying
 	String sdkArchive  // The artifact name filter for the sdk job
@@ -187,12 +186,12 @@ ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/${test_cpu}-m
 	} else {
 		if (test_cpu != "native") {
 			// copy qemu archive and run directly on the host
-			dir('qemu-linux') { deleteDir() }
-			copyArtifacts projectName: "qemu/qemu-cheri", filter: "qemu-linux/**", target: '.', fingerprintArtifacts: false
+			dir("qemu-${proj.buildOS}") { deleteDir() }
+			copyArtifacts projectName: "qemu/qemu-cheri", filter: "qemu-${proj.buildOS}/**", target: '.', fingerprintArtifacts: false
 			sh label: 'generate SSH key', script: 'test -e $WORKSPACE/id_ed25519 || ssh-keygen -t ed25519 -N \'\' -f $WORKSPACE/id_ed25519 < /dev/null'
 			testImageArgs += " --ssh-key \$WORKSPACE/id_ed25519.pub"
 		}
-		runTestsImpl(proj, testImageArgs, "\$WORKSPACE/qemu-linux/bin/${qemuCommand}", testSuffix)
+		runTestsImpl(proj, testImageArgs, "\$WORKSPACE/qemu-${proj.buildOS}/bin/${qemuCommand}", testSuffix)
 
 	}
 	runCallback(proj, proj.afterTests)
