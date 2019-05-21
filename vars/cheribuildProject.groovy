@@ -9,6 +9,7 @@ class CheribuildProjectParams implements Serializable {
 	boolean skipTarball = false // don't create a tarball to archive
 	boolean skipArchiving = false // don't archive the artifacts
 	String nodeLabel = "linux" // if non-null allocate a new jenkins node using node()
+	String uniqueId = null // Used for the github/analysis ID
 	String buildOS = null // Used when copying artifacts (the label parameter for those other jobs)
 	boolean setGitHubStatus = true
 
@@ -287,17 +288,22 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			runTests(proj, testSuffix)
 		}
 	}
-	def analysisId = proj.stageSuffix ? proj.stageSuffix : "${proj.cpu}_${proj.nodeLabel}_${env.NODE_NAME}"
+	def analysisId = proj.stageSuffix ? proj.stageSuffix : "${proj.cpu}_${proj.buildOS}_${env.NODE_NAME}"
 	analysisId.replace(' ', '_')
 	recordIssues aggregatingResults: true, blameDisabled: true, enabledForFailure: true, tools: [clang(id: analysisId)]
 	//warnings canComputeNew: false, canResolveRelativePaths: false, consoleParsers: [[parserName: 'Clang (LLVM based)']]
 	//step([$class: 'AnalysisPublisher', canComputeNew: false])
 	if (proj.setGitHubStatus) {
+		if (!proj.uniqueId) {
+			proj.uniqueId = "${env.JOB_NAME}/${proj.cpu}"
+			if (proj.nodeLabel)
+				proj.uniqueId += "/${proj.nodeLabel}"
+
+		}
 		def message = "${currentBuild.description} ${proj.cpu}"
-		def githubCommitStatusContext = "ci/jenkins/build-status/${env.JOB_NAME}/${proj.cpu}"
+		def githubCommitStatusContext = "ci/jenkins/build-status/${proj.uniqueId}"
 		if (proj.nodeLabel) {
 			message += " ${proj.nodeLabel}"
-			githubCommitStatusContext += "/${proj.nodeLabel}"
 		}
 		setGitHubStatus(proj.gitInfo + [message: message, context: githubCommitStatusContext])
 	}
