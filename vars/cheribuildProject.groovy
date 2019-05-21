@@ -75,8 +75,9 @@ def runCallback(CheribuildProjectParams proj, cb) {
 		//noinspection GroovyAssignabilityCheck
 		cb(proj.cpu)
 	} else {
-		assert cb instanceof String
-		if (!cb.allWhitespace) {
+		echo("Callback type: " + cb.getClass().getCanonicalName())
+		def callbackString = "${cb}"
+		if (!callbackString.allWhitespace) {
 			sh label: 'callback', script: cb
 		}
 	}
@@ -298,7 +299,6 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			proj.uniqueId = "${env.JOB_NAME}/${proj.cpu}"
 			if (proj.nodeLabel)
 				proj.uniqueId += "/${proj.nodeLabel}"
-
 		}
 		def message = "${currentBuild.description} ${proj.cpu}"
 		def githubCommitStatusContext = "ci/jenkins/build-status/${proj.uniqueId}"
