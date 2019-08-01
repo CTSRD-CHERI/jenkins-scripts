@@ -145,7 +145,6 @@ def runTests(CheribuildProjectParams proj, String testSuffix) {
 		imagePrefix = 'freebsd'
 		qemuCommand = "qemu-system-cheri256"
 	} else {
-		CPU_PARAM = test_cpu
 		kernelPrefix = test_cpu == 'cheri256' ? 'cheribsd-cheri' : 'cheribsd128-cheri128'
 		imagePrefix = test_cpu == 'cheri256' ? 'cheribsd' : 'cheribsd128'
 		qemuCommand = "qemu-system-${test_cpu}"
