@@ -136,7 +136,7 @@ def runTests(CheribuildProjectParams proj, String testSuffix) {
 	String imagePrefix = "ERROR"
 	String kernelPrefix = "ERROR"
 	String qemuCommand = "ERROR"
-	test_cpu = proj.cpu
+	String test_cpu = proj.cpu
 	if (test_cpu == 'mips' && proj.useCheriKernelForMipsTests) {
 		test_cpu = 'cheri128'
 	}
