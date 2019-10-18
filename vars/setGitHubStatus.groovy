@@ -85,7 +85,7 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result,
             description: message,
             status: result,
             // sha: 'aaaaa',
-            repo: 'githubRepo',
+            repo: githubRepo,
             account: githubAccount,
     ]
     // TODO: githubNotify account: 'CTSRD-CHERI', context: 'ci/foo', credentialsId: 'ctsrd-jenkins-new-github-api-key', description: 'Building', repo: 'qemu', sha: 'aaaaa', status: 'PENDING', targetUrl: ''
