@@ -62,9 +62,6 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result,
                                         results: [[$class: 'AnyBuildResult', message: message, state: result]]]
                    // statusResultSource: [ $class: "ConditionalStatusResultSource", results: [[$class: "AnyBuildResult", message: message, state: 'SUCCESS']] ]
     ]
-    def gitHubCommitSHA = args?.GIT_COMMIT
-    if (gitHubCommitSHA)
-        options['commitShaSource'] = [$class: "ManuallyEnteredShaSource", sha: gitHubCommitSHA]
     // Require GIT_URL to exist (must not be null)
     def gitHubRepoURL = args.GIT_URL
     if (gitHubRepoURL) {
@@ -76,8 +73,31 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result,
         echo("GIT_URL not set, args = ${args}")
         error("GIT_URL")
     }
-    echo("GitHub notifier options = ${options}")
-    step(options)
+    def githubParts = gitHubRepoURL.split('/');
+    def githubAccount = githubParts[-2]
+    def githubRepo = githubParts[-1]
+    if (githubAccount != "CTSRD-CHERI") {
+        echo("Not setting status on CTSRD-CHERI repo?? ${gitHubRepoURL}")
+    }
+    Map newGitHubStatusSetterArgs = [
+            credentialsId: 'ctsrd-jenkins-new-github-api-key',
+            context: githubCommitStatusContext,
+            description: message,
+            status: result,
+            // sha: 'aaaaa',
+            repo: 'githubRepo',
+            account: githubAccount,
+    ]
+    // TODO: githubNotify account: 'CTSRD-CHERI', context: 'ci/foo', credentialsId: 'ctsrd-jenkins-new-github-api-key', description: 'Building', repo: 'qemu', sha: 'aaaaa', status: 'PENDING', targetUrl: ''
+    def gitHubCommitSHA = args?.GIT_COMMIT
+    if (gitHubCommitSHA) {
+        options['commitShaSource'] = [$class: "ManuallyEnteredShaSource", sha: gitHubCommitSHA]
+        newGitHubStatusSetterArgs['sha'] = gitHubCommitSHA
+    }
+    echo("GitHub notifier options = ${newGitHubStatusSetterArgs}")
+    githubNotify(newGitHubStatusSetterArgs)
+    // echo("GitHub notifier options = ${options}")
+    // old: step(options)
 }
 
 def call(Map scmInfo, Map<String, String> args = [:]) {
