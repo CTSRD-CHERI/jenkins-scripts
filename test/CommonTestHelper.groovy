@@ -76,7 +76,7 @@ class CommonTestHelper {
         // binding.getVariable('env').JOB_NAME = "CHERI1-TEST-pipeline"
         // helper.registerAllowedMethod("cheriHardwareTest", [Map.class], { args -> cheriHardwareTest.call(args) })
         def scmBranch = "feature_test"
-        binding.setVariable('scm', [branch: 'master', url:'scm.git'])
+        binding.setVariable('scm', [branch: 'master', url: 'https://www.github.com/CTSRD-CHERI/some-repo.git'])
         binding.setVariable('docker', new DockerMock())
         /* binding.setVariable('scm', [
                 $class                           : 'GitSCM',

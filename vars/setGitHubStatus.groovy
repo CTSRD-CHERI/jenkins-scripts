@@ -74,6 +74,10 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result,
         error("GIT_URL")
     }
     def githubParts = gitHubRepoURL.split('/');
+    if (githubParts.size() < 2) {
+        error("WRONG REPO URL: ${gitHubRepoURL}");
+        return;
+    }
     def githubAccount = githubParts[-2]
     def githubRepo = githubParts[-1]
     if (githubAccount != "CTSRD-CHERI") {

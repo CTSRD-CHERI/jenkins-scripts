@@ -44,7 +44,7 @@ repositories {
 }
 
 dependencies {
-    compile 'org.codehaus.groovy:groovy-all:2.4.7'
+    compile 'org.codehaus.groovy:groovy-all:2.5.8'
     // compile 'org.jenkins-ci.plugins:junit:jar:1.24'
     // compile group: 'org.jenkins-ci.main', name: 'jenkins-core', version: '2.89.4'
     // For AbstractTestResultAction (doesn't work properly)

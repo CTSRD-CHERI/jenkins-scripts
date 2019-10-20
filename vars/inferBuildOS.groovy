@@ -1,4 +1,4 @@
-def call(Map args) {
+def call(Map args = [:]) {
     def labels = "${env.NODE_LABELS}"
     echo("inferring build OS, node labels: ${labels}")
     if (labels.contains("linux"))
