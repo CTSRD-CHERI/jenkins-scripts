@@ -300,7 +300,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 				proj.uniqueId += "/${proj.nodeLabel}"
 		}
 		def message = "${currentBuild.description} ${proj.cpu}"
-		def githubCommitStatusContext = "ci/jenkins/build-status/${proj.uniqueId}"
+		def githubCommitStatusContext = "jenkins/status/${proj.uniqueId}"
 		if (proj.nodeLabel) {
 			message += " ${proj.nodeLabel}"
 		}

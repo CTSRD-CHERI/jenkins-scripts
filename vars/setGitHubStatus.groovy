@@ -66,7 +66,7 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result,
     def gitHubRepoURL = args.GIT_URL
     if (gitHubRepoURL) {
         if (gitHubRepoURL.endsWith('.git')) {
-            gitHubRepoURL = gitHubRepoURL.substring(0, gitHubRepoURL.indexOf('.git'))
+            gitHubRepoURL = gitHubRepoURL.substring(0, gitHubRepoURL.lastIndexOf('.git'))
         }
         options['reposSource'] = [$class: "ManuallyEnteredRepositorySource", url: gitHubRepoURL]
     } else {
@@ -104,9 +104,9 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result,
     // old: step(options)
 }
 
-def call(Map scmInfo, Map<String, String> args = [:]) {
+def call(Map<String, String> args = [:]) {
     try {
-        setGitHubStatusBasedOnCurrentResult(scmInfo, args.get('context', null),
+        setGitHubStatusBasedOnCurrentResult(args, args.get('context', null),
                 args.get('result', null), args.get('message', ''), args.get('includeTestStatus', true))
     } catch (e) {
         e.printStackTrace()
