@@ -33,6 +33,9 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result,
             message = message.replace(' and counting', '')
         }
     }
+    // Map from Jenkins states to GitHub states: https://github.com/github-api/github-api/blob/master/src/main/java/org/kohsuke/github/GHCommitState.java
+    if (result == 'UNSTABLE')
+        result = 'FAILURE';
 
     // Maximum github message length is
     if (message.length() > 140) {
