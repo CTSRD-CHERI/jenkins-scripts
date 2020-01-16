@@ -11,9 +11,10 @@ def call(Map args) {
             submoduleCfg                     : [],
             userRemoteConfigs                : [[url: args.url]]
     ]
-    if (fileOutsideWorkspaceExists('/var/tmp/git-reference-repos/cheribuild')) {
+    String refdir = "/var/tmp/git-reference-repos/" + args.get("refdir", "invalid-directory")
+    if (fileOutsideWorkspaceExists(refdir)) {
         cheribuildSCM["extensions"] = [
-                [$class: 'CloneOption', depth: 0, noTags: true, reference: '/var/tmp/git-reference-repos/cheribuild', shallow: false, timeout: 5]
+                [$class: 'CloneOption', depth: 0, noTags: true, reference: refdir, shallow: false, timeout: 5]
         ]
         echo("Using reference repo for cheribuild")
     }

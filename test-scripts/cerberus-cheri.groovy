@@ -13,7 +13,7 @@ node("linux") {
                   quietOperation: true, workspaceUpdater: [$class: 'UpdateUpdater']]
         )
         dir('cheribuild') {
-            cloneGitRepoWithReference(url: "https://github.com/CTSRD-CHERI/cheribuild.git", changelog: false, poll: false)
+            cloneGitRepoWithReference(url: "https://github.com/CTSRD-CHERI/cheribuild.git", changelog: false, poll: false, refdir: "cheribuild")
         }
     }
     def kernelFile = 'cheribsd128-cheri128-malta64-mfs-root-minimal-cheribuild-kernel.bz2'
