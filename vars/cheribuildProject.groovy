@@ -231,6 +231,9 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 		// echo("env in block=${env}")
 		try {
 			runCheribuildImplWithEnv(proj)
+		} catch (e) {
+			currentBuild.result = 'FAILURE'
+			throw e
 		} finally {
 			if (proj.setGitHubStatus) {
 				if (!proj.uniqueId) {
