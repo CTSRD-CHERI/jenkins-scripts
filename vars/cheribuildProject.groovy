@@ -229,23 +229,26 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 	// echo("env before =${env}")
 	withEnv(["CPU=${proj.cpu}", "SDK_CPU=${proj.sdkCPU}"]) {
 		// echo("env in block=${env}")
+		if (!proj.uniqueId) {
+			proj.uniqueId = "${env.JOB_NAME}/${proj.cpu}"
+			if (proj.nodeLabel)
+				proj.uniqueId += "/${proj.nodeLabel}"
+		}
+		def message = "${currentBuild.description} ${proj.cpu}"
+		def githubCommitStatusContext = "jenkins/status/${proj.uniqueId}"
+		if (proj.nodeLabel) {
+			message += " ${proj.nodeLabel}"
+		}
 		try {
+			if (proj.setGitHubStatus) {
+				setGitHubStatus(proj.gitInfo + [message: message + " building ...", context: githubCommitStatusContext])
+			}
 			runCheribuildImplWithEnv(proj)
 		} catch (e) {
 			currentBuild.result = 'FAILURE'
 			throw e
 		} finally {
 			if (proj.setGitHubStatus) {
-				if (!proj.uniqueId) {
-					proj.uniqueId = "${env.JOB_NAME}/${proj.cpu}"
-					if (proj.nodeLabel)
-						proj.uniqueId += "/${proj.nodeLabel}"
-				}
-				def message = "${currentBuild.description} ${proj.cpu}"
-				def githubCommitStatusContext = "jenkins/status/${proj.uniqueId}"
-				if (proj.nodeLabel) {
-					message += " ${proj.nodeLabel}"
-				}
 				setGitHubStatus(proj.gitInfo + [message: message, context: githubCommitStatusContext])
 			}
 		}
