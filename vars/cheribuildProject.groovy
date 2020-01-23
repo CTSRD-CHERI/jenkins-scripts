@@ -241,7 +241,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 		}
 		try {
 			if (proj.setGitHubStatus) {
-				setGitHubStatus(proj.gitInfo + [message: message + " building ...", context: githubCommitStatusContext])
+				setGitHubStatus([message: message + " building ...", context: githubCommitStatusContext])
 			}
 			runCheribuildImplWithEnv(proj)
 		} catch (e) {
@@ -249,7 +249,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			throw e
 		} finally {
 			if (proj.setGitHubStatus) {
-				setGitHubStatus(proj.gitInfo + [message: message, context: githubCommitStatusContext])
+				setGitHubStatus([message: message, context: githubCommitStatusContext])
 			}
 		}
 	}
