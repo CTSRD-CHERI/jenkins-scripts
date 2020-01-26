@@ -12,9 +12,10 @@ class CheribuildProjectParams implements Serializable {
 	String uniqueId = null // Used for the github/analysis ID
 	String buildOS = null // Used when copying artifacts (the label parameter for those other jobs)
 	boolean setGitHubStatus = true
+	String gitHubStatusContext = null
 
 	Object scmOverride = null // Set this to use something other than the default scm variable for checkout
-	Object gitInfo = null  // This will be set the the git info from the checkout stage
+	Object gitInfo = [:]  // This will be set the the git info from the checkout stage
 	Map gitInfoMap = null  // Can be used to pass in a map that will be updated with the git info
 
 	/// general/build parameters
@@ -234,22 +235,21 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			if (proj.nodeLabel)
 				proj.uniqueId += "/${proj.nodeLabel}"
 		}
-		def message = "${currentBuild.description} ${proj.cpu}"
-		def githubCommitStatusContext = "jenkins/status/${proj.uniqueId}"
+		if (!proj.gitHubStatusContext) {
+			proj.gitHubStatusContext = "jenkins/status/${proj.uniqueId}"
+		}
 		if (proj.nodeLabel) {
 			message += " ${proj.nodeLabel}"
 		}
 		try {
-			if (proj.setGitHubStatus) {
-				setGitHubStatus([message: message + " building ...", context: githubCommitStatusContext])
-			}
 			runCheribuildImplWithEnv(proj)
 		} catch (e) {
 			currentBuild.result = 'FAILURE'
 			throw e
 		} finally {
 			if (proj.setGitHubStatus) {
-				setGitHubStatus([message: message, context: githubCommitStatusContext])
+				def message = "${currentBuild.description} ${proj.cpu}"
+				setGitHubStatus(proj.gitInfo + [message: message, context: proj.gitHubStatusContext])
 			}
 		}
 	}
@@ -284,6 +284,9 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			def x = cloneGitRepoWithReference(url: "https://github.com/CTSRD-CHERI/cheribuild.git", changelog: false, poll: false)
 			echo("Checked out cheribuild: ${x}")
 		}
+	}
+	if (proj.setGitHubStatus) {
+		setGitHubStatus(proj.gitInfo + [message: "${currentBuild.description} building ...", context: proj.gitHubStatusContext])
 	}
 	if (!proj.skipArtifacts) {
 		stage("Setup SDK for ${proj.target} (${proj.cpu})") {
