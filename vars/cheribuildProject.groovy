@@ -238,9 +238,6 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 		if (!proj.gitHubStatusContext) {
 			proj.gitHubStatusContext = "jenkins/status/${proj.uniqueId}"
 		}
-		if (proj.nodeLabel) {
-			message += " ${proj.nodeLabel}"
-		}
 		try {
 			runCheribuildImplWithEnv(proj)
 		} catch (e) {
@@ -249,6 +246,9 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 		} finally {
 			if (proj.setGitHubStatus) {
 				def message = "${currentBuild.description} ${proj.cpu}"
+				if (proj.nodeLabel) {
+					message += " ${proj.nodeLabel}"
+				}
 				setGitHubStatus(proj.gitInfo + [message: message, context: proj.gitHubStatusContext])
 			}
 		}
