@@ -37,7 +37,7 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result,
     if (result == 'UNSTABLE')
         result = 'FAILURE';
 
-    // Maximum github message length is
+    // Maximum github message length is 140
     if (message.length() > 140) {
         echo("Truncating ${message} to 140 chars")
         message = message.substring(0, 139)

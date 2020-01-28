@@ -245,7 +245,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			throw e
 		} finally {
 			if (proj.setGitHubStatus) {
-				def message = "${currentBuild.description} ${proj.cpu}"
+				def message = "${currentBuild.projectName}"
 				if (proj.nodeLabel) {
 					message += " ${proj.nodeLabel}"
 				}
@@ -286,7 +286,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 		}
 	}
 	if (proj.setGitHubStatus) {
-		setGitHubStatus(proj.gitInfo + [message: "${currentBuild.description} building ...", context: proj.gitHubStatusContext])
+		setGitHubStatus(proj.gitInfo + [message: "${currentBuild.projectName} building ...", context: proj.gitHubStatusContext])
 	}
 	if (!proj.skipArtifacts) {
 		stage("Setup SDK for ${proj.target} (${proj.cpu})") {
