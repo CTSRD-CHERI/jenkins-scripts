@@ -48,6 +48,7 @@ class CheribuildProjectParams implements Serializable {
 
 	String buildStage = null // Label for the build stage
 	String stageSuffix = null // Suffix for the build/test stage
+	static Map uniqueIDs = [:]
 
 	/// hooks
 	def beforeSCM // callback before checking out the sources
@@ -234,6 +235,10 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			proj.uniqueId = "${env.JOB_NAME}/${proj.target}/${proj.cpu}"
 			if (proj.nodeLabel)
 				proj.uniqueId += "/${proj.nodeLabel}"
+			while (CheribuildProjectParams.uniqueIDs.containsKey(proj.uniqueId.toString())) {
+				proj.uniqueId += "_1"
+			}
+			CheribuildProjectParams.uniqueIDs.put(proj.uniqueId, proj.uniqueId)
 		}
 		if (!proj.gitHubStatusContext) {
 			proj.gitHubStatusContext = "jenkins/status/${proj.uniqueId}"
