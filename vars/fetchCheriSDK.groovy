@@ -32,7 +32,7 @@ def call(Map args) {
         }
     }
 
-    stage("Setup SDK for ${params.target} (${params.cpu})") {
+    // stage("Setup SDK for ${params.target} (${params.cpu})") {
         // now copy all the artifacts
         copyArtifacts projectName: "CLANG-LLVM-master/CPU=cheri-multi,label=${params.buildOS}", flatten: true, optional: false, filter: 'cheri-multi-master-clang-llvm.tar.xz', selector: lastSuccessful()
         if (!params.compilerOnly) {
@@ -50,5 +50,5 @@ def call(Map args) {
                 sh "env SDK_CPU=${params.cpu} ${params.cheribuildPath}/jenkins-cheri-build.py extract-sdk --cpu ${params.cpu} ${params.extraCheribuildArgs} --cap-table-abi=${params.capTableABI}"
             }
         }
-    }
+    // }
 }

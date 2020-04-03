@@ -320,7 +320,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 		setGitHubStatus(proj.gitInfo + [message: "${currentBuild.projectName} building ...", context: proj.gitHubStatusContext])
 	}
 	if (!proj.skipArtifacts) {
-		stage("Setup SDK for ${proj.target} (${proj.cpu})") {
+		stage("Copying required artifacts") {
 			// Can't use a for loop here: https://issues.jenkins-ci.org/browse/JENKINS-49732
 			proj.artifactsToCopy.each { artifacts ->
 				copyArtifacts projectName: artifacts.job, filter: artifacts.filter, fingerprintArtifacts: false
