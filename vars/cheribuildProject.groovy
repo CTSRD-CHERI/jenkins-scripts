@@ -262,6 +262,12 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 				echo("final result = ${currentBuild.result} currentResult = ${currentBuild.currentResult}")
 				setGitHubStatus(proj.gitInfo + [message: message, context: proj.gitHubStatusContext])
 			}
+			if (env.CHANGE_ID) {
+				pullRequest.createStatus(status: currentBuild.currentResult,
+						context: proj.gitHubStatusContext,
+						description: "About to test PR#${pullRequest.id}...",
+						targetUrl: "${env.JOB_URL}/testResults")
+			}
 		}
 	}
 }
@@ -298,6 +304,13 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 	}
 	if (proj.setGitHubStatus) {
 		setGitHubStatus(proj.gitInfo + [message: "${currentBuild.projectName} building ...", context: proj.gitHubStatusContext])
+	}
+	if(env.CHANGE_ID) {
+		params.extraArgs += " --pretend"
+		pullRequest.createStatus(status: 'pending',
+				context: proj.gitHubStatusContext,
+				description: "About to test PR#${pullRequest.id}...",
+				targetUrl: "${env.JOB_URL}/testResults")
 	}
 	if (!proj.skipArtifacts) {
 		stage("Setup SDK for ${proj.target} (${proj.cpu})") {
@@ -371,10 +384,6 @@ def runCheribuild(Map args) {
 		])
 	}  catch(e) {
 		echo("FAILED TO SET GitHub issue trigger in Jenkinsfile: ${e}")
-	}
-	if(env.CHANGE_ID) {
-		echo("BUILDING A PULL REQUEST! Using --pretend flag")
-		params.extraArgs += " --pretend"
 	}
 	// The map spread operator is not supported in Jenkins
 	// def project = new CheribuildProjectParams(target: args.name, *:args)
