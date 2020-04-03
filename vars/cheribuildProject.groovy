@@ -292,7 +292,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			}
 		}
 		dir('cheribuild') {
-			def x = cloneGitRepoWithReference(url: "https://github.com/CTSRD-CHERI/cheribuild.git", changelog: false, poll: false)
+			def x = cloneGitRepoWithReference(url: "https://github.com/CTSRD-CHERI/cheribuild.git", changelog: false, poll: false, refdir: "cheribuild")
 			echo("Checked out cheribuild: ${x}")
 		}
 	}
