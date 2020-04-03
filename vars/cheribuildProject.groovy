@@ -253,7 +253,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			if (env.CHANGE_ID) {
 				echo("Setting PR status")
 				try {
-					pullRequest.createStatus(status: currentBuild.currentResult,
+					pullRequest.createStatus(status: "${currentBuild.currentResult}".toLowerCase(),
 							context: proj.gitHubStatusContext,
 							description: "${proj.stageSuffix}: Done.",
 							targetUrl: "${env.JOB_URL}/testResults")
