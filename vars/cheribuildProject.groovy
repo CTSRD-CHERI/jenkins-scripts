@@ -205,7 +205,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 		proj.tarballName = "${proj.target}-${proj.cpu}.tar.xz"
 	}
 	if (!proj.cpu) {
-		error("cpu parameter was not set!")
+		proj.cpu = "default"
 	}
 	if (!proj.buildOS) {
 		proj.buildOS = inferBuildOS()
