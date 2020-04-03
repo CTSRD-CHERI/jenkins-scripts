@@ -252,10 +252,14 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 		} finally {
 			if (env.CHANGE_ID) {
 				echo("Setting PR status")
-				pullRequest.createStatus(status: currentBuild.currentResult,
-						context: proj.gitHubStatusContext,
-						description: "${proj.stageSuffix}: Done.",
-						targetUrl: "${env.JOB_URL}/testResults")
+				try {
+					pullRequest.createStatus(status: currentBuild.currentResult,
+							context: proj.gitHubStatusContext,
+							description: "${proj.stageSuffix}: Done.",
+							targetUrl: "${env.JOB_URL}/testResults")
+				} catch (e) {
+					error("Failed to set PR status ${e}")
+				}
 			} else if (proj.setGitHubStatus) {
 				def message = "${currentBuild.projectName}"
 				if (proj.nodeLabel) {
@@ -304,10 +308,15 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 	}
 	if(env.CHANGE_ID) {
 		params.extraArgs += " --pretend"
-		pullRequest.createStatus(status: 'pending',
-				context: proj.gitHubStatusContext,
-				description: "About to build PR#${pullRequest.id}...",
-				targetUrl: "${env.JOB_URL}/testResults")
+		try {
+			pullRequest.createStatus(status: 'pending',
+					context: proj.gitHubStatusContext,
+					description: "About to build PR#${pullRequest.id}...",
+					targetUrl: "${env.JOB_URL}/testResults")
+		} catch (e) {
+			echo("Failed to set PR status ${e}")
+			error("Failed to set PR status ${e}")
+		}
 	} else if (proj.setGitHubStatus) {
 		setGitHubStatus(proj.gitInfo + [message: "${currentBuild.projectName} building ...", context: proj.gitHubStatusContext])
 	}
