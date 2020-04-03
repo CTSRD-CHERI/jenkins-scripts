@@ -251,6 +251,10 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 					message += " ${proj.nodeLabel}"
 				}
 				echo("Setting github status after build")
+				if (currentBuild.result == null)
+					currentBuild.result = currentBuild.currentResult
+				// Avoid setting an error flag on github commits just because binutils is still broken
+				echo("final result = ${currentBuild.result} currentResult = ${currentBuild.currentResult}")
 				setGitHubStatus(proj.gitInfo + [message: message, context: proj.gitHubStatusContext])
 			}
 		}
