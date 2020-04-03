@@ -307,7 +307,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 		}
 	}
 	if(env.CHANGE_ID) {
-		proj.extraArgs += " --pretend"
+		// proj.extraArgs += " --pretend"
 		try {
 			pullRequest.createStatus(status: 'pending',
 					context: proj.gitHubStatusContext,
