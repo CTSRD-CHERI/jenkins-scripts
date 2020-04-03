@@ -250,6 +250,13 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			currentBuild.result = 'FAILURE'
 			throw e
 		} finally {
+			if (env.CHANGE_ID) {
+				echo("Setting PR status")
+				pullRequest.createStatus(status: currentBuild.currentResult,
+						context: proj.gitHubStatusContext,
+						description: "${proj.stageSuffix}: Done.",
+						targetUrl: "${env.JOB_URL}/testResults")
+			}
 			if (proj.setGitHubStatus) {
 				def message = "${currentBuild.projectName}"
 				if (proj.nodeLabel) {
@@ -261,12 +268,6 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 				// Avoid setting an error flag on github commits just because binutils is still broken
 				echo("final result = ${currentBuild.result} currentResult = ${currentBuild.currentResult}")
 				setGitHubStatus(proj.gitInfo + [message: message, context: proj.gitHubStatusContext])
-			}
-			if (env.CHANGE_ID) {
-				pullRequest.createStatus(status: currentBuild.currentResult,
-						context: proj.gitHubStatusContext,
-						description: "About to test PR#${pullRequest.id}...",
-						targetUrl: "${env.JOB_URL}/testResults")
 			}
 		}
 	}
