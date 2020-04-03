@@ -324,7 +324,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			runTests(proj, testSuffix)
 		}
 	}
-	def analysisId = proj.stageSuffix ? proj.stageSuffix : "${proj.cpu}_${proj.buildOS}_${env.NODE_NAME}"
+	def analysisId = proj.stageSuffix ? proj.stageSuffix : "${proj.uniqueId}"
 	analysisId.replace(' ', '_')
 	recordIssues aggregatingResults: true, blameDisabled: true, enabledForFailure: true, tools: [clang(id: analysisId)]
 	//warnings canComputeNew: false, canResolveRelativePaths: false, consoleParsers: [[parserName: 'Clang (LLVM based)']]
