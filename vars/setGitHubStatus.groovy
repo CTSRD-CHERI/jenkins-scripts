@@ -101,6 +101,9 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result,
         options['commitShaSource'] = [$class: "ManuallyEnteredShaSource", sha: gitHubCommitSHA]
         newGitHubStatusSetterArgs['sha'] = gitHubCommitSHA
     }
+    if (gitHubCommitSHA && env.CHANGE_ID) {
+        echo("Not setting commit status on ${gitHubCommitSHA} since we are building a PR (${env.CHANGE_ID})")
+    }
     echo("GitHub notifier options = ${newGitHubStatusSetterArgs}")
     githubNotify(newGitHubStatusSetterArgs)
     echo("Done setting github status")

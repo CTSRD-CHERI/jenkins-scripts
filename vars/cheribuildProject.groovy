@@ -256,8 +256,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 						context: proj.gitHubStatusContext,
 						description: "${proj.stageSuffix}: Done.",
 						targetUrl: "${env.JOB_URL}/testResults")
-			}
-			if (proj.setGitHubStatus) {
+			} else if (proj.setGitHubStatus) {
 				def message = "${currentBuild.projectName}"
 				if (proj.nodeLabel) {
 					message += " ${proj.nodeLabel}"
@@ -303,15 +302,14 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			echo("Checked out cheribuild: ${x}")
 		}
 	}
-	if (proj.setGitHubStatus) {
-		setGitHubStatus(proj.gitInfo + [message: "${currentBuild.projectName} building ...", context: proj.gitHubStatusContext])
-	}
 	if(env.CHANGE_ID) {
 		params.extraArgs += " --pretend"
 		pullRequest.createStatus(status: 'pending',
 				context: proj.gitHubStatusContext,
-				description: "About to test PR#${pullRequest.id}...",
+				description: "About to build PR#${pullRequest.id}...",
 				targetUrl: "${env.JOB_URL}/testResults")
+	} else if (proj.setGitHubStatus) {
+		setGitHubStatus(proj.gitInfo + [message: "${currentBuild.projectName} building ...", context: proj.gitHubStatusContext])
 	}
 	if (!proj.skipArtifacts) {
 		stage("Setup SDK for ${proj.target} (${proj.cpu})") {
