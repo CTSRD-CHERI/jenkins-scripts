@@ -311,10 +311,9 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 		try {
 			pullRequest.createStatus(status: 'pending',
 					context: proj.gitHubStatusContext,
-					description: "About to build PR#${pullRequest.id}...",
+					description: "About to build PR#${pullRequest.number}...",
 					targetUrl: "${env.JOB_URL}")
 		} catch (e) {
-			echo("Failed to set PR status ${e}")
 			error("Failed to set PR status ${e}")
 		}
 	} else if (proj.setGitHubStatus) {
