@@ -352,14 +352,29 @@ def runCheribuild(Map args) {
 	try {
 		properties([
 				pipelineTriggers([
-						[$class: "GitHubPushTrigger"]
+						githubPush()
 				]),
 				disableConcurrentBuilds(),
+				disableResume(),
 				copyArtifactPermission('*'), // New in copyartifacts version 1.41
 				// [$class: 'CopyArtifactPermissionProperty', projectNames: '*'],
 		])
 	} catch(e) {
 		echo("FAILED TO SET GitHub push trigger in Jenkinsfile: ${e}")
+	}
+	try {
+		// Github
+		properties([
+				pipelineTriggers([
+						issueCommentTrigger('.*test this please.*')
+				])
+		])
+	}  catch(e) {
+		echo("FAILED TO SET GitHub issue trigger in Jenkinsfile: ${e}")
+	}
+	if(env.CHANGE_ID) {
+		echo("BUILDING A PULL REQUEST! Using --pretend flag")
+		params.extraArgs += " --pretend"
 	}
 	// The map spread operator is not supported in Jenkins
 	// def project = new CheribuildProjectParams(target: args.name, *:args)
