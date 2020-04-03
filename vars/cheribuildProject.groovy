@@ -231,7 +231,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 	withEnv(["CPU=${proj.cpu}", "SDK_CPU=${proj.sdkCPU}"]) {
 		// echo("env in block=${env}")
 		if (!proj.uniqueId) {
-			proj.uniqueId = "${env.JOB_NAME}/${proj.cpu}"
+			proj.uniqueId = "${env.JOB_NAME}/${proj.target}/${proj.cpu}"
 			if (proj.nodeLabel)
 				proj.uniqueId += "/${proj.nodeLabel}"
 		}
