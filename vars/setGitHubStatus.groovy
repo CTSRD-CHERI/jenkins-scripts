@@ -86,7 +86,7 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result,
     if (githubAccount != "CTSRD-CHERI") {
         echo("Not setting status on CTSRD-CHERI repo?? ${gitHubRepoURL}")
     }
-    Map newGitHubStatusSetterArgs = [
+    def newGitHubStatusSetterArgs = [
             credentialsId: 'ctsrd-jenkins-new-github-api-key',
             context: githubCommitStatusContext,
             description: message,
@@ -103,6 +103,7 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result,
     }
     echo("GitHub notifier options = ${newGitHubStatusSetterArgs}")
     githubNotify(newGitHubStatusSetterArgs)
+    echo("Done setting github status")
     // echo("GitHub notifier options = ${options}")
     // old: step(options)
 }
@@ -113,7 +114,6 @@ def call(Map<String, String> args = [:]) {
                 args.get('result', null), args.get('message', ''), args.get('includeTestStatus', true))
     } catch (e) {
         e.printStackTrace()
-
         echo("Could not set GitHub commit status: ${e}")
         // TODO: mark the current build as failed if github is unreachable?
         // currentBuild.result = 'FAILURE'

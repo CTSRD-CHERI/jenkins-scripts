@@ -241,6 +241,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 		try {
 			runCheribuildImplWithEnv(proj)
 		} catch (e) {
+			echo("Marking current build as failed!")
 			currentBuild.result = 'FAILURE'
 			throw e
 		} finally {
@@ -249,6 +250,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 				if (proj.nodeLabel) {
 					message += " ${proj.nodeLabel}"
 				}
+				echo("Setting github status after build")
 				setGitHubStatus(proj.gitInfo + [message: message, context: proj.gitHubStatusContext])
 			}
 		}
@@ -369,6 +371,7 @@ def call(Map args) {
 	try {
 		return runCheribuild(args)
 	} catch (e) {
+		echo("Marking current build as failed!")
 		currentBuild.result = 'FAILURE'
 		throw e
 	}
