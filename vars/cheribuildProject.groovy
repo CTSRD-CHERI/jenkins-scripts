@@ -256,7 +256,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 					pullRequest.createStatus(status: "${currentBuild.currentResult}".toLowerCase(),
 							context: proj.gitHubStatusContext,
 							description: "${proj.stageSuffix}: Done.",
-							targetUrl: "${env.JOB_URL}/testResults")
+							targetUrl: "${env.JOB_URL}")
 				} catch (e) {
 					error("Failed to set PR status ${e}")
 				}
@@ -307,12 +307,12 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 		}
 	}
 	if(env.CHANGE_ID) {
-		params.extraArgs += " --pretend"
+		proj.extraArgs += " --pretend"
 		try {
 			pullRequest.createStatus(status: 'pending',
 					context: proj.gitHubStatusContext,
 					description: "About to build PR#${pullRequest.id}...",
-					targetUrl: "${env.JOB_URL}/testResults")
+					targetUrl: "${env.JOB_URL}")
 		} catch (e) {
 			echo("Failed to set PR status ${e}")
 			error("Failed to set PR status ${e}")
