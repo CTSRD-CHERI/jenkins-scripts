@@ -66,6 +66,23 @@ class CheribuildProjectParams implements Serializable {
 
 // FIXME: all this jenkins transforming stuff is ugly... how can I access the jenkins globals?
 
+boolean updatePRStatus(CheribuildProjectParams proj, String message, String status = null) {
+	if (!env.CHANGE_ID) {
+		return false
+	}
+	try {
+		if (!status)
+			status = "${currentBuild.result}".toLowerCase();
+		pullRequest.createStatus(status: status,
+				context: proj.gitHubStatusContext,
+				description: message,
+				targetUrl: "${env.JOB_URL}")
+	} catch (e) {
+		error("Failed to set PR status ${e}")
+	}
+	return true;
+}
+
 // Run a beforeXXX hook (beforeBuild, beforeTarball, etc.)
 def runCallback(CheribuildProjectParams proj, cb) {
 	// def cb = this."${hook}"
@@ -109,6 +126,7 @@ def build(CheribuildProjectParams proj, String stageSuffix) {
 	}
 	// }
 	if (!proj.skipTarball && !proj.skipArchiving) {
+		updatePRStatus(proj, "Archiving artifacts...")
 		archiveArtifacts allowEmptyArchive: false, artifacts: proj.tarballName, fingerprint: true, onlyIfSuccessful: true
 	}
 	runCallback(proj, proj.afterBuild)
@@ -129,6 +147,7 @@ def runTestsImpl(CheribuildProjectParams proj, String testImageArgs, String qemu
 }
 
 def runTests(CheribuildProjectParams proj, String testSuffix) {
+	updatePRStatus(proj, "Running tests for PR#${pullRequest.number}...")
 	// Custom test script only support for CheriBSD
 	if (proj.testScript)
 		if (proj.cpu != "mips" && proj.cpu != "cheri128" && proj.cpu != "cheri256")
@@ -247,20 +266,12 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			runCheribuildImplWithEnv(proj)
 		} catch (e) {
 			echo("Marking current build as failed!")
+			currentBuild.currentResult = 'FAILURE'
 			currentBuild.result = 'FAILURE'
 			throw e
 		} finally {
-			if (env.CHANGE_ID) {
-				echo("Setting PR status")
-				try {
-					pullRequest.createStatus(status: "${currentBuild.currentResult}".toLowerCase(),
-							context: proj.gitHubStatusContext,
-							description: "${proj.stageSuffix}: Done.",
-							targetUrl: "${env.JOB_URL}")
-				} catch (e) {
-					error("Failed to set PR status ${e}")
-				}
-			} else if (proj.setGitHubStatus) {
+			def status = "${currentBuild.currentResult}".toLowerCase()
+			if (!updatePRStatus(proj, "${proj.stageSuffix}: Done.", status) && proj.setGitHubStatus) {
 				def message = "${currentBuild.projectName}"
 				if (proj.nodeLabel) {
 					message += " ${proj.nodeLabel}"
@@ -279,6 +290,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 	def gitHubCommitSHA = null
 	def gitHubRepoURL = null
+	updatePRStatus(proj, "Starting build for PR#${pullRequest.number}...")
 
 	if (proj.skipInitialSetup) {
 		proj.skipScm = true
@@ -307,7 +319,6 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 		}
 	}
 	if(env.CHANGE_ID) {
-		// proj.extraArgs += " --pretend"
 		try {
 			pullRequest.createStatus(status: 'pending',
 					context: proj.gitHubStatusContext,
@@ -316,7 +327,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 		} catch (e) {
 			error("Failed to set PR status ${e}")
 		}
-	} else if (proj.setGitHubStatus) {
+	} else if (!updatePRStatus(proj, "About to build PR#${pullRequest.number}...") && proj.setGitHubStatus) {
 		setGitHubStatus(proj.gitInfo + [message: "${currentBuild.projectName} building ...", context: proj.gitHubStatusContext])
 	}
 	if (!proj.skipArtifacts) {
