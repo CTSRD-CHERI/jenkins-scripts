@@ -71,8 +71,12 @@ boolean updatePRStatus(CheribuildProjectParams proj, String message, String stat
 		return false
 	}
 	try {
-		if (!status)
-			status = "${currentBuild.result}".toLowerCase();
+		if (!status) {
+			if (currentBuild.result)
+				status = "${currentBuild.result}".toLowerCase();
+			else
+				status = 'pending'
+		}
 		pullRequest.createStatus(status: status,
 				context: proj.gitHubStatusContext,
 				description: message,
@@ -266,7 +270,6 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			runCheribuildImplWithEnv(proj)
 		} catch (e) {
 			echo("Marking current build as failed!")
-			currentBuild.currentResult = 'FAILURE'
 			currentBuild.result = 'FAILURE'
 			throw e
 		} finally {
