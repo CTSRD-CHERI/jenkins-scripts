@@ -151,7 +151,7 @@ def runTestsImpl(CheribuildProjectParams proj, String testImageArgs, String qemu
 }
 
 def runTests(CheribuildProjectParams proj, String testSuffix) {
-	updatePRStatus(proj, "Running tests for PR#${pullRequest.number}...")
+	updatePRStatus(proj, "Running tests for PR...")
 	// Custom test script only support for CheriBSD
 	if (proj.testScript)
 		if (proj.cpu != "mips" && proj.cpu != "cheri128" && proj.cpu != "cheri256")
@@ -293,7 +293,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 	def gitHubCommitSHA = null
 	def gitHubRepoURL = null
-	updatePRStatus(proj, "Starting build for PR#${pullRequest.number}...")
+	updatePRStatus(proj, "Starting build...")
 
 	if (proj.skipInitialSetup) {
 		proj.skipScm = true
@@ -330,7 +330,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 		} catch (e) {
 			error("Failed to set PR status ${e}")
 		}
-	} else if (!updatePRStatus(proj, "About to build PR#${pullRequest.number}...") && proj.setGitHubStatus) {
+	} else if (!updatePRStatus(proj, "About to build PR...") && proj.setGitHubStatus) {
 		setGitHubStatus(proj.gitInfo + [message: "${currentBuild.projectName} building ...", context: proj.gitHubStatusContext])
 	}
 	if (!proj.skipArtifacts) {
