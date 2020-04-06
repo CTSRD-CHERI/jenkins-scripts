@@ -170,8 +170,8 @@ def runTests(CheribuildProjectParams proj, String testSuffix) {
 	if (test_cpu == 'mips-nocheri') {
 		kernelPrefix = 'freebsd'
 		imagePrefix = 'freebsd'
-		qemuCommand = "qemu-system-cheri128"
-	} else if (test_cpu in ['mips-hybrid', "mips-purecap"]) {
+		qemuCommand = 'qemu-system-cheri128'
+	} else if (test_cpu in ['mips-hybrid', 'mips-purecap']) {
 		kernelPrefix = test_cpu == 'cheribsd128-cheri128'
 		imagePrefix = test_cpu == 'cheribsd128'
 		qemuCommand = "qemu-system-cheri128"
@@ -227,45 +227,6 @@ ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/${test_cpu}-m
 }
 
 def runCheribuildImpl(CheribuildProjectParams proj) {
-	if (!proj.cpu) {
-		proj.cpu = "default"
-	}
-	if (!proj.architecture) {
-		if (proj.target.endsWith('-mips-nocheri')) {
-			proj.architecture = 'mips'
-		} else if (proj.target.endsWith('-mips-hybrid')) {
-			proj.architecture = 'mips-hybrid'
-		} else if (proj.target.endsWith('-mips-purecap') || proj.target.endsWith('-cheri')) {
-			proj.architecture = 'mips-purecap'
-		} else if (proj.target.endsWith('-riscv64')) {
-			proj.architecture = 'riscv64'
-		} else if (proj.target.endsWith('-riscv64-hybrid')) {
-			proj.architecture = 'riscv64-hybrid'
-		} else if (proj.target.endsWith('-riscv64-purecap')) {
-			proj.architecture = 'riscv64-purecap'
-		} else if (proj.target.endsWith('-native')) {
-			proj.architecture = 'riscv64-purecap'
-		} else if (proj.target.endsWith('-purecap')) { // legacy target names
-			proj.architecture = 'mips-purecap'
-		} else if (proj.target.endsWith('-native')) { // legacy target names
-			proj.architecture = 'native'
-		}
-	}
-	if (!proj.architecture) {
-		if (proj.cpu == 'mips') {
-			proj.architecture = 'mips-nocheri'
-		} else if (proj.cpu == 'cheri128' || proj.cpu == 'hybrid-128') {
-			proj.architecture = 'mips-nocheri'
-		} else if (proj.cpu == 'native') {
-			proj.architecture = 'native'
-		}
-	}
-	if (!proj.architecture) {
-		error("Could not infer 'architecture' parameter from target (${proj.target}) or cpu (${proj.cpu})")
-	}
-	if (!proj.tarballName) {
-		proj.tarballName = "${proj.target}-${proj.architecture}.tar.xz"
-	}
 	if (!proj.buildOS) {
 		proj.buildOS = inferBuildOS()
 		echo("Inferred build OS: '${proj.buildOS}'")
@@ -406,7 +367,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 	// TODO: clean up properly and remove the created artifacts?
 }
 
-def runCheribuild(Map args) {
+CheribuildProjectParams parseParams(Map args) {
 	def params = new CheribuildProjectParams()
 	// Can't use a for loop here: https://issues.jenkins-ci.org/browse/JENKINS-49732
 	args.each { it ->
@@ -423,6 +384,52 @@ def runCheribuild(Map args) {
 			return params
 		}
 	}
+	if (!params.cpu) {
+		params.cpu = "default"
+	}
+	if (!params.architecture) {
+		if (params.target.endsWith('-mips-nocheri')) {
+			params.architecture = 'mips'
+		} else if (params.target.endsWith('-mips-hybrid')) {
+			params.architecture = 'mips-hybrid'
+		} else if (params.target.endsWith('-mips-purecap') || params.target.endsWith('-cheri')) {
+			params.architecture = 'mips-purecap'
+		} else if (params.target.endsWith('-riscv64')) {
+			params.architecture = 'riscv64'
+		} else if (params.target.endsWith('-riscv64-hybrid')) {
+			params.architecture = 'riscv64-hybrid'
+		} else if (params.target.endsWith('-riscv64-purecap')) {
+			params.architecture = 'riscv64-purecap'
+		} else if (params.target.endsWith('-native')) {
+			params.architecture = 'riscv64-purecap'
+		} else if (params.target.endsWith('-purecap')) { // legacy target names
+			params.architecture = 'mips-purecap'
+		} else if (params.target.endsWith('-native')) { // legacy target names
+			params.architecture = 'native'
+		}
+	}
+	if (!params.architecture) {
+		if (params.cpu == 'mips') {
+			params.architecture = 'mips-nocheri'
+		} else if (params.cpu == 'cheri128' || params.cpu == 'hybrid-128') {
+			params.architecture = 'mips-nocheri'
+		} else if (params.cpu == 'native') {
+			params.architecture = 'native'
+		}
+	}
+	if (!params.architecture) {
+		error("Could not infer 'architecture' parameter from target (${params.target}) or cpu (${params.cpu})")
+	}
+	// Canonicalize architecure:
+	if (params.architecture == 'cheri' || params.architecture == 'purecap')
+		params.architecture = 'mips-purecap'
+	if (!params.tarballName) {
+		params.tarballName = "${params.target}-${params.architecture}.tar.xz"
+	}
+	return params
+}
+
+def runCheribuild(CheribuildProjectParams params) {
 	try {
 		properties([
 				pipelineTriggers([
@@ -460,18 +467,33 @@ def runCheribuild(Map args) {
 
 // This is what gets called from jenkins
 def call(Map args) {
-	List targetSuffixes = args.get('targetSuffixes', [''])
-	targetSuffixes.each { suffix ->
-		Map newMap = args + [target: args.get('target', 'target must be set!') + "-${suffix}"]
-		echo("newMap=${newMap}")
+	List targetArchitectures = args.get('targetArchitectures', [''])
+	def failFast = args.get('failFast', true) as Boolean
+	args.remove('failFast')
+	if (targetArchitectures.size() == 1) {
+		return runCheribuild(parseParams(args))
 	}
-	// just call the real method here so that I can run the tests
-	// the problem is that if I invoke call I get endless recursion
-	try {
-		return runCheribuild(args)
-	} catch (e) {
-		echo("Marking current build as failed!")
-		currentBuild.result = 'FAILURE'
-		throw e
+	// Otherwise run multiple architectures in parallel
+	def tasks = [failFast: failFast]
+	targetArchitectures.each { String suffix ->
+		tasks[suffix] = { ->
+			Map newMap = args + [target: args.get('target', 'target must be set!') + "-${suffix}", architecture: "${suffix}"]
+			echo("newMap=${newMap}")
+			// just call the real method here so that I can run the tests
+			// the problem is that if I invoke call I get endless recursion
+			def params = parseParams(newMap)
+			return runCheribuild(params)
+		}
+	}
+	if (env?.UNIT_TEST) {
+		tasks.each { key, closure ->
+			if (key == "failFast")
+				return
+			echo("Running ${key}")
+			closure()
+			echo("Finished running ${key}")
+		}
+	} else {
+		parallel tasks
 	}
 }

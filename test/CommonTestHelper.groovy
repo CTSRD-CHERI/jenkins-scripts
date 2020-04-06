@@ -62,6 +62,8 @@ class CommonTestHelper {
         })
         helper.registerAllowedMethod("brokenBuildSuspects", [], null)
         helper.registerAllowedMethod("brokenTestsSuspects", [], null)
+        helper.registerAllowedMethod("copyArtifactPermission", [String], null)
+        helper.registerAllowedMethod("issueCommentTrigger", [String], null)
         helper.registerAllowedMethod("requestor", [], null)
         helper.registerAllowedMethod("emailext", [Map.class], null)
         helper.registerAllowedMethod("pollSCM", [String.class], null)
@@ -113,8 +115,15 @@ class CommonTestHelper {
                                                             url          : 'github.com/lesfurets/JenkinsPipelineUnit.git'
                                                     ]]
         ]) */
-        binding.setVariable('env', [NODE_LABELS: "linux14 linux docker"])
-        binding.setVariable('currentBuild', [result: 'SUCCESS', currentResult: 'SUCCESS', durationString: "XXX seconds"])
+        binding.setVariable('env', [NODE_LABELS: "linux14 linux docker", UNIT_TEST: "true"])
+        // Override the default helper
+        helper.registerAllowedMethod("error", [String], { msg ->
+            echo(msg)
+            binding.getVariable('currentBuild').result = 'FAILURE'
+            throw new RuntimeException(msg)
+        })
+
+        // binding.setVariable('currentBuild', [result: null, currentResult: 'SUCCESS', durationString: "XXX seconds"])
     }
 
     static void addEnvVars(BasePipelineTest test, Map<String, String> vars) {

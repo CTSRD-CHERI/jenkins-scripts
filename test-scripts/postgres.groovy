@@ -26,5 +26,5 @@ cheribuildProject(target: 'postgres',
         runTests: true,
         beforeBuild: 'ls -la $WORKSPACE',
         testTimeout: 4 * 60 * 60, // increase the test timeout to 4 hours (CHERI can take a loooong time)
-        targetSuffixes: ['mips-nocheri', 'mips-hybrid', 'cheri']
+        targetArchitectures: ['mips-nocheri', 'mips-hybrid', 'cheri']
         /* sequential: true, // for now run all in order until we have it stable */)
