@@ -422,7 +422,11 @@ def runCheribuild(Map args) {
 def call(Map args) {
 	// just call the real method here so that I can run the tests
 	// the problem is that if I invoke call I get endless recursion
-	catchError {
+	try {
 		return runCheribuild(args)
+	} catch (e) {
+		echo("Marking current build as failed!")
+		currentBuild.result = 'FAILURE'
+		throw e
 	}
 }
