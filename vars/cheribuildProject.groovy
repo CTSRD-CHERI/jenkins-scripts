@@ -361,7 +361,9 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 	}
 	def analysisId = proj.stageSuffix ? proj.stageSuffix : "${proj.uniqueId}"
 	analysisId.replace(' ', '_')
-	recordIssues aggregatingResults: true, blameDisabled: true, enabledForFailure: true, tools: [clang(id: analysisId)]
+	warnError("FAILED TO RECORD ISSUES") {
+		recordIssues aggregatingResults: true, blameDisabled: true, enabledForFailure: true, forensicsDisabled: true, sourceCodeEncoding: 'UTF-8', tools: [clang(reportEncoding: 'UTF-8')]
+	}
 	//warnings canComputeNew: false, canResolveRelativePaths: false, consoleParsers: [[parserName: 'Clang (LLVM based)']]
 	//step([$class: 'AnalysisPublisher', canComputeNew: false])
 	// TODO: clean up properly and remove the created artifacts?
