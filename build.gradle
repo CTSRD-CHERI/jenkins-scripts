@@ -59,14 +59,14 @@ dependencies {
 
 }
 
-task copyTask(type: Copy) {
-    from '.'
-    into 'build/libs/ctsrd-jenkins-scripts@master'
-    include 'src/**'
-    include 'vars/**'
-}
-compileJava.dependsOn(copyTask)
-compileGroovy.dependsOn(copyTask)
-compileTestJava.dependsOn(copyTask)
-compileTestGroovy.dependsOn(copyTask)
+//task copyTask(type: Copy) {
+//    from '.'
+//    into 'build/libs/ctsrd-jenkins-scripts@master'
+//    include 'src/**'
+//    include 'vars/**'
+//}
+//compileJava.dependsOn(copyTask)
+//compileGroovy.dependsOn(copyTask)
+//compileTestJava.dependsOn(copyTask)
+//compileTestGroovy.dependsOn(copyTask)
 // build.dependsOn(copyTask)
