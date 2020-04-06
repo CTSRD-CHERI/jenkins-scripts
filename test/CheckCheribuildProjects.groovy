@@ -57,6 +57,20 @@ class CheckCheribuildProjects extends BasePipelineTest {
 	}
 
     @Test
+    void cheribsd_test() throws Exception {
+        CommonTestHelper.addEnvVars(this, [
+                JOB_NAME:"cheribsd/master",
+                BRANCH_NAME:"master",
+                WORKSPACE:"/workspace",
+                EXECUTOR_NUMBER:"8",
+        ])
+        def script = runScript("test-scripts/cheribsd.groovy")
+        // script.run()
+        printCallStack()
+    }
+
+
+    @Test
     void cerberus_test() throws Exception {
         CommonTestHelper.addEnvVars(this, [
                 JOB_NAME:"cerberus-CHERI",

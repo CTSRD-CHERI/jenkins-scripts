@@ -1,6 +1,7 @@
 import groovy.json.*
 
 class CheribuildProjectParams implements Serializable {
+	List targetArchitectures = []
 	boolean skipScm = false
 	// Whether to skip the clone/copy artifacts stage (useful if there are multiple cheribuild invocations)
 	boolean skipArtifacts = false
@@ -21,7 +22,8 @@ class CheribuildProjectParams implements Serializable {
 	/// general/build parameters
 	String target // the cheribuild project name
 	String extraArgs = '' // additional arguments to pass to cheribuild.py
-	String cpu // --cpu flag for cheribuild
+	String cpu = 'default' // --cpu flag for cheribuild (deprecated)
+	String architecture // suffix to be used for all output files, etc.
 	String sdkCPU  // the SDK used to build (e.g. for cheri256-hybrid will use the cheri256 sdk to build MIPS code)
 	String capTableABI = 'pcrel'
 	boolean needsFullCheriSDK = true
@@ -67,7 +69,7 @@ class CheribuildProjectParams implements Serializable {
 // FIXME: all this jenkins transforming stuff is ugly... how can I access the jenkins globals?
 
 boolean updatePRStatus(CheribuildProjectParams proj, String message, String status = null) {
-	if (!env.CHANGE_ID) {
+	if (!env.hasProperty('CHANGE_ID')) {
 		return false
 	}
 	try {
@@ -96,7 +98,7 @@ def runCallback(CheribuildProjectParams proj, cb) {
 	// echo "Running callback ${hook}"
 	if ((cb instanceof Closure) || cb.metaClass.respondsTo(cb, 'call')) {
 		//noinspection GroovyAssignabilityCheck
-		cb(proj.cpu)
+		cb(proj)
 	} else {
 		echo("Callback type: " + cb.getClass().getCanonicalName())
 		def callbackString = "${cb}"
@@ -153,28 +155,29 @@ def runTestsImpl(CheribuildProjectParams proj, String testImageArgs, String qemu
 def runTests(CheribuildProjectParams proj, String testSuffix) {
 	updatePRStatus(proj, "Running tests for PR...")
 	// Custom test script only support for CheriBSD
-	if (proj.testScript)
-		if (proj.cpu != "mips" && proj.cpu != "cheri128" && proj.cpu != "cheri256")
-			error("Running tests for target ${proj.cpu} not supported yet")
+	if (proj.testScript && !(proj.architecture in ["mips-nocheri", "mips-hybrid", "mips-purecap"])) {
+		error("Running tests for target ${proj.architecture} not supported yet")
+	}
 
 	String baseABI = 'n64'
 	String imagePrefix = "ERROR"
 	String kernelPrefix = "ERROR"
 	String qemuCommand = "ERROR"
-	String test_cpu = proj.cpu
-	if (test_cpu == 'mips' && proj.useCheriKernelForMipsTests) {
-		test_cpu = 'cheri128'
+	String test_cpu = proj.architecture
+	if (test_cpu == 'mips-nocheri' && proj.useCheriKernelForMipsTests) {
+		test_cpu = 'mips-hybrid'
 	}
-	if (test_cpu == 'mips') {
+	if (test_cpu == 'mips-nocheri') {
 		kernelPrefix = 'freebsd'
 		imagePrefix = 'freebsd'
-		qemuCommand = "qemu-system-cheri256"
+		qemuCommand = "qemu-system-cheri128"
+	} else if (test_cpu in ['mips-hybrid', "mips-purecap"]) {
+		kernelPrefix = test_cpu == 'cheribsd128-cheri128'
+		imagePrefix = test_cpu == 'cheribsd128'
+		qemuCommand = "qemu-system-cheri128"
 	} else {
-		kernelPrefix = test_cpu == 'cheri256' ? 'cheribsd-cheri' : 'cheribsd128-cheri128'
-		imagePrefix = test_cpu == 'cheri256' ? 'cheribsd' : 'cheribsd128'
-		qemuCommand = "qemu-system-${test_cpu}"
+		error("FATAL: unsupported arch ${test_cpu}")
 	}
-
 	def testImageArgs = ''
 	if (test_cpu != "native") {
 		// boot a world with a hybrid userspace (it contains all the necessary shared libs)
@@ -224,24 +227,60 @@ ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/${test_cpu}-m
 }
 
 def runCheribuildImpl(CheribuildProjectParams proj) {
-	if (!proj.tarballName) {
-		proj.tarballName = "${proj.target}-${proj.cpu}.tar.xz"
-	}
 	if (!proj.cpu) {
 		proj.cpu = "default"
+	}
+	if (!proj.architecture) {
+		if (proj.target.endsWith('-mips-nocheri')) {
+			proj.architecture = 'mips'
+		} else if (proj.target.endsWith('-mips-hybrid')) {
+			proj.architecture = 'mips-hybrid'
+		} else if (proj.target.endsWith('-mips-purecap') || proj.target.endsWith('-cheri')) {
+			proj.architecture = 'mips-purecap'
+		} else if (proj.target.endsWith('-riscv64')) {
+			proj.architecture = 'riscv64'
+		} else if (proj.target.endsWith('-riscv64-hybrid')) {
+			proj.architecture = 'riscv64-hybrid'
+		} else if (proj.target.endsWith('-riscv64-purecap')) {
+			proj.architecture = 'riscv64-purecap'
+		} else if (proj.target.endsWith('-native')) {
+			proj.architecture = 'riscv64-purecap'
+		} else if (proj.target.endsWith('-purecap')) { // legacy target names
+			proj.architecture = 'mips-purecap'
+		} else if (proj.target.endsWith('-native')) { // legacy target names
+			proj.architecture = 'native'
+		}
+	}
+	if (!proj.architecture) {
+		if (proj.cpu == 'mips') {
+			proj.architecture = 'mips-nocheri'
+		} else if (proj.cpu == 'cheri128' || proj.cpu == 'hybrid-128') {
+			proj.architecture = 'mips-nocheri'
+		} else if (proj.cpu == 'native') {
+			proj.architecture = 'native'
+		}
+	}
+	if (!proj.architecture) {
+		error("Could not infer 'architecture' parameter from target (${proj.target}) or cpu (${proj.cpu})")
+	}
+	if (!proj.tarballName) {
+		proj.tarballName = "${proj.target}-${proj.architecture}.tar.xz"
 	}
 	if (!proj.buildOS) {
 		proj.buildOS = inferBuildOS()
 		echo("Inferred build OS: '${proj.buildOS}'")
 	}
+	echo("Inferred build OS: '${proj.buildOS}'")
+
 	// compute sdkCPU from args
 	if (!proj.sdkCPU) {
-		proj.sdkCPU = proj.cpu
-		if (proj.sdkCPU.startsWith("hybrid-")) {
-			proj.sdkCPU = proj.sdkCPU.substring("hybrid-".length())
-		}
-		// Build using the MIPS SDK for native projects
-		if (proj.cpu == 'native' || proj.cpu == 'x86') {
+		if (proj.architecture == "mips") {
+			proj.sdkCPU = proj.architecture
+		} else if (proj.sdkCPU == "mips-hybrid" || proj.sdkCPU == "mips-purecap") {
+			proj.sdkCPU = "cheri128"
+		} else {
+			// Build using the MIPS SDK for native projects
+			// Should be find since we don't use anything except the compiler
 			proj.sdkCPU = 'mips'
 		}
 	}
@@ -252,10 +291,10 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 	// env.SDK_CPU = proj.sdkCPU
 
 	// echo("env before =${env}")
-	withEnv(["CPU=${proj.cpu}", "SDK_CPU=${proj.sdkCPU}"]) {
+	withEnv(["CPU=${proj.cpu}", "SDK_CPU=${proj.sdkCPU}", "CHERIBUILD_ARCH=${proj.architecture}"]) {
 		// echo("env in block=${env}")
 		if (!proj.uniqueId) {
-			proj.uniqueId = "${env.JOB_NAME}/${proj.target}/${proj.cpu}"
+			proj.uniqueId = "${env.JOB_NAME}/${proj.architecture}"
 			if (proj.nodeLabel)
 				proj.uniqueId += "/${proj.nodeLabel}"
 			while (CheribuildProjectParams.uniqueIDs.containsKey(proj.uniqueId.toString())) {
@@ -269,6 +308,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 		try {
 			runCheribuildImplWithEnv(proj)
 		} catch (e) {
+			e.printStackTrace()
 			echo("Marking current build as failed!")
 			currentBuild.result = 'FAILURE'
 			throw e
@@ -301,7 +341,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 	}
 	stage("Checkout") {
 		if (!proj.skipScm) {
-			echo "Target CPU: ${proj.cpu}, SDK CPU: ${proj.sdkCPU}, output: ${proj.tarballName}"
+			echo "Target arch: ${proj.architecture}, SDK CPU: ${proj.sdkCPU}, output: ${proj.tarballName}"
 			// def sdkImage = docker.image("ctsrd/cheri-sdk-${proj.sdkCPU}:latest")
 			// sdkImage.pull() // make sure we have the latest available from Docker Hub
 			runCallback(proj, proj.beforeSCM)
@@ -321,7 +361,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			echo("Checked out cheribuild: ${x}")
 		}
 	}
-	if(env.CHANGE_ID) {
+	if(env.hasProperty('CHANGE_ID')) {
 		try {
 			pullRequest.createStatus(status: 'pending',
 					context: proj.gitHubStatusContext,
@@ -341,19 +381,19 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			}
 			// now copy all the artifacts
 			if (proj.needsFullCheriSDK) {
-				fetchCheriSDK(target: proj.target, cpu: proj.cpu, compilerOnly: proj.sdkCompilerOnly, buildOS: proj.buildOS, capTableABI: proj.capTableABI, extraCheribuildArgs: proj.extraArgs)
+				fetchCheriSDK(target: proj.target, cpu: proj.sdkCPU, compilerOnly: proj.sdkCompilerOnly, buildOS: proj.buildOS, capTableABI: proj.capTableABI, extraCheribuildArgs: proj.extraArgs)
 			}
 			echo 'WORKSPACE after checkout:'
 			sh 'ls -la'
 		}
 	}
-	def buildSuffix = proj.stageSuffix ? proj.stageSuffix : " for ${proj.cpu}"
+	def buildSuffix = proj.stageSuffix ? proj.stageSuffix : " for ${proj.architecture}"
 	def buildStage = proj.buildStage ? proj.buildStage : "Build ${proj.target} ${buildSuffix}"
 	stage(buildStage) {
 		build(proj, buildSuffix)
 	}
 	if (proj.testScript || proj.runTests) {
-		def testSuffix = proj.stageSuffix ? proj.stageSuffix : " for ${proj.cpu}"
+		def testSuffix = proj.stageSuffix ? proj.stageSuffix : " for ${proj.architecture}"
 		stage("Run ${proj.target} tests ${testSuffix}") {
 			runTests(proj, testSuffix)
 		}
@@ -420,6 +460,11 @@ def runCheribuild(Map args) {
 
 // This is what gets called from jenkins
 def call(Map args) {
+	List targetSuffixes = args.get('targetSuffixes', [''])
+	targetSuffixes.each { suffix ->
+		Map newMap = args + [target: args.get('target', 'target must be set!') + "-${suffix}"]
+		echo("newMap=${newMap}")
+	}
 	// just call the real method here so that I can run the tests
 	// the problem is that if I invoke call I get endless recursion
 	try {

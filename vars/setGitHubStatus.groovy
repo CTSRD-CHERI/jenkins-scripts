@@ -67,6 +67,8 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result,
     ]
     // Require GIT_URL to exist (must not be null)
     def gitHubRepoURL = args.GIT_URL
+    def githubAccount = null
+    def githubRepo = null
     if (gitHubRepoURL) {
         if (gitHubRepoURL.endsWith('.git')) {
             gitHubRepoURL = gitHubRepoURL.substring(0, gitHubRepoURL.lastIndexOf('.git'))
@@ -76,8 +78,8 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result,
             error("WRONG REPO URL: ${gitHubRepoURL}");
             return;
         }
-        def githubAccount = githubParts[-2]
-        def githubRepo = githubParts[-1]
+        githubAccount = githubParts[-2]
+        githubRepo = githubParts[-1]
         if (githubAccount != "CTSRD-CHERI") {
             echo("Not setting status on CTSRD-CHERI repo?? ${gitHubRepoURL}")
         }
@@ -101,7 +103,7 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result,
         options['commitShaSource'] = [$class: "ManuallyEnteredShaSource", sha: gitHubCommitSHA]
         newGitHubStatusSetterArgs['sha'] = gitHubCommitSHA
     }
-    if (gitHubCommitSHA && env.CHANGE_ID) {
+    if (gitHubCommitSHA && env.hasProperty('CHANGE_ID')) {
         echo("Not setting commit status on ${gitHubCommitSHA} since we are building a PR (${env.CHANGE_ID})")
     }
     echo("GitHub notifier options = ${newGitHubStatusSetterArgs}")

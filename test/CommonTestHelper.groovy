@@ -21,20 +21,20 @@ class CommonTestHelper {
         }
     }
 
-    static def withEnvInterceptor = { list, closure ->
-        oldEnv = binding.getVariable("env")
-        newEnv = oldEnv.clone()
-        list.forEach {
-            parts = it.split('=')
-            assert (parts.length == 2)
-            newEnv[parts[0]] = parts[1]
-            // println("env[${parts[0]}] = ${parts[1]}")
-        }
-        binding.setVariable("env", newEnv)
-        def res = closure.call()
-        binding.setVariable("env", oldEnv)
-        return res
-    }
+//    static def withEnvInterceptor = { list, closure ->
+//        oldEnv = binding.getVariable("env")
+//        newEnv = oldEnv.clone()
+//        list.forEach {
+//            parts = it.split('=')
+//            assert (parts.length == 2)
+//            newEnv[parts[0]] = parts[1]
+//            // println("env[${parts[0]}] = ${parts[1]}")
+//        }
+//        binding.setVariable("env", newEnv)
+//        def res = closure.call()
+//        binding.setVariable("env", oldEnv)
+//        return res
+//    }
 
     static void setupTestEnv(TemporaryFolder folder, BasePipelineTest test) {
         def helper = test.helper
@@ -52,6 +52,14 @@ class CommonTestHelper {
         helper.registerAllowedMethod("disableResume", [], null)
         helper.registerAllowedMethod("githubPush", [], null)
         helper.registerAllowedMethod("culprits", [], null)
+        helper.registerAllowedMethod("catchError", [Closure.class], { Closure c ->
+            try {
+                c.delegate = delegate
+                helper.callClosure(c)
+            } catch (ignored) {
+                binding.getVariable('currentBuild').result = 'FAILURE'
+            }
+        })
         helper.registerAllowedMethod("brokenBuildSuspects", [], null)
         helper.registerAllowedMethod("brokenTestsSuspects", [], null)
         helper.registerAllowedMethod("requestor", [], null)
@@ -65,7 +73,17 @@ class CommonTestHelper {
         helper.registerAllowedMethod("durabilityHint", [String.class], null)
         helper.registerAllowedMethod("timestamps", [Closure.class], null)
         helper.registerAllowedMethod("ansiColor", [String.class, Closure.class], null)
-        helper.registerAllowedMethod("withEnv", [List.class, Closure.class], withEnvInterceptor)
+        helper.registerAllowedMethod('withEnv', [List, Closure], { List list, Closure c ->
+            list.each {
+                //def env = helper.get
+                def item = it.split('=')
+                assert item.size() == 2, "withEnv list does not look right: ${list.toString()}"
+                test.addEnvVar(item[0], item[1])
+                c.delegate = binding
+                c.call()
+            }
+        })
+        // helper.registerAllowedMethod("withEnv", [List.class, Closure.class], withEnvInterceptor)
         helper.registerAllowedMethod("copyArtifacts", [Map.class], /*{ args -> println "Copying $args" }*/null)
         helper.registerAllowedMethod("warnings", [Map.class], /*{ args -> println "Copying $args" }*/null)
         helper.registerAllowedMethod("recordIssues", [Map.class], /*{ args -> println "Copying $args" }*/null)
@@ -74,6 +92,11 @@ class CommonTestHelper {
         helper.registerAllowedMethod("git", [String.class], { url -> [GIT_URL:url, GIT_COMMIT:"abcdef123456"] })
         helper.registerAllowedMethod("git", [Map.class], { args -> [GIT_URL:args.url, GIT_COMMIT:"abcdef123456"] })
         helper.registerAllowedMethod("githubNotify", [Map.class], null)
+        //FIXME: work around bug
+        helper.registerAllowedMethod("dir", [String, Closure]) { String path, Closure c ->
+            c.delegate = delegate
+            helper.callClosure(c)
+        }
         // binding.getVariable('env').JOB_NAME = "CHERI1-TEST-pipeline"
         // helper.registerAllowedMethod("cheriHardwareTest", [Map.class], { args -> cheriHardwareTest.call(args) })
         def scmBranch = "feature_test"
@@ -90,7 +113,6 @@ class CommonTestHelper {
                                                             url          : 'github.com/lesfurets/JenkinsPipelineUnit.git'
                                                     ]]
         ]) */
-
         binding.setVariable('env', [NODE_LABELS: "linux14 linux docker"])
         binding.setVariable('currentBuild', [result: 'SUCCESS', currentResult: 'SUCCESS', durationString: "XXX seconds"])
     }
