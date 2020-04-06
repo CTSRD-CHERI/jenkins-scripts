@@ -71,20 +71,20 @@ def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result,
         if (gitHubRepoURL.endsWith('.git')) {
             gitHubRepoURL = gitHubRepoURL.substring(0, gitHubRepoURL.lastIndexOf('.git'))
         }
+        def githubParts = gitHubRepoURL.split('/');
+        if (githubParts.size() < 2) {
+            error("WRONG REPO URL: ${gitHubRepoURL}");
+            return;
+        }
+        def githubAccount = githubParts[-2]
+        def githubRepo = githubParts[-1]
+        if (githubAccount != "CTSRD-CHERI") {
+            echo("Not setting status on CTSRD-CHERI repo?? ${gitHubRepoURL}")
+        }
         options['reposSource'] = [$class: "ManuallyEnteredRepositorySource", url: gitHubRepoURL]
     } else {
         echo("GIT_URL not set, args = ${args}")
         error("GIT_URL")
-    }
-    def githubParts = gitHubRepoURL.split('/');
-    if (githubParts.size() < 2) {
-        error("WRONG REPO URL: ${gitHubRepoURL}");
-        return;
-    }
-    def githubAccount = githubParts[-2]
-    def githubRepo = githubParts[-1]
-    if (githubAccount != "CTSRD-CHERI") {
-        echo("Not setting status on CTSRD-CHERI repo?? ${gitHubRepoURL}")
     }
     def newGitHubStatusSetterArgs = [
             credentialsId: 'ctsrd-jenkins-new-github-api-key',
