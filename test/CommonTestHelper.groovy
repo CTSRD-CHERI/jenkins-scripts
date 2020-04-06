@@ -52,6 +52,14 @@ class CommonTestHelper {
         helper.registerAllowedMethod("disableResume", [], null)
         helper.registerAllowedMethod("githubPush", [], null)
         helper.registerAllowedMethod("culprits", [], null)
+        helper.registerAllowedMethod("catchError", [Closure.class], { Closure c ->
+            try {
+                c.delegate = delegate
+                helper.callClosure(c)
+            } catch (ignored) {
+                updateBuildStatus('FAILURE')
+            }
+        })
         helper.registerAllowedMethod("brokenBuildSuspects", [], null)
         helper.registerAllowedMethod("brokenTestsSuspects", [], null)
         helper.registerAllowedMethod("requestor", [], null)
