@@ -390,7 +390,8 @@ CheribuildProjectParams parseParams(Map args) {
 	if (!params.architecture) {
 		if (params.target.endsWith('-mips-nocheri')) {
 			params.architecture = 'mips'
-		} else if (params.target.endsWith('-mips-hybrid')) {
+		// Handle old hybrid target names
+		} else if (params.target.endsWith('-mips-hybrid') || params.target in ['cheribsd-cheri', 'disk-image-cheri', 'run-cheri']) {
 			params.architecture = 'mips-hybrid'
 		} else if (params.target.endsWith('-mips-purecap') || params.target.endsWith('-cheri')) {
 			params.architecture = 'mips-purecap'
