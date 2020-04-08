@@ -155,7 +155,10 @@ def runTestsImpl(CheribuildProjectParams proj, String testImageArgs, String qemu
 def runTests(CheribuildProjectParams proj, String testSuffix) {
 	updatePRStatus(proj, "Running tests for PR...")
 	// Custom test script only support for CheriBSD
-	if (proj.testScript && !(proj.architecture in ["mips-nocheri", "mips-hybrid", "mips-purecap"])) {
+	if (proj.testScript &&
+			proj.architecture != "mips-nocheri" &&
+			proj.architecture != "mips-hybrid" &&
+			proj.architecture != "mips-purecap") {
 		error("Running tests for target ${proj.architecture} not supported yet")
 	}
 
@@ -171,7 +174,7 @@ def runTests(CheribuildProjectParams proj, String testSuffix) {
 		kernelPrefix = 'freebsd'
 		imagePrefix = 'freebsd'
 		qemuCommand = 'qemu-system-cheri128'
-	} else if (test_cpu in ['mips-hybrid', 'mips-purecap']) {
+	} else if (test_cpu == 'mips-hybrid' || test_cpu == 'mips-purecap') {
 		kernelPrefix = test_cpu == 'cheribsd128-cheri128'
 		imagePrefix = test_cpu == 'cheribsd128'
 		qemuCommand = "qemu-system-cheri128"
@@ -393,7 +396,8 @@ CheribuildProjectParams parseParams(Map args) {
 		if (params.target.endsWith('-mips-nocheri')) {
 			params.architecture = 'mips'
 		// Handle old hybrid target names
-		} else if (params.target.endsWith('-mips-hybrid') || params.target in ['cheribsd-cheri', 'disk-image-cheri', 'run-cheri']) {
+		} else if (params.target.endsWith('-mips-hybrid') || params.target == 'cheribsd-cheri'
+				|| params.target == 'disk-image-cheri' || params.target == 'run-cheri') {
 			params.architecture = 'mips-hybrid'
 		} else if (params.target.endsWith('-mips-purecap') || params.target.endsWith('-cheri')) {
 			params.architecture = 'mips-purecap'
