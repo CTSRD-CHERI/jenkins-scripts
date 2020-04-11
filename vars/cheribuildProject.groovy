@@ -12,6 +12,7 @@ class CheribuildProjectParams implements Serializable {
 	String nodeLabel = "linux" // if non-null allocate a new jenkins node using node()
 	String uniqueId = null // Used for the github/analysis ID
 	String buildOS = null // Used when copying artifacts (the label parameter for those other jobs)
+	String result = 'SUCCESS'  // For github status updates
 	boolean setGitHubStatus = true
 	String gitHubStatusContext = null
 
@@ -274,21 +275,16 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 		} catch (e) {
 			e.printStackTrace()
 			echo("Marking current build as failed!")
-			currentBuild.result = 'FAILURE'
+			proj.result = 'FAILURE'
 			throw e
 		} finally {
-			def status = "${currentBuild.currentResult}".toLowerCase()
-			if (!updatePRStatus(proj, "${proj.stageSuffix}: Done.", status) && proj.setGitHubStatus) {
+			if (!updatePRStatus(proj, "${proj.stageSuffix}: Done.", proj.result.toLowerCase()) && proj.setGitHubStatus) {
 				def message = "${currentBuild.projectName}"
 				if (proj.nodeLabel) {
 					message += " ${proj.nodeLabel}"
 				}
-				echo("Setting github status after build")
-				if (currentBuild.result == null)
-					currentBuild.result = currentBuild.currentResult
-				// Avoid setting an error flag on github commits just because binutils is still broken
-				echo("final result = ${currentBuild.result} currentResult = ${currentBuild.currentResult}")
-				setGitHubStatus(proj.gitInfo + [message: message, context: proj.gitHubStatusContext])
+				echo("Setting github status after build\nproj.result=${proj.result}, currentBuild.result=${currentBuild.result} currentBuild.currentResult=${currentBuild.currentResult}")
+				setGitHubStatus(proj.gitInfo + [message: message, result: proj.result, context: proj.gitHubStatusContext])
 			}
 		}
 	}
