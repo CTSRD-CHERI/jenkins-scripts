@@ -60,6 +60,15 @@ class CommonTestHelper {
                 binding.getVariable('currentBuild').result = 'FAILURE'
             }
         })
+        helper.registerAllowedMethod("warnError", [String, Closure], { String s, Closure c ->
+            try {
+                c.delegate = delegate
+                helper.callClosure(c)
+            } catch (ignored) {
+                echo("Warning: ${s}")
+                binding.getVariable('currentBuild').result = 'UNSTABLE'
+            }
+        })
         helper.registerAllowedMethod("brokenBuildSuspects", [], null)
         helper.registerAllowedMethod("brokenTestsSuspects", [], null)
         helper.registerAllowedMethod("copyArtifactPermission", [String], null)
