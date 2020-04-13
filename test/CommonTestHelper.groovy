@@ -115,7 +115,7 @@ class CommonTestHelper {
                                                             url          : 'github.com/lesfurets/JenkinsPipelineUnit.git'
                                                     ]]
         ]) */
-        binding.setVariable('env', [NODE_LABELS: "linux14 linux docker", UNIT_TEST: "true"])
+        binding.setVariable('env', [NODE_LABELS: "linux14 linux docker", UNIT_TEST: "true", CHANGE_ID: null])
         // Override the default helper
         helper.registerAllowedMethod("error", [String], { msg ->
             echo(msg)

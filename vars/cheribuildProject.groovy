@@ -70,10 +70,11 @@ class CheribuildProjectParams implements Serializable {
 // FIXME: all this jenkins transforming stuff is ugly... how can I access the jenkins globals?
 
 boolean updatePRStatus(CheribuildProjectParams proj, String message, String status = null) {
-	if (!env.hasProperty('CHANGE_ID')) {
+	if (!env.CHANGE_ID) {
 		return false
 	}
 	try {
+		echo("Pull request: ${env.CHANGE_ID}")
 		if (!status) {
 			if (currentBuild.result)
 				status = "${currentBuild.result}".toLowerCase();
@@ -85,7 +86,8 @@ boolean updatePRStatus(CheribuildProjectParams proj, String message, String stat
 				description: message,
 				targetUrl: "${env.JOB_URL}")
 	} catch (e) {
-		error("Failed to set PR status ${e}")
+		error("Failed to set PR status: ${e}")
+		return false;
 	}
 	return true;
 }
@@ -321,16 +323,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			echo("Checked out cheribuild: ${x}")
 		}
 	}
-	if(env.hasProperty('CHANGE_ID')) {
-		try {
-			pullRequest.createStatus(status: 'pending',
-					context: proj.gitHubStatusContext,
-					description: "About to build PR#${pullRequest.number}...",
-					targetUrl: "${env.JOB_URL}")
-		} catch (e) {
-			error("Failed to set PR status ${e}")
-		}
-	} else if (!updatePRStatus(proj, "About to build PR...") && proj.setGitHubStatus) {
+	if (!updatePRStatus(proj, "About to build PR...", 'pending') && proj.setGitHubStatus) {
 		setGitHubStatus(proj.gitInfo + [message: "${currentBuild.projectName} building ...", context: proj.gitHubStatusContext])
 	}
 	if (!proj.skipArtifacts) {
