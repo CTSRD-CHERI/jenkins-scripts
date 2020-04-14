@@ -84,7 +84,7 @@ boolean updatePRStatus(CheribuildProjectParams proj, String message, String stat
 		pullRequest.createStatus(status: status,
 				context: proj.gitHubStatusContext,
 				description: message,
-				targetUrl: "${env.JOB_URL}")
+				targetUrl: "${env.RUN_DISPLAY_URL}") // TODO: CHANGE_URL? or BUILD_URL?
 	} catch (e) {
 		error("Failed to set PR status: ${e}")
 		return false;
