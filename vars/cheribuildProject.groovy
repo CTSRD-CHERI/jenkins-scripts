@@ -3,6 +3,7 @@ import groovy.json.*
 class CheribuildProjectParams implements Serializable {
 	List targetArchitectures = []
 	boolean skipScm = false
+	boolean deleteAfterBuild = true
 	// Whether to skip the clone/copy artifacts stage (useful if there are multiple cheribuild invocations)
 	boolean skipArtifacts = false
 	// Whether to skip the copy artifacts stage (useful if there are multiple cheribuild invocations)
@@ -454,6 +455,10 @@ def runCheribuild(CheribuildProjectParams params) {
 	if (params.nodeLabel != null) {
 		node(params.nodeLabel) {
 			runCheribuildImpl(params)
+			// If we allocated a new node, clean up by default:
+			if (params.deleteAfterBuild) {
+				deleteDir()
+			}
 		}
 	} else {
 		runCheribuildImpl(params)
