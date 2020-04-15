@@ -454,10 +454,13 @@ def runCheribuild(CheribuildProjectParams params) {
 	// def project = new CheribuildProjectParams(target: args.name, *:args)
 	if (params.nodeLabel != null) {
 		node(params.nodeLabel) {
-			runCheribuildImpl(params)
-			// If we allocated a new node, clean up by default:
-			if (params.deleteAfterBuild) {
-				deleteDir()
+			try {
+				runCheribuildImpl(params)
+			} finally {
+				// If we allocated a new node, clean up by default:
+				if (params.deleteAfterBuild) {
+					deleteDir()
+				}
 			}
 		}
 	} else {
