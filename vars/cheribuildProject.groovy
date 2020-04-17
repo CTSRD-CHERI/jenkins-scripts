@@ -436,6 +436,13 @@ CheribuildProjectParams parseParams(Map args) {
 	if (!params.tarballName) {
 		params.tarballName = "${params.target}-${params.architecture}.tar.xz"
 	}
+	// Skip archiving and tarballs for pull requests:
+	if (env.CHANGE_ID) {
+		params.skipArchiving = true
+		params.skipTarball = true
+		params.deleteAfterBuild = true
+	}
+
 	return params
 }
 
