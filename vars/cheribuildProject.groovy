@@ -420,8 +420,15 @@ CheribuildProjectParams parseParams(Map args) {
 		error("Could not infer 'architecture' parameter from target (${params.target}) or cpu (${params.cpu})")
 	}
 	// Canonicalize architecure:
-	if (params.architecture == 'cheri' || params.architecture == 'purecap')
+	if (params.architecture == 'purecap')
 		params.architecture = 'mips-purecap'
+	if (params.architecture == 'cheri') {
+		if (params.target.startsWith('cheribsd') || params.target.startsWith('disk-image') || params.target.startsWith('run')) {
+			params.architecture = 'mips-hybrid'
+		} else {
+			params.architecture = 'mips-purecap'
+		}
+	}
 	if (!params.tarballName) {
 		params.tarballName = "${params.target}-${params.architecture}.tar.xz"
 	}
