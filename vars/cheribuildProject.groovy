@@ -341,13 +341,13 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			sh 'ls -la'
 		}
 	}
-	def buildSuffix = proj.stageSuffix ? proj.stageSuffix : " for ${proj.architecture}"
+	def buildSuffix = proj.stageSuffix ? proj.stageSuffix : ""
 	def buildStage = proj.buildStage ? proj.buildStage : "Build ${proj.target} ${buildSuffix}"
 	stage(buildStage) {
 		build(proj, buildSuffix)
 	}
 	if (proj.testScript || proj.runTests) {
-		def testSuffix = proj.stageSuffix ? proj.stageSuffix : " for ${proj.architecture}"
+		def testSuffix = proj.stageSuffix ? proj.stageSuffix : ""
 		stage("Run ${proj.target} tests ${testSuffix}") {
 			runTests(proj, testSuffix)
 		}
@@ -408,8 +408,10 @@ CheribuildProjectParams parseParams(Map args) {
 	if (!params.architecture) {
 		if (params.cpu == 'mips') {
 			params.architecture = 'mips-nocheri'
-		} else if (params.cpu == 'cheri128' || params.cpu == 'hybrid-128') {
-			params.architecture = 'mips-nocheri'
+		} else if (params.cpu == 'hybrid-128') {
+			params.architecture = 'mips-hybrid'
+		} else if (params.cpu == 'cheri128') {
+			params.architecture = 'mips-purecap'
 		} else if (params.cpu == 'native') {
 			params.architecture = 'native'
 		}

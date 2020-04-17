@@ -11,7 +11,7 @@ properties([disableConcurrentBuilds(),
 
 jobs = [:]
 
-["mips-nocheri", "cheri", "purecap", "riscv64", "riscv64-hybrid", "riscv64-purecap", "native"].each { suffix ->
+["mips-nocheri", "mips-hybrid", "purecap", "riscv64", "riscv64-hybrid", "riscv64-purecap", "native"].each { suffix ->
     String name = "cheribsd-${suffix}"
     jobs[name] = { ->
         cheribuildProject(target: "cheribsd", architecture: suffix,
