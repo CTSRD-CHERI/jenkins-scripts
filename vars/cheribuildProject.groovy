@@ -117,27 +117,34 @@ def build(CheribuildProjectParams proj, String stageSuffix) {
 	// No docker yet
 	// sdkImage.inside('-u 0') {
 	ansiColor('xterm') {
-		sh "rm -fv ${proj.tarballName}; pwd"
-		runCallback(proj, proj.beforeBuildInDocker)
+		def buildStage = proj.buildStage ? proj.buildStage : "Build ${proj.target} ${stageSuffix}"
 		def cheribuildArgs = "${proj.target} --cpu ${proj.cpu} ${proj.extraArgs} --cap-table-abi=${proj.capTableABI}"
-		def cheribuildCmd = "./cheribuild/jenkins-cheri-build.py --build ${cheribuildArgs}"
-		// By default do a full rebuild. This can be disabled by passing incrementalBuild: true
-		if (proj.incrementalBuild) {
-			sh label: "Building with cheribuild (incremental) ${stageSuffix}", script: "${cheribuildCmd} --no-clean || (echo 'incremental build failed!' && ${cheribuildCmd})"
-		} else {
-			sh label: "Building with cheribuild ${stageSuffix}", script:  "${cheribuildCmd}"
+		stage(buildStage) {
+			sh "rm -fv ${proj.tarballName}; pwd"
+			runCallback(proj, proj.beforeBuildInDocker)
+			def cheribuildCmd = "./cheribuild/jenkins-cheri-build.py --build ${cheribuildArgs}"
+			// By default do a full rebuild. This can be disabled by passing incrementalBuild: true
+			if (proj.incrementalBuild) {
+				sh label: "Building with cheribuild (incremental) ${stageSuffix}", script: "${cheribuildCmd} --no-clean || (echo 'incremental build failed!' && ${cheribuildCmd})"
+			} else {
+				sh label: "Building with cheribuild ${stageSuffix}", script: "${cheribuildCmd}"
+			}
 		}
 		if (!proj.skipTarball) {
-			runCallback(proj, proj.beforeTarball)
-			sh label: "Create tarball ${stageSuffix}", script: "./cheribuild/jenkins-cheri-build.py --tarball --tarball-name ${proj.tarballName} --no-build ${cheribuildArgs}"
-			sh label: "List tarball  ${stageSuffix}", script: 'ls -lah; ls -lah tarball || true'
+			stage("Creating tarball for ${proj.target}") {
+				runCallback(proj, proj.beforeTarball)
+				sh label: "Create tarball ${stageSuffix}", script: "./cheribuild/jenkins-cheri-build.py --tarball --tarball-name ${proj.tarballName} --no-build ${cheribuildArgs}"
+				sh label: "List tarball  ${stageSuffix}", script: 'ls -lah; ls -lah tarball || true'
+			}
 		}
 		runCallback(proj, proj.afterBuildInDocker)
 	}
 	// }
 	if (!proj.skipTarball && !proj.skipArchiving) {
-		updatePRStatus(proj, "Archiving artifacts...")
-		archiveArtifacts allowEmptyArchive: false, artifacts: proj.tarballName, fingerprint: true, onlyIfSuccessful: true
+		stage("Archiving artificats for ${proj.target}") {
+			updatePRStatus(proj, "Archiving artifacts...")
+			archiveArtifacts allowEmptyArchive: false, artifacts: proj.tarballName, fingerprint: true, onlyIfSuccessful: true
+		}
 	}
 	runCallback(proj, proj.afterBuild)
 }
@@ -342,10 +349,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 		}
 	}
 	def buildSuffix = proj.stageSuffix ? proj.stageSuffix : ""
-	def buildStage = proj.buildStage ? proj.buildStage : "Build ${proj.target} ${buildSuffix}"
-	stage(buildStage) {
-		build(proj, buildSuffix)
-	}
+	build(proj, buildSuffix)
 	if (proj.testScript || proj.runTests) {
 		def testSuffix = proj.stageSuffix ? proj.stageSuffix : ""
 		stage("Run ${proj.target} tests ${testSuffix}") {
