@@ -4,6 +4,7 @@ class FetchCheriSDKArgs implements Serializable {
     String cpu = "cheri128"
     boolean compilerOnly = false
     String buildOS
+    String llvmBranch = null
     String capTableABI = "pcrel"
     String extraCheribuildArgs = ""
     String cheribuildPath = '$WORKSPACE/cheribuild'
@@ -32,9 +33,26 @@ def call(Map args) {
         }
     }
 
+    // Infer the correct LLVM for this project (dev/devel builds with LLVM dev)
+    if (!params.llvmBranch) {
+        def gitBranch = 'master'
+        if (env.CHANGE_ID) {
+            gitBranch = env.CHANGE_TARGET
+        } else if (env.BRANCH_NAME) {
+            gitBranch = env.BRANCH_NAME
+        }
+        if (gitBranch == 'dev' || gitBranch == 'devel')
+            params.llvmBranch = 'dev'
+        else
+            params.llvmBranch = 'master'
+    }
     // stage("Setup SDK for ${params.target} (${params.cpu})") {
         // now copy all the artifacts
-        copyArtifacts projectName: "CLANG-LLVM-master/CPU=cheri-multi,label=${params.buildOS}", flatten: true, optional: false, filter: 'cheri-multi-master-clang-llvm.tar.xz', selector: lastSuccessful()
+        def llvmJob = "CLANG-LLVM-master/CPU=cheri-multi,label=${params.buildOS}"
+        if (params.llvmBranch != 'master') {
+            llvmJob = "CLANG-LLVM-experimental/CPU=cheri-multi,LLVM_BRANCH=${params.llvmBranch},label=${params.buildOS}"
+        }
+        copyArtifacts projectName: llvmJob, flatten: true, optional: false, filter: "cheri-multi-${params.llvmBranch}-clang-llvm.tar.xz", selector: lastSuccessful()
         if (!params.compilerOnly) {
             // copyArtifacts projectName: "CHERI-SDK/ALLOC=jemalloc,ISA=vanilla,SDK_CPU=${proj.sdkCPU},label=${proj.label}", filter: '*-sdk.tar.xz', fingerprintArtifacts: true
             def cheribsdProject = null

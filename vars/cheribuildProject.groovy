@@ -30,6 +30,7 @@ class CheribuildProjectParams implements Serializable {
 	String capTableABI = 'pcrel'
 	boolean needsFullCheriSDK = true
 	boolean sdkCompilerOnly = false
+	String llvmBranch = null  // Git branch of LLVM to use for building. When NULL infer from branch name.
 	// otherwise pull just a specific set of artifacts
 	List artifactsToCopy = [] // List of (job:filter) for artifacts which need copying
 	String sdkArchive  // The artifact name filter for the sdk job
@@ -342,7 +343,10 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			}
 			// now copy all the artifacts
 			if (proj.needsFullCheriSDK) {
-				fetchCheriSDK(target: proj.target, cpu: proj.sdkCPU, compilerOnly: proj.sdkCompilerOnly, buildOS: proj.buildOS, capTableABI: proj.capTableABI, extraCheribuildArgs: proj.extraArgs)
+				fetchCheriSDK(target: proj.target, cpu: proj.sdkCPU,
+						      compilerOnly: proj.sdkCompilerOnly, llvmBranch: proj.llvmBranch,
+							  buildOS: proj.buildOS, capTableABI: proj.capTableABI,
+							  extraCheribuildArgs: proj.extraArgs)
 			}
 			echo 'WORKSPACE after checkout:'
 			sh 'ls -la'
