@@ -55,6 +55,10 @@ def call(Map args) {
             llvmJob = "CLANG-LLVM-experimental/CPU=cheri-multi,LLVM_BRANCH=${params.llvmBranch},label=${params.buildOS}"
         }
         copyArtifacts projectName: llvmJob, flatten: true, optional: false, filter: "cheri-multi-${params.llvmBranch}-clang-llvm.tar.xz", selector: lastSuccessful()
+        if (params.llvmBranch != 'master') {
+            // Rename the archive to the expected name
+            sh "mv -vf \"cheri-multi-${params.llvmBranch}-clang-llvm.tar.xz\" cheri-multi-master-clang-llvm.tar.xz"
+        }
         if (!params.compilerOnly) {
             // copyArtifacts projectName: "CHERI-SDK/ALLOC=jemalloc,ISA=vanilla,SDK_CPU=${proj.sdkCPU},label=${proj.label}", filter: '*-sdk.tar.xz', fingerprintArtifacts: true
             def cheribsdProject = null
