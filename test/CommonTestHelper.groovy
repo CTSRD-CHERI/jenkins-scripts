@@ -80,7 +80,7 @@ class CommonTestHelper {
         helper.registerAllowedMethod("deleteDir", [], null)
         helper.registerAllowedMethod("checkout", [Map.class], { args -> [GIT_URL:args.url, GIT_COMMIT:"abcdef123456"] })
         helper.registerAllowedMethod("compressBuildLog", [], null)
-        helper.registerAllowedMethod("junit", [Map.class], null)
+        helper.registerAllowedMethod("junit", [Map.class], { args -> [totalCount: 1234, failCount: 1, skipCount: 5, passCount: 1229] })
         helper.registerAllowedMethod("durabilityHint", [String.class], null)
         helper.registerAllowedMethod("timestamps", [Closure.class], null)
         helper.registerAllowedMethod("ansiColor", [String.class, Closure.class], null)

@@ -1,5 +1,9 @@
 import groovy.json.*
 
+enum BuildResult {
+	PENDING, SUCCESS, UNSTABLE, FAILURE
+}
+
 class CheribuildProjectParams implements Serializable {
 	List targetArchitectures = []
 	boolean skipScm = false
@@ -13,7 +17,19 @@ class CheribuildProjectParams implements Serializable {
 	String nodeLabel = "linux" // if non-null allocate a new jenkins node using node()
 	String uniqueId = null // Used for the github/analysis ID
 	String buildOS = null // Used when copying artifacts (the label parameter for those other jobs)
-	String result = 'SUCCESS'  // For github status updates
+	BuildResult _result = BuildResult.PENDING // For github status updates
+	String getResult() { return _result; }
+	void setResult(BuildResult newResult) {
+		if (newResult.ordinal() < _result.ordinal()) {
+			echo("Cannot change build result from ${_result} to ${newResult}")
+			throw new IllegalArgumentException("Cannot change build result from ${_result} to ${newResult}")
+		} else {
+			_result = newResult
+		}
+	}
+	void setResult(String newResult) {
+		setResult(newResult as BuildResult)
+	}
 	boolean setGitHubStatus = true
 	String gitHubStatusContext = null
 
@@ -76,13 +92,10 @@ boolean updatePRStatus(CheribuildProjectParams proj, String message, String stat
 		return false
 	}
 	try {
-		echo("Pull request: ${env.CHANGE_ID}")
 		if (!status) {
-			if (currentBuild.result)
-				status = "${currentBuild.result}".toLowerCase();
-			else
-				status = 'pending'
+			status = proj._result.name().toLowerCase()
 		}
+		echo("Setting PR${env.CHANGE_ID} status: ${status} for ${proj.gitHubStatusContext}: ${message}")
 		pullRequest.createStatus(status: status,
 				context: proj.gitHubStatusContext,
 				description: message,
@@ -283,13 +296,20 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 		}
 		try {
 			runCheribuildImplWithEnv(proj)
+			// If the status has not been changed (i.e. to UNSTABLE/FAILURE) it means we SUCCEEDED
+			if (proj.result == 'PENDING')
+				proj.result = 'SUCCESS'
 		} catch (e) {
 			e.printStackTrace()
-			echo("Marking current build as failed!")
+			echo("Marking current build as failed! (${e}:${e.getMessage()})")
 			proj.result = 'FAILURE'
 			throw e
 		} finally {
-			if (!updatePRStatus(proj, "${proj.stageSuffix}: Done.", proj.result.toLowerCase()) && proj.setGitHubStatus) {
+			if (proj.result == 'PENDING') {
+				echo("RESULT IS STILL PENDING! Something is very wrong...")
+				proj.result = 'FAILURE'
+			}
+			if (!updatePRStatus(proj, "${proj.stageSuffix}: Done.") && proj.setGitHubStatus) {
 				def message = "${currentBuild.projectName}"
 				if (proj.nodeLabel) {
 					message += " ${proj.nodeLabel}"
