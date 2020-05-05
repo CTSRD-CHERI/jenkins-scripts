@@ -3,6 +3,7 @@ import org.junit.rules.TemporaryFolder
 
 import static com.lesfurets.jenkins.unit.global.lib.LibraryConfiguration.library
 import static com.lesfurets.jenkins.unit.global.lib.LocalSource.localSource
+import static com.lesfurets.jenkins.unit.global.lib.ProjectSource.projectSource
 
 class CommonTestHelper {
     static class DockerMock {
@@ -44,6 +45,7 @@ class CommonTestHelper {
                 .allowOverride(true)
                 .implicit(false)
                 .targetPath(folder.root.getAbsolutePath())
+                // FIXME: doesn't work .retriever(projectSource('vars'))
                 .retriever(localSource('build/libs/'))
                 .build()
         helper.registerSharedLibrary(library)
@@ -84,17 +86,6 @@ class CommonTestHelper {
         helper.registerAllowedMethod("durabilityHint", [String.class], null)
         helper.registerAllowedMethod("timestamps", [Closure.class], null)
         helper.registerAllowedMethod("ansiColor", [String.class, Closure.class], null)
-        helper.registerAllowedMethod('withEnv', [List, Closure], { List list, Closure c ->
-            list.each {
-                //def env = helper.get
-                def item = it.split('=')
-                assert item.size() == 2, "withEnv list does not look right: ${list.toString()}"
-                test.addEnvVar(item[0], item[1])
-                c.delegate = binding
-                c.call()
-            }
-        })
-        // helper.registerAllowedMethod("withEnv", [List.class, Closure.class], withEnvInterceptor)
         helper.registerAllowedMethod("copyArtifacts", [Map.class], /*{ args -> println "Copying $args" }*/null)
         helper.registerAllowedMethod("warnings", [Map.class], /*{ args -> println "Copying $args" }*/null)
         helper.registerAllowedMethod("recordIssues", [Map.class], /*{ args -> println "Copying $args" }*/null)
