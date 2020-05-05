@@ -9,114 +9,112 @@ Note: The GitHubCommitStatusSetter requires that the Git Server is defined under
 [...]
  */
 
-
-def setGitHubStatusBasedOnCurrentResult(Map args, String context, String result, String message, boolean includeTestStatus) {
-    if (result == null)
-        result = currentBuild.result
-    if (result == null)
-        result = 'PENDING'
-    echo("ARGS=${args}")
-    // Strip the -pipeline from JOB_NAME
-    String prettyJobName = "${env.JOB_NAME}".replace('-pipeline/', '/')
-    if (message == null || message.isEmpty()) {
-        String description = currentBuild.displayName
-        if (description == null)
-            description = ''
-        message = "${prettyJobName}: ${description}"
-    }
-    if (includeTestStatus)
-        message += getTestStatus()
-
-    if (currentBuild.durationString && result != 'PENDING') {
-        message += "\n${result} after ${currentBuild.durationString}"
-        if (' and counting' in message) {
-            message = message.replace(' and counting', '')
-        }
-    }
-    // Map from Jenkins states to GitHub states: https://github.com/github-api/github-api/blob/master/src/main/java/org/kohsuke/github/GHCommitState.java
-    if (result == 'UNSTABLE')
-        result = 'FAILURE';
-
-    // Maximum github message length is 140
-    if (message.length() > 140) {
-        echo("Truncating ${message} to 140 chars")
-        message = message.substring(0, 139)
-    }
-
-    String githubCommitStatusContext = context ? context : "jenkins/${prettyJobName}"
-    // Remove the unnecessary -pipeline suffix
-    if (githubCommitStatusContext.indexOf('-pipeline/') > 0)
-        githubCommitStatusContext = githubCommitStatusContext.replace('-pipeline/', '/')
-
-    Map options = [$class            : 'GitHubCommitStatusSetter',
-                   errorHandlers     : [[$class: 'ShallowAnyErrorHandler']],
-                   // errorHandlers: [[$class: "ChangingBuildStatusErrorHandler", result: "UNSTABLE"]],
-                   contextSource     : [$class: "ManuallyEnteredCommitContextSource", context: githubCommitStatusContext],
-                   /*statusResultSource: [
-                           $class: 'ConditionalStatusResultSource',
-                           results: [
-                                   [$class: 'BetterThanOrEqualBuildResult', result: 'SUCCESS', state: 'SUCCESS', message: message],
-                                   [$class: 'BetterThanOrEqualBuildResult', result: 'UNSTABLE', state: 'FAILURE', message: message],
-                                   [$class: 'BetterThanOrEqualBuildResult', result: 'FAILURE', state: 'FAILURE', message: message],
-                                   [$class: 'AnyBuildResult', message: 'Something went wrong', state: 'ERROR']
-                           ]
-                   ]*/
-                   statusResultSource: [$class : 'ConditionalStatusResultSource',
-                                        results: [[$class: 'AnyBuildResult', message: message, state: result]]]
-                   // statusResultSource: [ $class: "ConditionalStatusResultSource", results: [[$class: "AnyBuildResult", message: message, state: 'SUCCESS']] ]
-    ]
-    // Require GIT_URL to exist (must not be null)
-    def gitHubRepoURL = args.GIT_URL
-    def githubAccount = null
-    def githubRepo = null
-    if (gitHubRepoURL) {
-        if (gitHubRepoURL.endsWith('.git')) {
-            gitHubRepoURL = gitHubRepoURL.substring(0, gitHubRepoURL.lastIndexOf('.git'))
-        }
-        def githubParts = gitHubRepoURL.split('/');
-        if (githubParts.size() < 2) {
-            error("WRONG REPO URL: ${gitHubRepoURL}");
-            return;
-        }
-        githubAccount = githubParts[-2]
-        githubRepo = githubParts[-1]
-        if (githubAccount != "CTSRD-CHERI") {
-            echo("Not setting status on CTSRD-CHERI repo?? ${gitHubRepoURL}")
-        }
-        options['reposSource'] = [$class: "ManuallyEnteredRepositorySource", url: gitHubRepoURL]
-    } else {
-        echo("GIT_URL not set, args = ${args}")
-        error("GIT_URL")
-    }
-    def newGitHubStatusSetterArgs = [
-            credentialsId: 'ctsrd-jenkins-new-github-api-key',
-            context: githubCommitStatusContext,
-            description: message,
-            status: result,
-            // sha: 'aaaaa',
-            repo: githubRepo,
-            account: githubAccount,
-    ]
-    // TODO: githubNotify account: 'CTSRD-CHERI', context: 'ci/foo', credentialsId: 'ctsrd-jenkins-new-github-api-key', description: 'Building', repo: 'qemu', sha: 'aaaaa', status: 'PENDING', targetUrl: ''
-    def gitHubCommitSHA = args?.GIT_COMMIT
-    if (gitHubCommitSHA) {
-        options['commitShaSource'] = [$class: "ManuallyEnteredShaSource", sha: gitHubCommitSHA]
-        newGitHubStatusSetterArgs['sha'] = gitHubCommitSHA
-    }
-    if (gitHubCommitSHA && env.CHANGE_ID) {
-        echo("Not setting commit status on ${gitHubCommitSHA} since we are building a PR (${env.CHANGE_ID})")
-    }
-    echo("GitHub notifier options = ${newGitHubStatusSetterArgs}")
-    githubNotify(newGitHubStatusSetterArgs)
-    echo("Done setting github status")
-    // echo("GitHub notifier options = ${options}")
-    // old: step(options)
-}
-
 def call(Map<String, String> args = [:]) {
     try {
-        setGitHubStatusBasedOnCurrentResult(args, args.get('context', null),
-                args.get('result', null), args.get('message', ''), args.get('includeTestStatus', true))
+        String context = args.get('context', null)
+        String result = args.get('result', null)
+        String message = args.get('message', '')
+        boolean includeTestStatus = args.get('includeTestStatus', true)
+        if (result == null)
+            result = currentBuild.result
+        if (result == null)
+            result = 'PENDING'
+        echo("ARGS=${args}")
+        // Strip the -pipeline from JOB_NAME
+        String prettyJobName = "${env.JOB_NAME}".replace('-pipeline/', '/')
+        if (message == null || message.isEmpty()) {
+            String description = currentBuild.displayName
+            if (description == null)
+                description = ''
+            message = "${prettyJobName}: ${description}"
+        }
+        if (includeTestStatus)
+            message += getTestStatus()
+
+        if (currentBuild.durationString && result != 'PENDING') {
+            message += "\n${result} after ${currentBuild.durationString}"
+            if (' and counting' in message) {
+                message = message.replace(' and counting', '')
+            }
+        }
+        // Map from Jenkins states to GitHub states: https://github.com/github-api/github-api/blob/master/src/main/java/org/kohsuke/github/GHCommitState.java
+        if (result == 'UNSTABLE')
+            result = 'FAILURE';
+
+        // Maximum github message length is 140
+        if (message.length() > 140) {
+            echo("Truncating ${message} to 140 chars")
+            message = message.substring(0, 139)
+        }
+
+        String githubCommitStatusContext = context ? context : "jenkins/${prettyJobName}"
+        // Remove the unnecessary -pipeline suffix
+        if (githubCommitStatusContext.indexOf('-pipeline/') > 0)
+            githubCommitStatusContext = githubCommitStatusContext.replace('-pipeline/', '/')
+
+        Map options = [$class            : 'GitHubCommitStatusSetter',
+                       errorHandlers     : [[$class: 'ShallowAnyErrorHandler']],
+                       // errorHandlers: [[$class: "ChangingBuildStatusErrorHandler", result: "UNSTABLE"]],
+                       contextSource     : [$class: "ManuallyEnteredCommitContextSource", context: githubCommitStatusContext],
+                       /*statusResultSource: [
+                               $class: 'ConditionalStatusResultSource',
+                               results: [
+                                       [$class: 'BetterThanOrEqualBuildResult', result: 'SUCCESS', state: 'SUCCESS', message: message],
+                                       [$class: 'BetterThanOrEqualBuildResult', result: 'UNSTABLE', state: 'FAILURE', message: message],
+                                       [$class: 'BetterThanOrEqualBuildResult', result: 'FAILURE', state: 'FAILURE', message: message],
+                                       [$class: 'AnyBuildResult', message: 'Something went wrong', state: 'ERROR']
+                               ]
+                       ]*/
+                       statusResultSource: [$class : 'ConditionalStatusResultSource',
+                                            results: [[$class: 'AnyBuildResult', message: message, state: result]]]
+                       // statusResultSource: [ $class: "ConditionalStatusResultSource", results: [[$class: "AnyBuildResult", message: message, state: 'SUCCESS']] ]
+        ]
+        // Require GIT_URL to exist (must not be null)
+        def gitHubRepoURL = args.GIT_URL
+        def githubAccount = null
+        def githubRepo = null
+        if (gitHubRepoURL) {
+            if (gitHubRepoURL.endsWith('.git')) {
+                gitHubRepoURL = gitHubRepoURL.substring(0, gitHubRepoURL.lastIndexOf('.git'))
+            }
+            def githubParts = gitHubRepoURL.split('/');
+            if (githubParts.size() < 2) {
+                error("WRONG REPO URL: ${gitHubRepoURL}");
+                return;
+            }
+            githubAccount = githubParts[-2]
+            githubRepo = githubParts[-1]
+            if (githubAccount != "CTSRD-CHERI") {
+                echo("Not setting status on CTSRD-CHERI repo?? ${gitHubRepoURL}")
+            }
+            options['reposSource'] = [$class: "ManuallyEnteredRepositorySource", url: gitHubRepoURL]
+        } else {
+            echo("GIT_URL not set, args = ${args}")
+            error("GIT_URL")
+        }
+        def newGitHubStatusSetterArgs = [
+                credentialsId: 'ctsrd-jenkins-new-github-api-key',
+                context: githubCommitStatusContext,
+                description: message,
+                status: result,
+                // sha: 'aaaaa',
+                repo: githubRepo,
+                account: githubAccount,
+        ]
+        // TODO: githubNotify account: 'CTSRD-CHERI', context: 'ci/foo', credentialsId: 'ctsrd-jenkins-new-github-api-key', description: 'Building', repo: 'qemu', sha: 'aaaaa', status: 'PENDING', targetUrl: ''
+        def gitHubCommitSHA = args?.GIT_COMMIT
+        if (gitHubCommitSHA) {
+            options['commitShaSource'] = [$class: "ManuallyEnteredShaSource", sha: gitHubCommitSHA]
+            newGitHubStatusSetterArgs['sha'] = gitHubCommitSHA
+        }
+        if (gitHubCommitSHA && env.CHANGE_ID) {
+            echo("Not setting commit status on ${gitHubCommitSHA} since we are building a PR (${env.CHANGE_ID})")
+        }
+        echo("GitHub notifier options = ${newGitHubStatusSetterArgs}")
+        githubNotify(newGitHubStatusSetterArgs)
+        echo("Done setting github status")
+        // echo("GitHub notifier options = ${options}")
+        // old: step(options)
     } catch (e) {
         e.printStackTrace()
         echo("Could not set GitHub commit status: ${e}")
