@@ -94,6 +94,11 @@ boolean updatePRStatus(CheribuildProjectParams proj, String message, String stat
 	try {
 		if (!status) {
 			status = proj._result.name().toLowerCase()
+			if (status == 'failure') {
+				status = 'error'
+			} else if (status == 'unstable') {
+				status = 'failure'
+			}
 		}
 		echo("Setting PR${env.CHANGE_ID} status: ${status} for ${proj.gitHubStatusContext}: ${message}")
 		pullRequest.createStatus(status: status,
