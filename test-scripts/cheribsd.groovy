@@ -43,12 +43,12 @@ find cheribsd-test-results
                 params.statusUnstable("Test script returned ${exitCode}, failed tests: ${summary.failCount}")
             }
             if (summary.passCount == 0 || summary.totalCount == 0) {
-                params.statusUnstable("No tests successful?")
+                params.statusFailure("No tests successful?")
             }
         } else {
             // No cheritest, just check that that the test script exited successfully
             if (exitCode != 0) {
-                params.statusFailure("Test script returned ${exitCode}")
+                params.statusUnstable("Test script returned ${exitCode}")
             }
         }
 
@@ -57,9 +57,6 @@ find cheribsd-test-results
 
 ["mips-nocheri", "mips-hybrid", "mips-purecap", "riscv64", "riscv64-hybrid", "riscv64-purecap", "native"].each { suffix ->
     String name = "cheribsd-${suffix}"
-    if (!suffix.startsWith("mips-")) {
-        return // reduce load on jenkins while testing this PR
-    }
     jobs[name] = { ->
         cheribuildProject(target: "cheribsd-${suffix}", architecture: suffix,
                 extraArgs: '--cheribsd/build-options=-s --cheribsd/no-debug-info --keep-install-dir --install-prefix=/rootfs --cheribsd/build-tests',
@@ -83,7 +80,4 @@ if (runParallel) {
         echo("RUNNING ${key}")
         value();
     }
-}
-if (env.CHANGE_ID) {
-    deleteDir() // Avoid using up all Jenkins disk space
 }
