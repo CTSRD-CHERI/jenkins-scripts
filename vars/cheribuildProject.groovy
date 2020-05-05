@@ -312,24 +312,23 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 		try {
 			runCheribuildImplWithEnv(proj)
 			// If the status has not been changed (i.e. to UNSTABLE/FAILURE) it means we SUCCEEDED
-			if (proj.result == 'PENDING')
-				proj.result = 'SUCCESS'
+			if (proj._result == BuildResult.PENDING)
+				proj._result = BuildResult.SUCCESS
 		} catch (e) {
 			// e.printStackTrace()
 			echo("Marking current build as failed! (${e}:${e.getMessage()})")
-			proj.result = 'FAILURE'
+			proj._result = BuildResult.FAILURE
 			throw e
 		} finally {
-			if (proj.result == 'PENDING') {
-				echo("RESULT IS STILL PENDING! Something is very wrong...")
-				proj.result = 'FAILURE'
+			echo("Setting github status after build\nproj.result=${proj.result}, currentBuild.result=${currentBuild.result} currentBuild.currentResult=${currentBuild.currentResult}")
+			if (proj._result == BuildResult.PENDING) {
+				proj.statusFailure("RESULT IS STILL PENDING! Something is very wrong...")
 			}
 			if (!updatePRStatus(proj, "Finished (${proj.result}).") && proj.setGitHubStatus) {
 				def message = "${currentBuild.projectName}"
 				if (proj.nodeLabel) {
 					message += " ${proj.nodeLabel}"
 				}
-				echo("Setting github status after build\nproj.result=${proj.result}, currentBuild.result=${currentBuild.result} currentBuild.currentResult=${currentBuild.currentResult}")
 				setGitHubStatus(proj.gitInfo + [message: message, result: proj.result, context: proj.gitHubStatusContext])
 			}
 		}
