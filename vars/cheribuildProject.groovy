@@ -324,7 +324,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 				echo("RESULT IS STILL PENDING! Something is very wrong...")
 				proj.result = 'FAILURE'
 			}
-			if (!updatePRStatus(proj, "${proj.stageSuffix}: Done.") && proj.setGitHubStatus) {
+			if (!updatePRStatus(proj, "Finished (${proj.result}).") && proj.setGitHubStatus) {
 				def message = "${currentBuild.projectName}"
 				if (proj.nodeLabel) {
 					message += " ${proj.nodeLabel}"
