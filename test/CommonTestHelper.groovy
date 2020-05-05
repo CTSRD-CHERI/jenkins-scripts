@@ -118,11 +118,11 @@ class CommonTestHelper {
         binding.setVariable('env', [NODE_LABELS: "linux14 linux docker", UNIT_TEST: "true", CHANGE_ID: null])
         // Override the default helper
         helper.registerAllowedMethod("error", [String], { msg ->
-            echo(msg)
+            println(msg)
             binding.getVariable('currentBuild').result = 'FAILURE'
-            throw new RuntimeException(msg)
+            // throw new RuntimeException(msg)
         })
-
+        helper.registerAllowedMethod("unstable", [String.class], null)
         // binding.setVariable('currentBuild', [result: null, currentResult: 'SUCCESS', durationString: "XXX seconds"])
     }
 

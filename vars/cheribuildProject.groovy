@@ -30,6 +30,16 @@ class CheribuildProjectParams implements Serializable {
 	void setResult(String newResult) {
 		setResult(newResult as BuildResult)
 	}
+	Closure callGlobalUnstable = null;
+	void statusUnstable(String message) {
+		setResult(BuildResult.UNSTABLE)
+		this.callGlobalUnstable(message)
+	}
+	Closure callGlobalError = null;
+	void statusFailure(String message) {
+		setResult(BuildResult.FAILURE)
+		this.callGlobalError(message)
+	}
 	boolean setGitHubStatus = true
 	String gitHubStatusContext = null
 
@@ -305,7 +315,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			if (proj.result == 'PENDING')
 				proj.result = 'SUCCESS'
 		} catch (e) {
-			e.printStackTrace()
+			// e.printStackTrace()
 			echo("Marking current build as failed! (${e}:${e.getMessage()})")
 			proj.result = 'FAILURE'
 			throw e
@@ -471,6 +481,10 @@ CheribuildProjectParams parseParams(Map args) {
 		params.skipTarball = true
 		params.deleteAfterBuild = true
 	}
+
+	// WTF. Work around weird scoping rules. Groovy really sucks...
+	params.callGlobalUnstable = { String message -> unstable(message) }
+	params.callGlobalError = { String message -> error(message) }
 
 	return params
 }
