@@ -489,6 +489,20 @@ CheribuildProjectParams parseParams(Map args) {
 }
 
 def runCheribuild(CheribuildProjectParams params) {
+	if (env.CHANGE_ID) {
+		def labels = pullRequest.labels
+		echo("PR Labels: ${labels}")
+		if (labels.any { it -> it == "NO-JENKINS"}) {
+			echo("Skipping Jenkins for pull request since NO-JENKINS label was set")
+			return
+		}
+		// Depends on https://github.com/jenkinsci/pipeline-github-plugin/pull/77
+		if (pullRequest?.draft) {
+			echo("Skipping Jenkins for pull request since draft flag was set")
+			return
+		}
+	}
+
 	try {
 		properties([
 				pipelineTriggers([
