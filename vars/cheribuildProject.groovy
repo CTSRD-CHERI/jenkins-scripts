@@ -497,10 +497,10 @@ def runCheribuild(CheribuildProjectParams params) {
 			return
 		}
 		// Depends on https://github.com/jenkinsci/pipeline-github-plugin/pull/77
-		if (pullRequest?.draft) {
-			echo("Skipping Jenkins for pull request since draft flag was set")
-			return
-		}
+		// if (pullRequest.draft) {
+		//	echo("Skipping Jenkins for pull request since draft flag was set")
+		//	return
+		//}
 		if (!pullRequest.mergeable) {
 			error("Pull request is not mergeable!")
 			return
