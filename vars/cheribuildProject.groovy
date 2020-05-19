@@ -489,47 +489,40 @@ CheribuildProjectParams parseParams(Map args) {
 }
 
 def runCheribuild(CheribuildProjectParams params) {
-	if (env.CHANGE_ID) {
-		def labels = pullRequest.labels
-		echo("PR Labels: ${labels}")
-		if (labels.any { it -> it == 'NO-JENKINS'}) {
-			echo("Skipping Jenkins for pull request since NO-JENKINS label was set")
-			return
+	stage ("Set job properties") {
+		if (env.CHANGE_ID) {
+			def labels = pullRequest.labels
+			echo("PR Labels: ${labels}")
+			if (labels.any { it -> it == 'NO-JENKINS' }) {
+				echo("Skipping Jenkins for pull request since NO-JENKINS label was set")
+				return
+			}
+			// Depends on https://github.com/jenkinsci/pipeline-github-plugin/pull/77
+			// if (pullRequest.draft) {
+			//	echo("Skipping Jenkins for pull request since draft flag was set")
+			//	return
+			//}
+			if (!pullRequest.mergeable) {
+				error("Pull request is not mergeable!")
+				return
+			}
 		}
-		// Depends on https://github.com/jenkinsci/pipeline-github-plugin/pull/77
-		// if (pullRequest.draft) {
-		//	echo("Skipping Jenkins for pull request since draft flag was set")
-		//	return
-		//}
-		if (!pullRequest.mergeable) {
-			error("Pull request is not mergeable!")
-			return
+		try {
+			properties([pipelineTriggers([githubPush()]),
+						disableConcurrentBuilds(),
+						disableResume(),
+						copyArtifactPermission('*'), // New in copyartifacts version 1.41
+						// [$class: 'CopyArtifactPermissionProperty', projectNames: '*'],
+			])
+		} catch (e) {
+			echo("FAILED TO SET GitHub push trigger in Jenkinsfile: ${e}")
 		}
-
-	}
-
-	try {
-		properties([
-				pipelineTriggers([
-						githubPush()
-				]),
-				disableConcurrentBuilds(),
-				disableResume(),
-				copyArtifactPermission('*'), // New in copyartifacts version 1.41
-				// [$class: 'CopyArtifactPermissionProperty', projectNames: '*'],
-		])
-	} catch(e) {
-		echo("FAILED TO SET GitHub push trigger in Jenkinsfile: ${e}")
-	}
-	try {
-		// Github
-		properties([
-				pipelineTriggers([
-						issueCommentTrigger('.*test this please.*')
-				])
-		])
-	}  catch(e) {
-		echo("FAILED TO SET GitHub issue trigger in Jenkinsfile: ${e}")
+		try {
+			// Github
+			properties([pipelineTriggers([issueCommentTrigger('.*test this please.*')])])
+		} catch (e) {
+			echo("FAILED TO SET GitHub issue trigger in Jenkinsfile: ${e}")
+		}
 	}
 	// The map spread operator is not supported in Jenkins
 	// def project = new CheribuildProjectParams(target: args.name, *:args)
