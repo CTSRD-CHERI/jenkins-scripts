@@ -493,7 +493,7 @@ def runCheribuild(CheribuildProjectParams params) {
 		if (env.CHANGE_ID) {
 			def labels = pullRequest.labels
 			echo("PR Labels: ${labels}")
-			if (labels.any { it -> it == 'NO-JENKINS' }) {
+			if (labels.any { l -> l == 'NO-JENKINS' }) {
 				echo("Skipping Jenkins for pull request since NO-JENKINS label was set")
 				return
 			}
