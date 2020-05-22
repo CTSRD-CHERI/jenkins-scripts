@@ -53,6 +53,23 @@ def call(Map<String, String> args = [:]) {
     echo "PR HEAD commit already built: ${alreadyRun}"
     if (alreadyRun && !hasAlwaysRunLabel) {
         echo "This pull request has already been tested, trigger a build manually or add the '${alwaysRunLabel}' label to re-test against latest HEAD"
+        echo "PR COMMENTS:"
+        def jenkinsComment = null
+        lock('github_issue_comment_lock') {
+            // some block
+            for (comment in pullRequest.comments) {
+                // echo "Author: ${comment.user}, Comment: ${comment.body}"
+                if (comment.body.contains('pull request has already been tested')) {
+                    jenkinsComment = comment
+                }
+            }
+            if (jenkinsComment == null) {
+                def comment = pullRequest.comment("Changes to base branch detected, but this pull request has already been tested.\n To re-test against latest HEAD trigger a build manually or add the '${alwaysRunLabel}' label.")
+                // pullRequest.editComment(comment.id, 'Live long and prosper.')
+            } else {
+                echo "Jenkins comment already exists: ${jenkinsComment.user}, Comment: ${jenkinsComment.body}"
+            }
+        }
         return false
     }
     echo "Will build PR!"
