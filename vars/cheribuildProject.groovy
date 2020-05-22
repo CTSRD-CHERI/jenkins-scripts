@@ -491,12 +491,30 @@ CheribuildProjectParams parseParams(Map args) {
 def runCheribuild(CheribuildProjectParams params) {
 	stage ("Set job properties") {
 		if (env.CHANGE_ID) {
+			echo "STATUSES:"
+			for (status in pullRequest.statuses) {
+				echo "HEAD Status: Commit: ${pullRequest.head}, State: ${status.state}, Context: ${status.context}, URL: ${status.targetUrl}"
+				// If the latest commit already has some statuses
+				if (status.state != 'pending')
+					alreadyRun = true
+			}
+			// TODO: allow a comment to override the automatic skipping?
+//			echo "PR COMMENTS:"
+//			for (comment in pullRequest.comments) {
+//				echo "Author: ${comment.user}, Comment: ${comment.body}"
+//			}
 			def labels = pullRequest.labels
 			echo("PR Labels: ${labels}")
 			if (labels.any { l -> l == 'NO-JENKINS' }) {
 				echo("Skipping Jenkins for pull request since NO-JENKINS label was set")
 				return
 			}
+			boolean runOnEveryPush = labels.any { l -> l == 'ALWAYS-JENKINS' }
+			if (alreadyRun && !runOnEveryPush) {
+				echo "This pull request has already been tested, trigger a build manually or add the \"ALWAYS-JENKINS\" label to re-test against latest HEAD"
+				return
+			}
+
 			// Depends on https://github.com/jenkinsci/pipeline-github-plugin/pull/77
 			// if (pullRequest.draft) {
 			//	echo("Skipping Jenkins for pull request since draft flag was set")
