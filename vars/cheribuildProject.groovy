@@ -493,10 +493,12 @@ def runCheribuild(CheribuildProjectParams params) {
 		if (env.CHANGE_ID) {
 			echo "STATUSES:"
 			for (status in pullRequest.statuses) {
-				echo "HEAD Status: Commit: ${pullRequest.head}, State: ${status.state}, Context: ${status.context}, URL: ${status.targetUrl}"
-				// If the latest commit already has some statuses
-				if (status.state != 'pending')
+				// If the latest commit already has some statuses don't build again
+				if (status.state != 'pending') {
+					echo "Found non-pending status for HEAD commit: ${pullRequest.head}, State: ${status.state}, Context: ${status.context}, URL: ${status.targetUrl}"
 					alreadyRun = true
+					break
+				}
 			}
 			// TODO: allow a comment to override the automatic skipping?
 //			echo "PR COMMENTS:"
