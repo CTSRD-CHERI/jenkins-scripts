@@ -491,6 +491,7 @@ CheribuildProjectParams parseParams(Map args) {
 def runCheribuild(CheribuildProjectParams params) {
 	stage ("Set job properties") {
 		if (env.CHANGE_ID) {
+			echo "BUILD CAUSES: ${currentBuild.buildCauses}"
 			echo "STATUSES:"
 			for (status in pullRequest.statuses) {
 				// If the latest commit already has some statuses don't build again
