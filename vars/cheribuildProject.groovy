@@ -309,6 +309,10 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 		if (!proj.gitHubStatusContext) {
 			proj.gitHubStatusContext = "jenkins/status/${proj.uniqueId}"
 		}
+		if (env.CHANGE_ID && !shouldBuildPullRequest(context: proj.gitHubStatusContext)) {
+			echo "Not building this pull request."
+			return
+		}
 		try {
 			runCheribuildImplWithEnv(proj)
 			// If the status has not been changed (i.e. to UNSTABLE/FAILURE) it means we SUCCEEDED
@@ -490,10 +494,6 @@ CheribuildProjectParams parseParams(Map args) {
 
 def runCheribuild(CheribuildProjectParams params) {
 	stage ("Set job properties") {
-		if (env.CHANGE_ID && !shouldBuildPullRequest()) {
-			echo "Not building this pull request."
-			return
-		}
 		try {
 			properties([pipelineTriggers([githubPush()]),
 						disableConcurrentBuilds(),

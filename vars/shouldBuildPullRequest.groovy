@@ -1,4 +1,11 @@
-def call(Map<String, String> args = [:]) {
+// Work around stupid variable scoping
+class ShouldBuildResult {
+    static Map<String, Boolean> shouldBuild = [:]
+    static String ANY_CONTEXT = 'ANY_CONTEXT'
+}
+
+def callImpl(String expectedContext) {
+    assert ShouldBuildResult.shouldBuild.getOrDefault(expectedContext, null) == null
     if (!env.CHANGE_ID) {
         echo("WARNING: This should only be called for pull requests")
         return true
@@ -40,9 +47,11 @@ def call(Map<String, String> args = [:]) {
     }
     echo "Checking if PR has already been built:"
     boolean alreadyRun = false
-    for (status in pullRequest.statuses) {
+    def latestCommit = pullRequest.commits.last()
+    echo("Latest Commit in PR: ${latestCommit.sha}")
+    for (status in latestCommit.statuses) {
         // If the latest commit already has some statuses don't build again
-        if (status.state != 'pending') {
+        if (status.state != 'pending' && (status.context == expectedContext || expectedContext == ShouldBuildResult.ANY_CONTEXT)) {
             if (!alreadyRun) {
                 echo "Found non-pending status for HEAD commit: ${pullRequest.head}, State: ${status.state}, Context: ${status.context}, URL: ${status.targetUrl}"
             }
@@ -74,4 +83,25 @@ def call(Map<String, String> args = [:]) {
     }
     echo "Will build PR!"
     return true;
+}
+
+def call(Map<String, String> args = [:]) {
+    String context = args.getOrDefault('context', ShouldBuildResult.ANY_CONTEXT)
+    if (!ShouldBuildResult.shouldBuild.isEmpty()) {
+        if (context == ShouldBuildResult.ANY_CONTEXT) {
+            boolean result = ShouldBuildResult.shouldBuild.any { k, v ->
+                echo("checking cached should build result: ${k} = ${v}")
+                return v == 'yes'
+            }
+            ShouldBuildResult.shouldBuild[context] = result ? 'yes' : 'no'
+            echo("Using cached should build result: ${result}")
+            return result
+        } else if (ShouldBuildResult.shouldBuild.get(context) != null) {
+            echo("Using cached should build result: ${ShouldBuildResult.shouldBuild}")
+            return ShouldBuildResult.shouldBuild == 'yes'
+        }
+    }
+    boolean result = callImpl(context)
+    ShouldBuildResult.shouldBuild[context] = result ? 'yes' : 'no'
+    return result
 }
