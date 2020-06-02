@@ -34,8 +34,8 @@ def callImpl(String expectedContext) {
     String alwaysRunLabel = 'ALWAYS-JENKINS'
     boolean hasSkipLabel = false
     boolean hasAlwaysRunLabel = false
-    pullRequest.labels.eachWithIndex { item, label ->
-        echo "PR Label ${index}: ${item}"
+    pullRequest.labels.eachWithIndex { index, label ->
+        echo "PR Label ${index}: ${label}"
         if (label == skipLabel)
             hasSkipLabel = true
         if (label == alwaysRunLabel)
