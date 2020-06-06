@@ -274,7 +274,6 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 		proj.buildOS = inferBuildOS()
 		echo("Inferred build OS: '${proj.buildOS}'")
 	}
-	echo("Inferred build OS: '${proj.buildOS}'")
 
 	// compute sdkCPU from args
 	if (!proj.sdkCPU) {
