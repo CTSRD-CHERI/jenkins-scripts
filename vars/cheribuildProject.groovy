@@ -185,15 +185,19 @@ def build(CheribuildProjectParams proj, String stageSuffix) {
 	runCallback(proj, proj.afterBuild)
 }
 
-def runTestsImpl(CheribuildProjectParams proj, String testImageArgs, String qemuPath, String testSuffix) {
+def runTestsImpl(CheribuildProjectParams proj, String testExtraArgs, String qemuPath, String testSuffix) {
 	ansiColor('xterm') {
 		runCallback(proj, proj.beforeTestsInDocker)
-		if (proj.testScript) {
+		if (proj.testScript && proj.architecture != 'native') {
 			def testCommand = "'export CPU=${proj.cpu}; " + proj.testScript.replaceAll('\'', '\\\'') + "'"
 			echo "Test command = ${testCommand}"
-			sh label: "Running simple test (${testSuffix})", script: "\$WORKSPACE/cheribuild/test-scripts/run_simple_tests.py --qemu-cmd ${qemuPath} ${testImageArgs} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
+			sh label: "Running simple test (${testSuffix})", script: "\$WORKSPACE/cheribuild/test-scripts/run_simple_tests.py --qemu-cmd ${qemuPath} ${testExtraArgs} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
 		} else {
-			sh label: "Running tests with cheribuild ${testSuffix}", script: "\$WORKSPACE/cheribuild/jenkins-cheri-build.py --cpu=${proj.cpu} --test ${proj.target} ${proj.extraArgs} --test-extra-args=\"--qemu-cmd ${qemuPath} ${testImageArgs} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}\""
+
+			String cheribuildTestArgs = (proj.architecture == 'native')
+					? "${testExtraArgs} ${proj.testExtraArgs}"
+					: "--test-extra-args=\"--qemu-cmd ${qemuPath} ${testExtraArgs} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}\""
+			sh label: "Running tests with cheribuild ${testSuffix}", script: "\$WORKSPACE/cheribuild/jenkins-cheri-build.py --cpu=${proj.cpu} --test ${proj.target} ${proj.extraArgs} ${cheribuildTestArgs}"
 		}
 		runCallback(proj, proj.afterTestsInDocker)
 	}
@@ -228,7 +232,7 @@ def runTests(CheribuildProjectParams proj, String testSuffix) {
 	} else {
 		error("FATAL: unsupported arch ${test_cpu}")
 	}
-	def testImageArgs = ''
+	def defaultTestExtraArgs = ''
 	if (test_cpu != "native") {
 		// boot a world with a hybrid userspace (it contains all the necessary shared libs)
 		// There is no need for the binaries to be CHERIABI
@@ -237,7 +241,7 @@ def runTests(CheribuildProjectParams proj, String testSuffix) {
 		if (proj.minimalTestImage) {
 			copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-mfs-root-minimal-cheribuild-kernel.bz2", target: '.', fingerprintArtifacts: false, flatten: true, selector: lastSuccessful()
 			sh "ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-mfs-root-minimal-cheribuild-kernel.bz2 \$WORKSPACE/${test_cpu}-malta64-minimal-kernel.bz2"
-			testImageArgs = "--kernel ${test_cpu}-malta64-minimal-kernel.bz2"
+			defaultTestExtraArgs = "--kernel ${test_cpu}-malta64-minimal-kernel.bz2"
 		} else {
 			copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-full.img.xz", target: '.', fingerprintArtifacts: false, flatten: true, selector: lastSuccessful()
 			copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-kernel.bz2", target: '.', fingerprintArtifacts: false, flatten: true, selector: lastSuccessful()
@@ -245,8 +249,8 @@ def runTests(CheribuildProjectParams proj, String testSuffix) {
 ln -sfn \$WORKSPACE/${imagePrefix}-full.img.xz \$WORKSPACE/${test_cpu}-full.img.xz
 ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/${test_cpu}-malta64-kernel.bz2
 """
-			testImageArgs = "--disk-image \$WORKSPACE/${test_cpu}-full.img.xz"
-			testImageArgs += " --kernel \$WORKSPACE/${test_cpu}-malta64-kernel.bz2 --no-keep-compressed-images"
+			defaultTestExtraArgs = "--disk-image \$WORKSPACE/${test_cpu}-full.img.xz"
+			defaultTestExtraArgs += " --kernel \$WORKSPACE/${test_cpu}-malta64-kernel.bz2 --no-keep-compressed-images"
 		}
 		sh "ls -la \$WORKSPACE"
 	}
@@ -254,13 +258,13 @@ ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/${test_cpu}-m
 	runCallback(proj, proj.beforeTests)
 	if (proj.runTestsInDocker) {
 		// Try to speed it up by extracting to tmpfs
-		testImageArgs += " --extract-images-to /images"
+		defaultTestExtraArgs += " --extract-images-to /images"
 		def cheribsdImage = docker.image("ctsrd/qemu-cheri:latest")
 		cheribsdImage.pull()
 		// Currently the full image is 5.59G
 		cheribsdImage.inside('-u 0 --rm --tmpfs /images:rw,noexec,nosuid,size=7g') {
 			sh 'df -h /images'
-			runTestsImpl(proj, testImageArgs, "/usr/local/bin/${qemuCommand}", testSuffix)
+			runTestsImpl(proj, defaultTestExtraArgs, "/usr/local/bin/${qemuCommand}", testSuffix)
 		}
 	} else {
 		if (test_cpu != "native") {
@@ -268,9 +272,9 @@ ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/${test_cpu}-m
 			dir("qemu-${proj.buildOS}") { deleteDir() }
 			copyArtifacts projectName: "qemu/qemu-cheri", filter: "qemu-${proj.buildOS}/**", target: '.', fingerprintArtifacts: false
 			sh label: 'generate SSH key', script: 'test -e $WORKSPACE/id_ed25519 || ssh-keygen -t ed25519 -N \'\' -f $WORKSPACE/id_ed25519 < /dev/null'
-			testImageArgs += " --ssh-key \$WORKSPACE/id_ed25519.pub"
+			defaultTestExtraArgs += " --ssh-key \$WORKSPACE/id_ed25519.pub"
 		}
-		runTestsImpl(proj, testImageArgs, "\$WORKSPACE/qemu-${proj.buildOS}/bin/${qemuCommand}", testSuffix)
+		runTestsImpl(proj, defaultTestExtraArgs, "\$WORKSPACE/qemu-${proj.buildOS}/bin/${qemuCommand}", testSuffix)
 
 	}
 	runCallback(proj, proj.afterTests)

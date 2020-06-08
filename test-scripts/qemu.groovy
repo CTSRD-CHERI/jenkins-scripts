@@ -34,14 +34,14 @@ node('xenial') {
 	bblRepo["branches"] = [[name: '*/cheri_purecap']]
 	cheribuildProject(target: 'bbl-baremetal-riscv64-purecap',
 			customGitCheckoutDir: 'bbl', scmOverride: bblRepo,
-			buildStage: "Build BBL BIOS",
+			nodeLabel: null, buildStage: "Build BBL BIOS",
 			extraArgs: '--install-prefix=/',
 			sdkCompilerOnly: true, skipTarball: true,
 			afterBuild: { archiveBBL(['freebsd', 'linux']) }
 	)
 
 	def qemuResult = cheribuildProject(target: 'qemu', cpu: 'native', skipArtifacts: true,
-			buildStage: "Build Linux",
+			nodeLabel: null, buildStage: "Build Linux",
 			extraArgs: '--without-sdk --install-prefix=/usr',
 			runTests: /* true */ false,
 			skipTarball: true, afterBuild: archiveQEMU('linux')
@@ -50,18 +50,21 @@ node('xenial') {
 	// Run the baremetal MIPS tests to check we didn't regress
 	cheribuildProject(target: 'cheritest-qemu', architecture: 'native',
 			customGitCheckoutDir: 'cheritest', scmOverride: gitRepoWithLocalReference(url: 'https://github.com/CTSRD-CHERI/cheritest.git'),
-			buildStage: "Run CHERI-MIPS tests",
-			extraArgs: '--install-prefix=/',
+			nodeLabel: null, buildStage: "Run CHERI-MIPS tests",
+			// Ensure we test failures don't prevent creation of the junit file
+			extraArgs: '--install-prefix=/ --cheritest-qemu/no-run-tests-with-build',
+			runTests: true,
 			// Set the status message on the QEMU repo not the cheritest one
 			gitHubStatusArgs: qemuResult.gitInfo,
 			sdkCompilerOnly: true, skipTarball: true,
+			afterTests: {
+				def summary = junit allowEmptyResults: false, keepLongStdio: true, testResults: 'cheritest/nosetests_qemu*.xml'
+				echo("cheritest test summary: ${summary.totalCount}, Failures: ${summary.failCount}, Skipped: ${summary.skipCount}, Passed: ${summary.passCount}")
+				if (summary.passCount == 0 || summary.totalCount == 0) {
+					error("No tests successful?")
+				}
+			}
 	)
-
-	def summary = junit allowEmptyResults: false, keepLongStdio: true, testResults: 'cheritest/nosetests_qemu*.xml'
-	echo("cheritest test summary: ${summary.totalCount}, Failures: ${summary.failCount}, Skipped: ${summary.skipCount}, Passed: ${summary.passCount}")
-	if (summary.passCount == 0 || summary.totalCount == 0) {
-		error("No tests successful?")
-	}
 }
 
 cheribuildProject(target: 'qemu', cpu: 'native', skipArtifacts: true,
