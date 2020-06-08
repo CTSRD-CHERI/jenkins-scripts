@@ -46,6 +46,13 @@ class CheribuildProjectParams implements Serializable {
 	Object scmOverride = null // Set this to use something other than the default scm variable for checkout
 	Object gitInfo = [:]  // This will be set the the git info from the checkout stage
 	Map gitInfoMap = null  // Can be used to pass in a map that will be updated with the git info
+	/// Custom gitInfo object for GitHub status updates (if the status should be
+	/// placed on a different repo than the one we are building
+	Object gitHubStatusArgs = null
+
+	Map getRepoInfoForGitHubStatus() {
+		return gitHubStatusArgs != null ? gitHubStatusArgs : gitInfo
+	}
 
 	/// general/build parameters
 	String target // the cheribuild project name
@@ -297,7 +304,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 	withEnv(["CPU=${proj.cpu}", "SDK_CPU=${proj.sdkCPU}", "CHERIBUILD_ARCH=${proj.architecture}"]) {
 		// echo("env in block=${env}")
 		if (!proj.uniqueId) {
-			proj.uniqueId = "${env.JOB_NAME}/${proj.architecture}"
+			proj.uniqueId = "${env.JOB_NAME}/${proj.target}/${proj.architecture}"
 			if (proj.nodeLabel)
 				proj.uniqueId += "/${proj.nodeLabel}"
 			while (CheribuildProjectParams.uniqueIDs.containsKey(proj.uniqueId.toString())) {
@@ -306,7 +313,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			CheribuildProjectParams.uniqueIDs.put(proj.uniqueId, proj.uniqueId)
 		}
 		if (!proj.gitHubStatusContext) {
-			proj.gitHubStatusContext = "jenkins/status/${proj.uniqueId}"
+			proj.gitHubStatusContext = "jenkins/${proj.uniqueId}"
 		}
 		if (env.CHANGE_ID && !shouldBuildPullRequest(context: proj.gitHubStatusContext)) {
 			echo "Not building this pull request."
@@ -332,7 +339,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 				if (proj.nodeLabel) {
 					message += " ${proj.nodeLabel}"
 				}
-				setGitHubStatus(proj.gitInfo + [message: message, result: proj.result, context: proj.gitHubStatusContext])
+				setGitHubStatus(proj.getRepoInfoForGitHubStatus() + [message: message, result: proj.result, context: proj.gitHubStatusContext])
 			}
 		}
 	}
@@ -370,7 +377,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 		}
 	}
 	if (!updatePRStatus(proj, "About to build PR...", 'pending') && proj.setGitHubStatus) {
-		setGitHubStatus(proj.gitInfo + [message: "${currentBuild.projectName} building ...", context: proj.gitHubStatusContext])
+		setGitHubStatus(proj.getRepoInfoForGitHubStatus() + [message: "${currentBuild.projectName} building ...", context: proj.gitHubStatusContext])
 	}
 	if (!proj.skipArtifacts) {
 		stage("Copying required artifacts") {
