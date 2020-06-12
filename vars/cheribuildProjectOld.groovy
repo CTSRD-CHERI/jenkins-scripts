@@ -147,7 +147,7 @@ def runCheribuild(CheribuildProjectParamsOld proj) {
 
 // This is what gets called from jenkins
 def call(Map args) {
-    def targets = args.get('targets', ['mips', 'cheri256', 'cheri128', 'hybrid-cheri128'])
+    def targets = args.getOrDefault('targets', ['mips', 'cheri256', 'cheri128', 'hybrid-cheri128'])
     def name = args.name
     args.remove('targets')
     args.remove('name')

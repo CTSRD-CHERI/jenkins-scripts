@@ -37,6 +37,24 @@ class CommonTestHelper {
 //        return res
 //    }
 
+    static Map doCheckout(Map args) {
+        String url = args.getOrDefault("url", null)
+        println(args)
+        if (!url) {
+            // Sometimes it's nested in an scm node
+            def scmMap = args.getOrDefault("scm", args)
+            for (config in scmMap.getOrDefault("userRemoteConfigs", [])) {
+                url = config.getOrDefault("url", null)
+                if (url)
+                    break;
+            }
+        }
+        if (!url) {
+            throw new RuntimeException("Could not detect GIT URL ${args}")
+        }
+        return [GIT_URL:"xxx/xxxx.git", GIT_COMMIT:"abcdef123456"]
+    }
+
     static void setupTestEnv(TemporaryFolder folder, BasePipelineTest test) {
         def helper = test.helper
         def binding = test.binding
@@ -80,22 +98,8 @@ class CommonTestHelper {
         helper.registerAllowedMethod("pollSCM", [String.class], null)
         helper.registerAllowedMethod("lastSuccessful", [], null)
         helper.registerAllowedMethod("deleteDir", [], null)
-        helper.registerAllowedMethod("checkout", [Map.class], { args ->
-            String url = args.get("url", null)
-            if (!url) {
-                // Sometimes it's nested in an scm node
-                def scmMap = args.get("scm", args)
-                for (config in scmMap.get("userRemoteConfigs", [])) {
-                    url = config.get("url", null)
-                    if (url)
-                        break;
-                }
-            }
-            if (!url) {
-                throw new RuntimeException("Could not detect GIT URL ${args}")
-            }
-            return [GIT_URL:url, GIT_COMMIT:"abcdef123456"]
-        })
+        helper.registerAllowedMethod("checkout", [Map.class],
+                { args -> doCheckout(args) })
         helper.registerAllowedMethod("compressBuildLog", [], null)
         helper.registerAllowedMethod("junit", [Map.class], { args -> [totalCount: 1234, failCount: 1, skipCount: 5, passCount: 1229] })
         helper.registerAllowedMethod("durabilityHint", [String.class], null)

@@ -11,10 +11,10 @@ Note: The GitHubCommitStatusSetter requires that the Git Server is defined under
 
 def call(Map<String, String> args = [:]) {
     try {
-        String context = args.get('context', null)
-        String result = args.get('result', null)
-        String message = args.get('message', '')
-        boolean includeTestStatus = args.get('includeTestStatus', true)
+        String context = args.getOrDefault('context', null)
+        String result = args.getOrDefault('result', null)
+        String message = args.getOrDefault('message', '')
+        boolean includeTestStatus = args.getOrDefault('includeTestStatus', true)
         if (result == null)
             result = currentBuild.result
         if (result == null)

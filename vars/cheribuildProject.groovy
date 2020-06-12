@@ -224,19 +224,19 @@ def runTests(CheribuildProjectParams proj, String testSuffix) {
 	if (test_cpu == 'mips-nocheri' && proj.useCheriKernelForMipsTests) {
 		test_cpu = 'mips-hybrid'
 	}
-	if (test_cpu == 'mips-nocheri') {
-		kernelPrefix = 'freebsd'
-		imagePrefix = 'freebsd'
-		qemuCommand = 'qemu-system-cheri128'
-	} else if (test_cpu == 'mips-hybrid' || test_cpu == 'mips-purecap') {
-		kernelPrefix = test_cpu == 'cheribsd128-cheri128'
-		imagePrefix = test_cpu == 'cheribsd128'
-		qemuCommand = "qemu-system-cheri128"
-	} else {
-		error("FATAL: unsupported arch ${test_cpu}")
-	}
 	def defaultTestExtraArgs = ''
 	if (test_cpu != "native") {
+		if (test_cpu == 'mips-nocheri') {
+			kernelPrefix = 'freebsd'
+			imagePrefix = 'freebsd'
+			qemuCommand = 'qemu-system-cheri128'
+		} else if (test_cpu == 'mips-hybrid' || test_cpu == 'mips-purecap') {
+			kernelPrefix = test_cpu == 'cheribsd128-cheri128'
+			imagePrefix = test_cpu == 'cheribsd128'
+			qemuCommand = "qemu-system-cheri128"
+		} else {
+			error("FATAL: unsupported arch ${test_cpu}")
+		}
 		// boot a world with a hybrid userspace (it contains all the necessary shared libs)
 		// There is no need for the binaries to be CHERIABI
 		diskImageProjectName = "CheriBSD-allkernels-multi/BASE_ABI=${baseABI},CPU=${test_cpu},ISA=vanilla,label=freebsd"
@@ -545,8 +545,8 @@ def runCheribuild(CheribuildProjectParams params) {
 
 // This is what gets called from jenkins
 def call(Map args) {
-	List targetArchitectures = args.get('targetArchitectures', [''])
-	def failFast = args.get('failFast', true) as Boolean
+	List targetArchitectures = args.getOrDefault('targetArchitectures', [''])
+	def failFast = args.getOrDefault('failFast', true) as Boolean
 	args.remove('failFast')
 	if (targetArchitectures.size() == 1) {
 		return runCheribuild(parseParams(args))
@@ -555,7 +555,7 @@ def call(Map args) {
 	def tasks = [failFast: failFast]
 	targetArchitectures.each { String suffix ->
 		tasks[suffix] = { ->
-			Map newMap = args + [target: args.get('target', 'target must be set!') + "-${suffix}", architecture: "${suffix}"]
+			Map newMap = args + [target: args.getOrDefault('target', 'target must be set!') + "-${suffix}", architecture: "${suffix}"]
 			echo("newMap=${newMap}")
 			// just call the real method here so that I can run the tests
 			// the problem is that if I invoke call I get endless recursion
