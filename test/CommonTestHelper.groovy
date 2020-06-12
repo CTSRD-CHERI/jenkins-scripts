@@ -80,7 +80,22 @@ class CommonTestHelper {
         helper.registerAllowedMethod("pollSCM", [String.class], null)
         helper.registerAllowedMethod("lastSuccessful", [], null)
         helper.registerAllowedMethod("deleteDir", [], null)
-        helper.registerAllowedMethod("checkout", [Map.class], { args -> [GIT_URL:args.url, GIT_COMMIT:"abcdef123456"] })
+        helper.registerAllowedMethod("checkout", [Map.class], { args ->
+            String url = args.get("url", null)
+            if (!url) {
+                // Sometimes it's nested in an scm node
+                def scmMap = args.get("scm", args)
+                for (config in scmMap.get("userRemoteConfigs", [])) {
+                    url = config.get("url", null)
+                    if (url)
+                        break;
+                }
+            }
+            if (!url) {
+                throw new RuntimeException("Could not detect GIT URL ${args}")
+            }
+            return [GIT_URL:url, GIT_COMMIT:"abcdef123456"]
+        })
         helper.registerAllowedMethod("compressBuildLog", [], null)
         helper.registerAllowedMethod("junit", [Map.class], { args -> [totalCount: 1234, failCount: 1, skipCount: 5, passCount: 1229] })
         helper.registerAllowedMethod("durabilityHint", [String.class], null)
@@ -120,7 +135,7 @@ class CommonTestHelper {
         helper.registerAllowedMethod("error", [String], { msg ->
             println(msg)
             binding.getVariable('currentBuild').result = 'FAILURE'
-            // throw new RuntimeException(msg)
+            throw new RuntimeException(msg)
         })
         helper.registerAllowedMethod("unstable", [String.class], null)
         // binding.setVariable('currentBuild', [result: null, currentResult: 'SUCCESS', durationString: "XXX seconds"])
