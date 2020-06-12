@@ -18,7 +18,7 @@ node("linux") {
     }
     def kernelFile = 'cheribsd128-cheri128-malta64-mfs-root-minimal-cheribuild-kernel.bz2'
     stage("copy artifacts") {
-        fetchCheriSDK(cpu: "cheri128", capTableABI: "pcrel")
+        fetchCheriSDK(cpu: "cheri128")
         sh 'rm -rfv $WORKSPACE/*kernel.bz2 qemu-linux'
         copyArtifacts projectName: "qemu/qemu-cheri", filter: "qemu-linux/**", target: '.', fingerprintArtifacts: false, selector: lastSuccessful()
         // There is no need for the binaries to be CHERIABI

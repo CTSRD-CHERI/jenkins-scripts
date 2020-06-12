@@ -5,7 +5,7 @@ class FetchCheriSDKArgs implements Serializable {
     boolean compilerOnly = false
     String buildOS
     String llvmBranch = null
-    String capTableABI = "pcrel"
+    String capTableABI = null
     String extraCheribuildArgs = ""
     String cheribuildPath = '$WORKSPACE/cheribuild'
 }
@@ -64,14 +64,15 @@ def call(Map args) {
             def cheribsdProject = null
             if (params.capTableABI == "legacy") {
                 cheribsdProject = "CHERIBSD-WORLD/CPU=${params.cpu},ISA=legacy"
-            } else if (params.capTableABI == "pcrel") {
+            } else if (params.capTableABI == null || params.capTableABI == "pcrel") {
                 cheribsdProject = "CHERIBSD-WORLD/CPU=${params.cpu},ISA=cap-table-pcrel"
             } else {
                 error("Cannot infer SDK name for capTableABI=${params.capTableABI}")
             }
             copyArtifacts projectName: cheribsdProject, flatten: true, optional: false, filter: '*', selector: lastSuccessful()
             ansiColor('xterm') {
-                sh "env SDK_CPU=${params.cpu} ${params.cheribuildPath}/jenkins-cheri-build.py extract-sdk --cpu ${params.cpu} ${params.extraCheribuildArgs} --cap-table-abi=${params.capTableABI}"
+                extraArgs = params.capTableABI ? "--cap-table-abi=${params.capTableABI}" : ""
+                sh "env SDK_CPU=${params.cpu} ${params.cheribuildPath}/jenkins-cheri-build.py extract-sdk --cpu ${params.cpu} ${params.extraCheribuildArgs} ${extraArgs}"
             }
         }
     // }

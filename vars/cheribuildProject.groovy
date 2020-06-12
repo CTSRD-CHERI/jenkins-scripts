@@ -60,7 +60,7 @@ class CheribuildProjectParams implements Serializable {
 	String cpu = 'default' // --cpu flag for cheribuild (deprecated)
 	String architecture // suffix to be used for all output files, etc.
 	String sdkCPU  // the SDK used to build (e.g. for cheri256-hybrid will use the cheri256 sdk to build MIPS code)
-	String capTableABI = 'pcrel'
+	String capTableABI = null // use whatever the default is
 	boolean needsFullCheriSDK = true
 	boolean sdkCompilerOnly = false
 	String llvmBranch = null  // Git branch of LLVM to use for building. When NULL infer from branch name.
@@ -154,7 +154,10 @@ def build(CheribuildProjectParams proj, String stageSuffix) {
 	// sdkImage.inside('-u 0') {
 	ansiColor('xterm') {
 		def buildStage = proj.buildStage ? proj.buildStage : "Build ${proj.target} ${stageSuffix}"
-		def cheribuildArgs = "${proj.target} --cpu ${proj.cpu} ${proj.extraArgs} --cap-table-abi=${proj.capTableABI}"
+		def cheribuildArgs = "${proj.target} --cpu ${proj.cpu} ${proj.extraArgs}"
+		if (proj.capTableABI) {
+			cheribuildArgs += " --cap-table-abi=${proj.capTableABI}"
+		}
 		stage(buildStage) {
 			sh "rm -fv ${proj.tarballName}; pwd"
 			runCallback(proj, proj.beforeBuildInDocker)
