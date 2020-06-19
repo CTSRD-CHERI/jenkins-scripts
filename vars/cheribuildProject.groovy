@@ -81,6 +81,7 @@ class CheribuildProjectParams implements Serializable {
 	String testScript  // if set this will be invoked by ./boot_cheribsd.py in the test stage. If not tests are skipped
 	String testExtraArgs = ''  // Additional command line options to be passed to ./boot_cheribsd.py
 	boolean runTestsInDocker = false // Seems to be really slow (1 min 44 until init instead of 15 secs)
+	String junitXmlFiles = null // Pattern for junit() step to record test results
 	// FIXME: implement this:
 	// List testOutputs  // if set these files will be scp'd from CheriBSD after running the tests (e.g. JUnit XML files)
 
@@ -281,6 +282,13 @@ ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/${test_cpu}-m
 
 	}
 	runCallback(proj, proj.afterTests)
+	if (proj.junitXmlFiles != null) {
+		def testSummary = junit allowEmptyResults: false, keepLongStdio: true, testResults: proj.junitXmlFiles
+		echo("Test results: ${testSummary.totalCount}, Failures: ${testSummary.failCount}, Skipped: ${testSummary.skipCount}, Passed: ${testSummary.passCount}")
+		if (testSummary.passCount == 0 || testSummary.totalCount == 0) {
+			error("No tests successful?")
+		}
+	}
 }
 
 def runCheribuildImpl(CheribuildProjectParams proj) {

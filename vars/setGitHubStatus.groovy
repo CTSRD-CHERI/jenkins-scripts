@@ -19,7 +19,6 @@ def call(Map<String, String> args = [:]) {
             result = currentBuild.result
         if (result == null)
             result = 'PENDING'
-        echo("ARGS=${args}")
         // Strip the -pipeline from JOB_NAME
         String prettyJobName = "${env.JOB_NAME}".replace('-pipeline/', '/')
         if (message == null || message.isEmpty()) {
