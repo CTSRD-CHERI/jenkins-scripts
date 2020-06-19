@@ -11,7 +11,7 @@ def stuff(Map args) {
 }
 node('linux') {
 stuff(target: 'libcxxrt-baremetal', cpu: 'mips',
-			needsFullCheriSDK: false, // this was already set up in the previous step from
+			fetchCheriCompiler: false, // this was already set up in the previous step from
 			artifactsToCopy: [[job:'Newlib-baremetal-mips/master', filter:'newlib-baremetal-mips.tar.xz']],
 			beforeBuild: 'mkdir -p cherisdk/baremetal && tar xzf newlib-baremetal-mips.tar.xz -C cherisdk/baremetal')
 stuff([cpu: 'mips', skipScm: false])

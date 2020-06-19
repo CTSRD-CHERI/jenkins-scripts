@@ -34,8 +34,8 @@ class CheckCheribuildProjects extends BasePipelineTest {
 	@Test
 	void llvm_test() throws Exception {
 		CommonTestHelper.addEnvVars(this, [
-                JOB_NAME:"LLVM-linux/cap-table",
-                BRANCH_NAME:"cap-table",
+                JOB_NAME:"CLANG-LLVM-linux/dev",
+                BRANCH_NAME:"dev",
                 WORKSPACE:"/workspace",
         ])
 		def script = runScript("test-scripts/llvm.groovy")
