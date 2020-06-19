@@ -61,7 +61,7 @@ class CheribuildProjectParams implements Serializable {
 	String architecture // suffix to be used for all output files, etc.
 	String sdkCPU  // the SDK used to build (e.g. for cheri256-hybrid will use the cheri256 sdk to build MIPS code)
 	String capTableABI = null // use whatever the default is
-	boolean needsFullCheriSDK = true
+	boolean fetchCheriCompiler = true
 	boolean sdkCompilerOnly = false
 	String llvmBranch = null  // Git branch of LLVM to use for building. When NULL infer from branch name.
 	// otherwise pull just a specific set of artifacts
@@ -101,6 +101,14 @@ class CheribuildProjectParams implements Serializable {
 	// def afterTestsInCheriBSD // before running the tests (sent to cheribsd command line)
 	def afterTestsInDocker // before running the tests (inside docker, cheribsd no longer running)
 	def afterTests // before running the tests (no longer inside docker)
+
+	String commonCheribuildArgs() {
+		def result = "${this.target} --cpu ${this.cpu} ${this.extraArgs}"
+		if (this.capTableABI) {
+			result += " --cap-table-abi=${this.capTableABI}"
+		}
+		return result
+	}
 }
 
 // FIXME: all this jenkins transforming stuff is ugly... how can I access the jenkins globals?
@@ -155,14 +163,10 @@ def build(CheribuildProjectParams proj, String stageSuffix) {
 	// sdkImage.inside('-u 0') {
 	ansiColor('xterm') {
 		def buildStage = proj.buildStage ? proj.buildStage : "Build ${proj.target} ${stageSuffix}"
-		def cheribuildArgs = "${proj.target} --cpu ${proj.cpu} ${proj.extraArgs}"
-		if (proj.capTableABI) {
-			cheribuildArgs += " --cap-table-abi=${proj.capTableABI}"
-		}
 		stage(buildStage) {
 			sh "rm -fv ${proj.tarballName}; pwd"
 			runCallback(proj, proj.beforeBuildInDocker)
-			def cheribuildCmd = "./cheribuild/jenkins-cheri-build.py --build ${cheribuildArgs}"
+			def cheribuildCmd = "./cheribuild/jenkins-cheri-build.py --build ${proj.commonCheribuildArgs()}"
 			// By default do a full rebuild. This can be disabled by passing incrementalBuild: true
 			if (proj.incrementalBuild) {
 				sh label: "Building with cheribuild (incremental) ${stageSuffix}", script: "${cheribuildCmd} --no-clean || (echo 'incremental build failed!' && ${cheribuildCmd})"
@@ -170,22 +174,9 @@ def build(CheribuildProjectParams proj, String stageSuffix) {
 				sh label: "Building with cheribuild ${stageSuffix}", script: "${cheribuildCmd}"
 			}
 		}
-		if (!proj.skipTarball) {
-			stage("Creating tarball for ${proj.target}") {
-				runCallback(proj, proj.beforeTarball)
-				sh label: "Create tarball ${stageSuffix}", script: "./cheribuild/jenkins-cheri-build.py --tarball --tarball-name ${proj.tarballName} --no-build ${cheribuildArgs}"
-				sh label: "List tarball  ${stageSuffix}", script: 'ls -lah; ls -lah tarball || true'
-			}
-		}
 		runCallback(proj, proj.afterBuildInDocker)
 	}
 	// }
-	if (!proj.skipTarball && !proj.skipArchiving) {
-		stage("Archiving artificats for ${proj.target}") {
-			updatePRStatus(proj, "Archiving artifacts...")
-			archiveArtifacts allowEmptyArchive: false, artifacts: proj.tarballName, fingerprint: true, onlyIfSuccessful: true
-		}
-	}
 	runCallback(proj, proj.afterBuild)
 }
 
@@ -197,11 +188,10 @@ def runTestsImpl(CheribuildProjectParams proj, String testExtraArgs, String qemu
 			echo "Test command = ${testCommand}"
 			sh label: "Running simple test (${testSuffix})", script: "\$WORKSPACE/cheribuild/test-scripts/run_simple_tests.py --qemu-cmd ${qemuPath} ${testExtraArgs} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
 		} else {
-
 			String cheribuildTestArgs = (proj.architecture == 'native')
 					? "${testExtraArgs} ${proj.testExtraArgs}"
 					: "--test-extra-args=\"--qemu-cmd ${qemuPath} ${testExtraArgs} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}\""
-			sh label: "Running tests with cheribuild ${testSuffix}", script: "\$WORKSPACE/cheribuild/jenkins-cheri-build.py --cpu=${proj.cpu} --test ${proj.target} ${proj.extraArgs} ${cheribuildTestArgs}"
+			sh label: "Running tests with cheribuild ${testSuffix}", script: "\$WORKSPACE/cheribuild/jenkins-cheri-build.py --test ${proj.commonCheribuildArgs()} ${cheribuildTestArgs}"
 		}
 		runCallback(proj, proj.afterTestsInDocker)
 	}
@@ -401,11 +391,11 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 				copyArtifacts projectName: artifacts.job, filter: artifacts.filter, fingerprintArtifacts: false
 			}
 			// now copy all the artifacts
-			if (proj.needsFullCheriSDK) {
+			if (proj.fetchCheriCompiler) {
 				fetchCheriSDK(target: proj.target, cpu: proj.sdkCPU,
 						      compilerOnly: proj.sdkCompilerOnly, llvmBranch: proj.llvmBranch,
 							  buildOS: proj.buildOS, capTableABI: proj.capTableABI,
-							  extraCheribuildArgs: proj.extraArgs)
+							  extraCheribuildArgs: proj.commonCheribuildArgs())
 			}
 			echo 'WORKSPACE after checkout:'
 			sh 'ls -la'
@@ -424,9 +414,19 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 	warnError("FAILED TO RECORD ISSUES") {
 		recordIssues aggregatingResults: true, blameDisabled: true, enabledForFailure: true, forensicsDisabled: true, sourceCodeEncoding: 'UTF-8', tools: [clang(reportEncoding: 'UTF-8', id: "clang-${analysisId}")]
 	}
-	//warnings canComputeNew: false, canResolveRelativePaths: false, consoleParsers: [[parserName: 'Clang (LLVM based)']]
-	//step([$class: 'AnalysisPublisher', canComputeNew: false])
-	// TODO: clean up properly and remove the created artifacts?
+	if (!proj.skipTarball) {
+		stage("Creating tarball for ${proj.target}") {
+			runCallback(proj, proj.beforeTarball)
+			sh label: "Create tarball ${buildSuffix}", script: "./cheribuild/jenkins-cheri-build.py --tarball --tarball-name ${proj.tarballName} --no-build ${proj.commonCheribuildArgs()}"
+			sh label: "List tarball ${buildSuffix}", script: 'ls -lah; ls -lah tarball || true'
+		}
+		if (!proj.skipArchiving) {
+			stage("Archiving artificats for ${proj.target}") {
+				updatePRStatus(proj, "Archiving artifacts...")
+				archiveArtifacts allowEmptyArchive: false, artifacts: proj.tarballName, fingerprint: true, onlyIfSuccessful: true
+			}
+		}
+	}
 }
 
 CheribuildProjectParams parseParams(Map args) {
