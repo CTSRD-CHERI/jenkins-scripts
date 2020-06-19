@@ -6,7 +6,8 @@ properties([
         disableResume(),
         [$class: 'GithubProjectProperty', displayName: '', projectUrlStr: 'https://github.com/CTSRD-CHERI/llvm-project/'],
         [$class: 'CopyArtifactPermissionProperty', projectNames: '*'],
-        [$class: 'JobPropertyImpl', throttle: [count: 2, durationName: 'hour', userBoost: true]],
+        // FIXME: doesn't seem to work: copyArtifactPermission('*'),
+        rateLimitBuilds([count: 2, durationName: 'hour', userBoost: true]),
         durabilityHint('PERFORMANCE_OPTIMIZED'),
         pipelineTriggers([githubPush(), pollSCM('@daily')])
 ])
@@ -85,5 +86,6 @@ cheribuildProject(target: 'llvm-native', architecture: 'native',
         skipArchiving: !archiveArtifacts, skipTarball: !archiveArtifacts,
         tarballName: "cheri-clang-llvm.tar.xz",
         runTests: true,
+        uniqueId: env.JOB_NAME,
         junitXmlFiles: "llvm-test-output.xml",
 )
