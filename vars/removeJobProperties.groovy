@@ -11,15 +11,15 @@ import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject
 // See e.g. https://issues.jenkins-ci.org/browse/JENKINS-44848
 // Hopefully this workaround works
 @NonCPS
-def call(List<JobProperty<?>> args) {
+def call(List/*<JobProperty<?>>*/ args) {
     hudson.model.Job<?, ?> job = currentBuild.rawBuild.parent;
     echo("Properties before:")
     job.getAllProperties().eachWithIndex{ JobProperty<?> entry, int i ->
         echo("Property ${i}: ${entry.toString()}")
     }
     echo("Properties before:")
-    for (JobProperty<?> prop : args) {
-        job.removeProperty(prop);
+    for (/*JobProperty<?> */ prop in args) {
+        job.removeProperty(prop as JobProperty<?>);
     }
     echo("Properties after:")
     job.getAllProperties().eachWithIndex{ JobProperty<?> entry, int i ->
