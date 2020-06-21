@@ -514,25 +514,6 @@ CheribuildProjectParams parseParams(Map args) {
 }
 
 def runCheribuild(CheribuildProjectParams params) {
-	stage ("Set job properties") {
-		try {
-			properties([pipelineTriggers([githubPush()]),
-						disableConcurrentBuilds(),
-						disableResume(),
-						// The new copyArtifactPermission() doesn't seem to work...
-						// copyArtifactPermission('*'), // New in copyartifacts version 1.41
-						[$class: 'CopyArtifactPermissionProperty', projectNames: '*'],
-			])
-		} catch (e) {
-			echo("FAILED TO SET GitHub push trigger in Jenkinsfile: ${e}")
-		}
-		try {
-			// Github
-			properties([pipelineTriggers([issueCommentTrigger('.*test this please.*')])])
-		} catch (e) {
-			echo("FAILED TO SET GitHub issue trigger in Jenkinsfile: ${e}")
-		}
-	}
 	// The map spread operator is not supported in Jenkins
 	// def project = new CheribuildProjectParams(target: args.name, *:args)
 	if (params.nodeLabel != null) {
