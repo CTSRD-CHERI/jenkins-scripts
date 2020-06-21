@@ -169,9 +169,9 @@ def build(CheribuildProjectParams proj, String stageSuffix) {
 			def cheribuildCmd = "./cheribuild/jenkins-cheri-build.py --build ${proj.commonCheribuildArgs()}"
 			// By default do a full rebuild. This can be disabled by passing incrementalBuild: true
 			if (proj.incrementalBuild) {
-				sh label: "Building with cheribuild (incremental) ${stageSuffix}", script: "${cheribuildCmd} --no-clean || (echo 'incremental build failed!' && ${cheribuildCmd})"
+				sh label: "Building with cheribuild (incremental) ${stageSuffix} on ${env.NODE_LABELS}", script: "${cheribuildCmd} --no-clean || (echo 'incremental build failed!' && ${cheribuildCmd})"
 			} else {
-				sh label: "Building with cheribuild ${stageSuffix}", script: "${cheribuildCmd}"
+				sh label: "Building with cheribuild ${stageSuffix} on ${env.NODE_LABELS}", script: "${cheribuildCmd}"
 			}
 		}
 		runCallback(proj, proj.afterBuildInDocker)
