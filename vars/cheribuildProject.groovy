@@ -309,7 +309,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 	withEnv(["CPU=${proj.cpu}", "SDK_CPU=${proj.sdkCPU}", "CHERIBUILD_ARCH=${proj.architecture}"]) {
 		// echo("env in block=${env}")
 		if (!proj.uniqueId) {
-			proj.uniqueId = "${env.JOB_NAME}/${proj.target}/${proj.architecture}"
+			proj.uniqueId = "${currentBuild.projectName}/${proj.target}/${proj.architecture}"
 			if (proj.nodeLabel)
 				proj.uniqueId += "/${proj.nodeLabel}"
 			while (CheribuildProjectParams.uniqueIDs.containsKey(proj.uniqueId.toString())) {
@@ -463,8 +463,6 @@ CheribuildProjectParams parseParams(Map args) {
 		} else if (params.target.endsWith('-riscv64-hybrid')) {
 			params.architecture = 'riscv64-hybrid'
 		} else if (params.target.endsWith('-riscv64-purecap')) {
-			params.architecture = 'riscv64-purecap'
-		} else if (params.target.endsWith('-native')) {
 			params.architecture = 'riscv64-purecap'
 		} else if (params.target.endsWith('-purecap')) { // legacy target names
 			params.architecture = 'mips-purecap'
