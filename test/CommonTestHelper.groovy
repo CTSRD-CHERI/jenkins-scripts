@@ -69,8 +69,6 @@ class CommonTestHelper {
         helper.registerSharedLibrary(library)
         helper.registerAllowedMethod("timeout", [Integer.class, Closure.class], null)
         helper.registerAllowedMethod("timeout", [Map.class, Closure.class], null)
-        helper.registerAllowedMethod("disableResume", [], null)
-        helper.registerAllowedMethod("githubPush", [], null)
         helper.registerAllowedMethod("culprits", [], null)
         helper.registerAllowedMethod("catchError", [Closure.class], { Closure c ->
             try {
@@ -89,9 +87,17 @@ class CommonTestHelper {
                 binding.getVariable('currentBuild').result = 'UNSTABLE'
             }
         })
+        // Properties() helpers
+        helper.registerAllowedMethod("compressBuildLog", { -> ["compressBuildLog"] })
+        helper.registerAllowedMethod("disableConcurrentBuilds", { -> ["disableConcurrentBuilds"] })
+        helper.registerAllowedMethod("rateLimitBuilds", [Map.class], { args -> ["rateLimitBuilds": args] })
+        helper.registerAllowedMethod("copyArtifactPermission", [String.class], { arg -> ["copyArtifactPermission": arg] })
+        helper.registerAllowedMethod("durabilityHint", [String.class], { arg -> ["durabilityHint": arg] })
+        helper.registerAllowedMethod("disableResume", { -> ["disableResume"] })
+        helper.registerAllowedMethod("githubPush", { -> ["githubPush"] })
+
         helper.registerAllowedMethod("brokenBuildSuspects", [], null)
         helper.registerAllowedMethod("brokenTestsSuspects", [], null)
-        helper.registerAllowedMethod("copyArtifactPermission", [String], null)
         helper.registerAllowedMethod("issueCommentTrigger", [String], null)
         helper.registerAllowedMethod("requestor", [], null)
         helper.registerAllowedMethod("emailext", [Map.class], null)
@@ -100,9 +106,7 @@ class CommonTestHelper {
         helper.registerAllowedMethod("deleteDir", [], null)
         helper.registerAllowedMethod("checkout", [Map.class],
                 { args -> doCheckout(args) })
-        helper.registerAllowedMethod("compressBuildLog", [], null)
         helper.registerAllowedMethod("junit", [Map.class], { args -> [totalCount: 1234, failCount: 1, skipCount: 5, passCount: 1229] })
-        helper.registerAllowedMethod("durabilityHint", [String.class], null)
         helper.registerAllowedMethod("timestamps", [Closure.class], null)
         helper.registerAllowedMethod("ansiColor", [String.class, Closure.class], null)
         helper.registerAllowedMethod("copyArtifacts", [Map.class], /*{ args -> println "Copying $args" }*/null)
