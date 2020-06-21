@@ -7,7 +7,7 @@ import groovy.json.JsonBuilder
 // See e.g. https://issues.jenkins-ci.org/browse/JENKINS-44848
 // Hopefully this workaround works
 @NonCPS
-def call(Map args) {
+def call(List<JobProperty<?>> args) {
     hudson.model.Job<?, ?> job = currentBuild.rawBuild.parent;
     echo("Properties before: ${new JsonBuilder(job.getAllProperties()).toPrettyString()}")
     for (JobProperty<?> prop : args) {

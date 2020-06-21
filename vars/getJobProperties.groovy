@@ -7,11 +7,7 @@ import groovy.json.JsonBuilder
 // See e.g. https://issues.jenkins-ci.org/browse/JENKINS-44848
 // Hopefully this workaround works
 @NonCPS
-def call(List<JobProperty<?>> args) {
+List<JobProperty<?>> call() {
     hudson.model.Job<?, ?> job = currentBuild.rawBuild.parent;
-    echo("Properties before: ${new JsonBuilder(job.getAllProperties()).toPrettyString()}")
-    for (JobProperty<?> prop : args) {
-        job.removeProperty(prop);
-    }
-    echo("Properties after: ${new JsonBuilder(job.getAllProperties()).toPrettyString()}")
+    return job.getAllProperties();
 }
