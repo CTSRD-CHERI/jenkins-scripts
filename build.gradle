@@ -25,7 +25,7 @@ sourceSets {
     }
     main {
         groovy.srcDirs = [file('src'),
-                          // file('vars')
+                          file('vars')
         ]
     }
     test {
@@ -46,15 +46,19 @@ repositories {
 
 dependencies {
     compile 'org.codehaus.groovy:groovy-all:2.5.8'
+    compile group: 'org.jenkins-ci.main', name: 'jenkins-core', version: '2.235'
+    // compile group: 'org.jenkins-ci.plugins.workflow', name: 'workflow-multibranch', version: '+'
     // compile 'org.jenkins-ci.plugins:junit:jar:1.24'
-    // compile group: 'org.jenkins-ci.main', name: 'jenkins-core', version: '2.89.4'
     // For AbstractTestResultAction (doesn't work properly)
+    compile group: 'com.cloudbees', name: 'groovy-cps', version: '1.32'
     // compile group: 'org.jenkins-ci.plugins', name: 'junit', version: '1.24'
     // compile(group: 'org.jenkins-ci.plugins', name: 'job-dsl-core', version: '1.70', classifier: 'sources')
     // compile(group: 'org.jenkins-ci.plugins', name: 'junit', version: '1.26.1', classifier: 'sources')
     compile(group: 'org.jenkins-ci.plugins', name: 'junit', version: '1.26.1', ext: 'jar')
     compile(group: 'org.jenkins-ci.plugins', name: 'job-dsl-core', version: '1.70', ext: 'jar')
-    // compile(group: 'org.jenkins-ci.main', name: 'jenkins-core', version: '2.138.3')
+    compile(group: 'org.jenkins-ci.plugins.workflow', name: 'workflow-multibranch', version: '2.21', ext: 'jar')
+    // compile group: 'org.jenkins-ci.plugins.workflow', name: 'workflow-multibranch', version: '+'
+
     testCompile 'junit:junit:4.12'
     // testImplementation "com.lesfurets:jenkins-pipeline-unit:1.3"
     // testImplementation "com.github.jenkinsci:JenkinsPipelineUnit:2422551"
