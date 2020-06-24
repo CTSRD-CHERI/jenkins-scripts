@@ -290,6 +290,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 
 	// compute sdkCPU from args
 	if (!proj.sdkCPU) {
+		proj.sdkCPU = proj.architecture
 		if (proj.sdkCPU == "mips-nocheri") {
 			proj.sdkCPU = "mips" // Handle old jenkins job names
 		} else if (proj.sdkCPU == "mips-hybrid" || proj.sdkCPU == "mips-purecap") {
