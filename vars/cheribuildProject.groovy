@@ -310,7 +310,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 	withEnv(["CPU=${proj.cpu}", "SDK_CPU=${proj.sdkCPU}", "CHERIBUILD_ARCH=${proj.architecture}"]) {
 		// echo("env in block=${env}")
 		if (!proj.uniqueId) {
-			proj.uniqueId = "${currentBuild.projectName}/${proj.target}/${proj.architecture}"
+			proj.uniqueId = "${currentBuild.projectName}/${proj.target}"
 			if (proj.nodeLabel)
 				proj.uniqueId += "/${proj.nodeLabel}"
 			while (CheribuildProjectParams.uniqueIDs.containsKey(proj.uniqueId.toString())) {
