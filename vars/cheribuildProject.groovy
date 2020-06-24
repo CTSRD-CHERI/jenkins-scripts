@@ -104,7 +104,7 @@ class CheribuildProjectParams implements Serializable {
 	def afterTests // before running the tests (no longer inside docker)
 
 	String commonCheribuildArgs() {
-		def result = "${this.target} --cpu ${this.cpu} ${this.extraArgs}"
+		def result = "${this.target} ${this.extraArgs}"
 		if (this.capTableABI) {
 			result += " --cap-table-abi=${this.capTableABI}"
 		}
