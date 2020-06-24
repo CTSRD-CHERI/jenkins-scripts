@@ -3,6 +3,7 @@ class FetchCheriSDKArgs implements Serializable {
     String target
     String cpu = "cheri128"
     boolean compilerOnly = false
+    boolean useNewLLVMJobs = false
     String buildOS
     String llvmBranch = null
     String capTableABI = null
@@ -50,14 +51,15 @@ def call(Map args) {
     }
     // stage("Setup SDK for ${params.target} (${params.cpu})") {
         // now copy all the artifacts
-        def llvmJob = "CLANG-LLVM-master/CPU=cheri-multi,label=${params.buildOS}"
+        def llvmJob = params.useNewLLVMJobs ? "CLANG-LLVM-${params.buildOS}/master" : "CLANG-LLVM-master/CPU=cheri-multi,label=${params.buildOS}"
         if (params.llvmBranch != 'master') {
-            llvmJob = "CLANG-LLVM-experimental/CPU=cheri-multi,LLVM_BRANCH=${params.llvmBranch},label=${params.buildOS}"
+            llvmJob = params.useNewLLVMJobs ? "CLANG-LLVM-${params.buildOS}/${params.llvmBranch}" : "CLANG-LLVM-experimental/CPU=cheri-multi,LLVM_BRANCH=${params.llvmBranch},label=${params.buildOS}"
         }
-        copyArtifacts projectName: llvmJob, flatten: true, optional: false, filter: "cheri-multi-${params.llvmBranch}-clang-llvm.tar.xz", selector: lastSuccessful()
-        if (params.llvmBranch != 'master') {
+        String llvmArtifact = params.useNewLLVMJobs ? "cheri-clang-llvm.tar.xz" : "cheri-multi-${params.llvmBranch}-clang-llvm.tar.xz"
+        copyArtifacts projectName: llvmJob, flatten: true, optional: false, filter: llvmArtifact, selector: lastSuccessful()
+        if (params.llvmBranch != 'master' || params.useNewLLVMJobs) {
             // Rename the archive to the expected name
-            sh "mv -vf \"cheri-multi-${params.llvmBranch}-clang-llvm.tar.xz\" cheri-multi-master-clang-llvm.tar.xz"
+            sh "mv -vf \"${llvmArtifact}\" cheri-multi-master-clang-llvm.tar.xz"
         }
         if (!params.compilerOnly) {
             // copyArtifacts projectName: "CHERI-SDK/ALLOC=jemalloc,ISA=vanilla,SDK_CPU=${proj.sdkCPU},label=${proj.label}", filter: '*-sdk.tar.xz', fingerprintArtifacts: true
