@@ -290,14 +290,10 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 
 	// compute sdkCPU from args
 	if (!proj.sdkCPU) {
-		if (proj.architecture == "mips") {
-			proj.sdkCPU = proj.architecture
-		} else if (proj.sdkCPU == "mips-hybrid" || proj.sdkCPU == "mips-purecap") {
-			proj.sdkCPU = "cheri128"
+		if (proj.sdkCPU == "mips-hybrid" || proj.sdkCPU == "mips-purecap") {
+			proj.sdkCPU = "cheri128" // Handle old jenkins job names
 		} else {
-			// Build using the MIPS SDK for native projects
-			// Should be find since we don't use anything except the compiler
-			proj.sdkCPU = 'mips'
+			proj.sdkCPU = proj.architecture
 		}
 	}
 	// Note: env.FOO = ... sets the environment globally across all nodes
@@ -397,7 +393,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 						      compilerOnly: proj.sdkCompilerOnly, llvmBranch: proj.llvmBranch,
 							  buildOS: proj.buildOS, capTableABI: proj.capTableABI,
 							  useNewLLVMJobs: proj.useNewLLVMJobs,
-							  extraCheribuildArgs: proj.commonCheribuildArgs())
+							  extraCheribuildArgs: proj.extraArgs)
 			}
 			echo 'WORKSPACE after checkout:'
 			sh 'ls -la'
