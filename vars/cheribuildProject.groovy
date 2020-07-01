@@ -183,16 +183,20 @@ def build(CheribuildProjectParams proj, String stageSuffix) {
 
 def runTestsImpl(CheribuildProjectParams proj, String testExtraArgs, String qemuPath, String testSuffix) {
 	ansiColor('xterm') {
+		def testExitCode = 0
 		runCallback(proj, proj.beforeTestsInDocker)
 		if (proj.testScript && proj.architecture != 'native') {
 			def testCommand = "'export CPU=${proj.cpu}; " + proj.testScript.replaceAll('\'', '\\\'') + "'"
 			echo "Test command = ${testCommand}"
-			sh label: "Running simple test (${testSuffix})", script: "\$WORKSPACE/cheribuild/test-scripts/run_simple_tests.py --qemu-cmd ${qemuPath} ${testExtraArgs} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
+			testExitCode = sh returnStatus: true, label: "Running simple test (${testSuffix})", script: "\$WORKSPACE/cheribuild/test-scripts/run_simple_tests.py --qemu-cmd ${qemuPath} ${testExtraArgs} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
 		} else {
 			String cheribuildTestArgs = (proj.architecture == 'native')
 					? "${testExtraArgs} ${proj.testExtraArgs}"
 					: "--test-extra-args=\"--qemu-cmd ${qemuPath} ${testExtraArgs} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}\""
-			sh label: "Running tests with cheribuild ${testSuffix}", script: "\$WORKSPACE/cheribuild/jenkins-cheri-build.py --test ${proj.commonCheribuildArgs()} ${cheribuildTestArgs}"
+			testExitCode = sh returnStatus: true, label: "Running tests with cheribuild ${testSuffix}", script: "\$WORKSPACE/cheribuild/jenkins-cheri-build.py --test ${proj.commonCheribuildArgs()} ${cheribuildTestArgs}"
+		}
+		if (testExitCode != 0) {
+			proj.statusUnstable("Test script returned ${testExitCode}")
 		}
 		runCallback(proj, proj.afterTestsInDocker)
 	}
