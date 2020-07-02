@@ -56,6 +56,7 @@ class CheribuildProjectParams implements Serializable {
 
 	/// general/build parameters
 	String target // the cheribuild project name
+	String _targetWithoutSuffix  // Set when building multiple architectures
 	String extraArgs = '' // additional arguments to pass to cheribuild.py
 	String cpu = 'default' // --cpu flag for cheribuild (deprecated)
 	String architecture // suffix to be used for all output files, etc.
@@ -370,7 +371,15 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			// sdkImage.pull() // make sure we have the latest available from Docker Hub
 			runCallback(proj, proj.beforeSCM)
 
-			dir(proj.customGitCheckoutDir ? proj.customGitCheckoutDir : proj.target) {
+			def gitCloneDir = proj.customGitCheckoutDir
+			// Don't add a suffix to the git checkout dir:
+			// TODO: should do something like cheribuild --print-default-source-dir <target> instead
+			if (!gitCloneDir && proj._targetWithoutSuffix != null) {
+				gitCloneDir = proj._targetWithoutSuffix
+			} else {
+				gitCloneDir = proj.target
+			}
+			dir(gitCloneDir) {
 				def realScm = proj.scmOverride != null ? proj.scmOverride : scm
 				proj.gitInfo = checkout realScm
 				echo("Checkout result: ${proj.gitInfo}")
@@ -548,7 +557,8 @@ def call(Map args) {
 	def tasks = [failFast: failFast]
 	targetArchitectures.each { String suffix ->
 		tasks[suffix] = { ->
-			Map newMap = args + [target: args.getOrDefault('target', 'target must be set!') + "-${suffix}", architecture: "${suffix}"]
+			String targetWithoutSuffix = args.getOrDefault('target', 'target must be set!')
+			Map newMap = args + [target: targetWithoutSuffix + "-${suffix}", _targetWithoutSuffix: targetWithoutSuffix, architecture: "${suffix}"]
 			echo("newMap=${newMap}")
 			// just call the real method here so that I can run the tests
 			// the problem is that if I invoke call I get endless recursion
