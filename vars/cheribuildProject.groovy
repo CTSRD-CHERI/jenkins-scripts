@@ -64,7 +64,7 @@ class CheribuildProjectParams implements Serializable {
 	String capTableABI = null // use whatever the default is
 	boolean fetchCheriCompiler = true
 	boolean sdkCompilerOnly = false
-	boolean useNewLLVMJobs = false // Whether to use the new LLVM jobs
+	boolean useNewLLVMJobs = true // Whether to use the new LLVM jobs
 	String llvmBranch = null  // Git branch of LLVM to use for building. When NULL infer from branch name.
 	// otherwise pull just a specific set of artifacts
 	List artifactsToCopy = [] // List of (job:filter) for artifacts which need copying

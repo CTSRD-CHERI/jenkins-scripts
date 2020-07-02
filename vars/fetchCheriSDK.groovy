@@ -3,7 +3,7 @@ class FetchCheriSDKArgs implements Serializable {
     String target
     String cpu = "cheri128"
     boolean compilerOnly = false
-    boolean useNewLLVMJobs = false
+    boolean useNewLLVMJobs = true
     String buildOS
     String llvmBranch = null
     String capTableABI = null
