@@ -374,10 +374,8 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			def gitCloneDir = proj.customGitCheckoutDir
 			// Don't add a suffix to the git checkout dir:
 			// TODO: should do something like cheribuild --print-default-source-dir <target> instead
-			if (!gitCloneDir && proj._targetWithoutSuffix != null) {
-				gitCloneDir = proj._targetWithoutSuffix
-			} else {
-				gitCloneDir = proj.target
+			if (!gitCloneDir) {
+				gitCloneDir = proj._targetWithoutSuffix != null ? proj._targetWithoutSuffix : proj.target
 			}
 			dir(gitCloneDir) {
 				def realScm = proj.scmOverride != null ? proj.scmOverride : scm
