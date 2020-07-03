@@ -282,7 +282,11 @@ ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/${test_cpu}-m
 		def testSummary = junit allowEmptyResults: false, keepLongStdio: true, testResults: proj.junitXmlFiles
 		echo("Test results: ${testSummary.totalCount}, Failures: ${testSummary.failCount}, Skipped: ${testSummary.skipCount}, Passed: ${testSummary.passCount}")
 		if (testSummary.passCount == 0 || testSummary.totalCount == 0) {
-			error("No tests successful?")
+			proj.statusFailure("No tests successful?")
+		} else if (testSummary.failCount != 0) {
+			// Note: Junit set should have set stage/build status to unstable already, but we still need to set
+			// the per-configuration status, since Jenkins doesn't have a build result for each parallel branch.
+			proj.statusUnstable("${testSummary.failCount} test(s) failed!")
 		}
 	}
 }
@@ -340,6 +344,10 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			proj._result = BuildResult.FAILURE
 			throw e
 		} finally {
+			// In the single project case propagate the unstable flag:
+			// if (proj.targetArchitectures.size() == 1 && proj._result == BuildResult.SUCCESS && "${currentBuild.currentResult}" == "UNSTABLE") {
+			//     proj._result = BuildResult.UNSTABLE
+			// }
 			echo("Setting github status after build\nproj.result=${proj.result}, currentBuild.result=${currentBuild.result} currentBuild.currentResult=${currentBuild.currentResult}")
 			if (proj._result == BuildResult.PENDING) {
 				proj.statusFailure("RESULT IS STILL PENDING! Something is very wrong...")
