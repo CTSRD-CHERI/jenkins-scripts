@@ -53,7 +53,7 @@ def call(Map args) {
         // now copy all the artifacts
         def llvmJob = params.useNewLLVMJobs ? "CLANG-LLVM-${params.buildOS}/master" : "CLANG-LLVM-master/CPU=cheri-multi,label=${params.buildOS}"
         if (params.llvmBranch != 'master') {
-            llvmJob = params.useNewLLVMJobs ? "CLANG-LLVM-${params.buildOS}/${params.llvmBranch}" : "CLANG-LLVM-experimental/CPU=cheri-multi,LLVM_BRANCH=${params.llvmBranch},label=${params.buildOS}"
+            llvmJob = "CLANG-LLVM-${params.buildOS}/${params.llvmBranch}"
         }
         String llvmArtifact = params.useNewLLVMJobs ? "cheri-clang-llvm.tar.xz" : "cheri-multi-${params.llvmBranch}-clang-llvm.tar.xz"
         copyArtifacts projectName: llvmJob, flatten: true, optional: false, filter: llvmArtifact, selector: lastSuccessful()
