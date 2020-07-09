@@ -9,6 +9,11 @@ class DefaultJobProperties {
 // See e.g. https://issues.jenkins-ci.org/browse/JENKINS-44848
 // Hopefully this workaround works
 @NonCPS
+def getCurrentProperties() {
+    hudson.model.Job<?, ?> job = currentBuild?.rawBuild?.parent;
+    return job?.getAllProperties();
+}
+
 def call(List args) {
     if (DefaultJobProperties.alreadyCalled) {
         error("SetDefaultJobProperties called more than once!")
@@ -31,6 +36,5 @@ def call(List args) {
         }
     }
     // Return the current properties
-    hudson.model.Job<?, ?> job = currentBuild?.rawBuild?.parent;
-    return job?.getAllProperties();
+    return getCurrentProperties();
 }

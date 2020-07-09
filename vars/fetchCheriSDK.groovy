@@ -46,8 +46,11 @@ def call(Map args) {
             params.llvmBranch = 'dev'
         else if (gitBranch == 'abi-breaking-changes')
             params.llvmBranch = 'abi-breaking-changes'
+        else if (gitBranch == 'upstream-llvm-merge')
+            params.llvmBranch = 'upstream-llvm-merge'
         else
             params.llvmBranch = 'master'
+        // echo("Inferred LLVM branch from current git branch (${gitBranch}): ${params.llvmBranch}")
     }
     // stage("Setup SDK for ${params.target} (${params.cpu})") {
         // now copy all the artifacts
