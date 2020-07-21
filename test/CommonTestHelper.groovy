@@ -52,10 +52,10 @@ class CommonTestHelper {
         if (!url) {
             throw new RuntimeException("Could not detect GIT URL ${args}")
         }
-        return [GIT_URL:"xxx/xxxx.git", GIT_COMMIT:"abcdef123456"]
+        return [GIT_URL:url, GIT_COMMIT:"abcdef123456"]
     }
 
-    static void setupTestEnv(TemporaryFolder folder, BasePipelineTest test) {
+    static void setupTestEnv(TemporaryFolder folder, BasePipelineTest test, String testName) {
         def helper = test.helper
         def binding = test.binding
         def library = library().name('ctsrd-jenkins-scripts')
@@ -125,7 +125,7 @@ class CommonTestHelper {
         // binding.getVariable('env').JOB_NAME = "CHERI1-TEST-pipeline"
         // helper.registerAllowedMethod("cheriHardwareTest", [Map.class], { args -> cheriHardwareTest.call(args) })
         def scmBranch = "feature_test"
-        binding.setVariable('scm', [branch: 'master', url: 'https://www.github.com/CTSRD-CHERI/some-repo.git'])
+        binding.setVariable('scm', [branch: 'master', url: 'https://www.github.com/CTSRD-CHERI/' + testName + '.git'])
         binding.setVariable('docker', new DockerMock())
         /* binding.setVariable('scm', [
                 $class                           : 'GitSCM',
@@ -151,6 +151,10 @@ class CommonTestHelper {
 
     static void addEnvVars(BasePipelineTest test, Map<String, String> vars) {
         def x = test.binding.getVariable("env")
+        String jobName = vars.getOrDefault('JOB_NAME', '')
+        if (jobName.contains('/')) {
+            vars.putIfAbsent('JOB_BASE_NAME', jobName.substring(jobName.indexOf('/') + 1))
+        }
         // print("Before: ")
         // println(x)
         x << vars

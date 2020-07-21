@@ -3,6 +3,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import org.junit.rules.TestName
 
 import static com.lesfurets.jenkins.unit.global.lib.LibraryConfiguration.library
 import static com.lesfurets.jenkins.unit.global.lib.LocalSource.localSource
@@ -12,12 +13,15 @@ class CheckCheribuildProjects extends BasePipelineTest {
     @Rule
     public TemporaryFolder folder = new TemporaryFolder()
 
+    @Rule
+    public final TestName testName = new TestName();
+
     @Override
     @Before
     void setUp() throws Exception {
         scriptRoots += 'vars'
         super.setUp()
-        CommonTestHelper.setupTestEnv(folder, this)
+        CommonTestHelper.setupTestEnv(folder, this, testName.getMethodName())
     }
 
     @Test

@@ -1,11 +1,32 @@
 @Library('ctsrd-jenkins-scripts') _
 
+cheribuildArgs = ['--llvm/build-type=Release', // DEBUG builds are too slow, we use release + assertions
+                  '--install-prefix=/', // This path is expected by downstream jobs
+                  '--without-sdk', // Use host compilers
+                  '--llvm/build-everything', // build all targets
+                  '--llvm/install-toolchain-only', // but only install compiler+binutils
+]
+// Set job properties:
+// Only archive artifacts for the default master and dev builds
+def archiveArtifacts = false
+def jobProperties = [rateLimitBuilds([count: 2, durationName: 'hour', userBoost: true]),
+                     copyArtifactPermission('*'), // Downstream jobs need the compiler tarball
+                     [$class: 'GithubProjectProperty', displayName: '', projectUrlStr: 'https://github.com/CTSRD-CHERI/llvm-project/'],
+]
+if (env.JOB_NAME.startsWith('CLANG-LLVM-linux/') || env.JOB_NAME.startsWith('CLANG-LLVM-freebsd/')) {
+    // Skip pull requests and non-default branches:
+    def archiveBranches = ['master', 'dev', 'upstream-llvm-merge']
+    if (!env.CHANGE_ID && (archiveBranches.contains(env.BRANCH_NAME))) {
+        archiveArtifacts = true
+        cheribuildArgs.add("--use-all-cores")
+        // For branches other than the master branch, only keep the last two artifacts to save disk space
+        if (env.BRANCH_NAME != 'master') {
+            jobProperties.add(buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '2')))
+        }
+    }
+}
 // Set the default job properties (work around properties() not being additive but replacing)
-setDefaultJobProperties([rateLimitBuilds([count: 2, durationName: 'hour', userBoost: true]),
-                         [$class: 'GithubProjectProperty', displayName: '', projectUrlStr: 'https://github.com/CTSRD-CHERI/llvm-project/'],
-                         copyArtifactPermission('*'), // Downstream jobs need the compiler tarball
-])
-
+setDefaultJobProperties(jobProperties)
 
 def nodeLabel = null
 echo("JOB_NAME='${env.JOB_NAME}', JOB_BASE_NAME='${env.JOB_BASE_NAME}'")
@@ -27,12 +48,6 @@ if (env.JOB_NAME.toLowerCase().contains("sanitizer")) {
     TEST_WITH_SANITIZERS = true
 }
 
-cheribuildArgs = ['--llvm/build-type=Release', // DEBUG builds are too slow, we use release + assertions
-                  '--install-prefix=/', // This path is expected by downstream jobs
-                  '--without-sdk', // Use host compilers
-                  '--llvm/build-everything', // build all targets
-                  '--llvm/install-toolchain-only', // but only install compiler+binutils
-]
 cmakeArgs = [
         // Shared library builds are significantly slower
         '-DBUILD_SHARED_LIBS=OFF',
@@ -59,18 +74,6 @@ cheribuildCmakeOption = '\'--llvm/cmake-options=\"' + cmakeArgs.join('\" \"') + 
 echo("CMake options = ${cheribuildCmakeOption}")
 cheribuildArgs.add(cheribuildCmakeOption)
 
-
-// Only archive artifacts for the default master and dev builds
-def archiveArtifacts = false
-if (env.JOB_NAME.startsWith('CLANG-LLVM-linux/') || env.JOB_NAME.startsWith('CLANG-LLVM-freebsd/')) {
-    // Skip pull requests and non-default branches:
-    def archiveBranches = ['master', 'dev']
-    if (!env.CHANGE_ID && (archiveBranches.contains(env.BRANCH_NAME))) {
-        archiveArtifacts = true
-        cheribuildArgs.add("--use-all-cores")
-    }
-}
-
 Map defaultArgs = [target              : 'llvm-native', architecture: 'native',
                    customGitCheckoutDir: 'llvm-project',
                    nodeLabel           : nodeLabel,
@@ -96,8 +99,21 @@ Map defaultArgs = [target              : 'llvm-native', architecture: 'native',
 
 if (archiveArtifacts) {
     parallel "Build+Test": {
-        // Run the full test suite
-        cheribuildProject(defaultArgs)
+        node (nodeLabel) {
+            // Run the full test suite
+            def result = cheribuildProject(defaultArgs + [nodeLabel: null]) // already have a node
+            // Run the libunwind+libcxxabi+libcxx tests to check we didn't regress native builds
+            cheribuildProject(target: 'llvm-libs', architecture: 'native',
+                    skipInitialSetup: true, // No need to checkout git
+                    nodeLabel: null, buildStage: "Run libunwind+libcxxabi+libcxx tests",
+                    // Ensure we test failures don't prevent creation of the junit file
+                    extraArgs: '--keep-install-dir --install-prefix=/',
+                    runTests: true,
+                    // Set the status message on the current commit of the LLVM repo
+                    gitHubStatusArgs: result.gitInfo, skipTarball: true,
+                    uniqueId: "llvm-libraries/${env.JOB_BASE_NAME}/${nodeLabel}/",
+                    junitXmlFiles: "llvm-libs-build/llvm-test-output.xml",)
+        }
     }, "Build LTO": {
         // Build for archiving (with LTO, only toolchain binaries)
         String ltoCheribuildArgs = cheribuildArgs.join(" ")
