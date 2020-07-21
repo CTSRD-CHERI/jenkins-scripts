@@ -15,10 +15,10 @@ def callImpl(String expectedContext) {
     //	echo("Skipping Jenkins for pull request since draft flag was set")
     //	return
     //}
-    if (!pullRequest.mergeable) {
-        error("Pull request is not mergeable -> Won't build!")
-        return false
-    }
+    //    if (!pullRequest.mergeable) {
+    //        error("Pull request is not mergeable -> Won't build!")
+    //        return false
+    //    }
     echo "BUILD CAUSES: ${currentBuild.buildCauses}"
     boolean manualBuild = false
     currentBuild.buildCauses.eachWithIndex { item, index ->
