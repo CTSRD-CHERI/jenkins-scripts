@@ -69,6 +69,7 @@ class CommonTestHelper {
         helper.registerSharedLibrary(library)
         helper.registerAllowedMethod("timeout", [Integer.class, Closure.class], null)
         helper.registerAllowedMethod("timeout", [Map.class, Closure.class], null)
+        helper.registerAllowedMethod("lock", [String.class, Closure.class], null)
         helper.registerAllowedMethod("culprits", [], null)
         helper.registerAllowedMethod("catchError", [Closure.class], { Closure c ->
             try {
