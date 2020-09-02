@@ -14,9 +14,10 @@ def testStatuses() {
         def total = testResultAction.totalCount
         def failed = testResultAction.failCount
         def skipped = testResultAction.skipCount
-        def passed = total - failed - skipped
-        testStatus = "Test Status:\n  Passed: ${passed}, Failed: ${failed} ${testResultAction.failureDiffString}, Skipped: ${skipped}"
-
+        def passed1 = testResultAction.passedTests.size()
+        def passed2 = total - failed - skipped
+        assert(passed1 == passed2)
+        testStatus = "Test Status:\n  Passed: ${passed2}, Failed: ${failed} ${testResultAction.failureDiffString}, Skipped: ${skipped}"
         if (failed == 0) {
             currentBuild.result = 'SUCCESS'
         }
