@@ -279,7 +279,7 @@ ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/${test_cpu}-m
 	}
 	runCallback(proj, proj.afterTests)
 	if (proj.junitXmlFiles != null) {
-		def testSummary = junit allowEmptyResults: false, keepLongStdio: true, testResults: proj.junitXmlFiles
+		def testSummary = junitReturnCurrentSummary allowEmptyResults: false, keepLongStdio: true, testResults: proj.junitXmlFiles
 		echo("Test results: ${testSummary.totalCount}, Failures: ${testSummary.failCount}, Skipped: ${testSummary.skipCount}, Passed: ${testSummary.passCount}")
 		if (testSummary.passCount == 0 || testSummary.totalCount == 0) {
 			proj.statusFailure("No tests successful?")
