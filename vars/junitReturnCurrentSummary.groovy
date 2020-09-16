@@ -24,10 +24,10 @@ def call(Map args) {
     lock('junit-test-results-lock') {
         def result = junit(args)
         def prevResult = currentTestResult()
-        echo("totalCount : ${result.totalCount} - ${prevResult?.totalCount}, " +
-                "failCount : ${result.failCount} - ${prevResult?.failCount}, " +
-                "skipCount : ${result.skipCount} - ${prevResult?.skipCount}, " +
-                "passCount : ${result.passCount} - ${prevResult?.passedTests?.size()}")
+        echo("totalCount : ${result.totalCount} / ${prevResult?.totalCount}, " +
+                "failCount : ${result.failCount} / ${prevResult?.failCount}, " +
+                "skipCount : ${result.skipCount} / ${prevResult?.skipCount}, " +
+                "passCount : ${result.passCount} / ${prevResult?.passedTests?.size()}")
 //        newResult = [totalCount: result.totalCount - prevResult.totalCount,
 //                     failCount : result.failCount - prevResult.failCount,
 //                     skipCount : result.skipCount - prevResult.skipCount,
