@@ -44,6 +44,8 @@ def call(Map args) {
         }
         if (gitBranch == 'dev' || gitBranch == 'devel')
             params.llvmBranch = 'dev'
+        else if (gitBranch == 'faster-testsuite-runs')
+            params.llvmBranch = 'dev' // FIXME: remove when LLVM dev->master merge complete
         else if (gitBranch == 'abi-breaking-changes')
             params.llvmBranch = 'abi-breaking-changes'
         else if (gitBranch == 'upstream-llvm-merge')
