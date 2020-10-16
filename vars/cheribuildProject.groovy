@@ -207,9 +207,9 @@ def runTests(CheribuildProjectParams proj, String testSuffix) {
 	updatePRStatus(proj, "Running tests for PR...")
 	// Custom test script only support for CheriBSD
 	if (proj.testScript &&
-			proj.architecture != "mips-nocheri" &&
-			proj.architecture != "mips-hybrid" &&
-			proj.architecture != "mips-purecap") {
+			proj.architecture != "mips64" &&
+			proj.architecture != "mips64-hybrid" &&
+			proj.architecture != "mips64-purecap") {
 		error("Running tests for target ${proj.architecture} not supported yet")
 	}
 
@@ -218,16 +218,16 @@ def runTests(CheribuildProjectParams proj, String testSuffix) {
 	String kernelPrefix = "ERROR"
 	String qemuCommand = "ERROR"
 	String test_cpu = proj.architecture
-	if (test_cpu == 'mips-nocheri' && proj.useCheriKernelForMipsTests) {
-		test_cpu = 'mips-hybrid'
+	if (test_cpu == 'mips64' && proj.useCheriKernelForMipsTests) {
+		test_cpu = 'mips64-hybrid'
 	}
 	def defaultTestExtraArgs = ''
 	if (test_cpu != "native") {
-		if (test_cpu == 'mips-nocheri') {
+		if (test_cpu == 'mips64') {
 			kernelPrefix = 'freebsd'
 			imagePrefix = 'freebsd'
 			qemuCommand = 'qemu-system-cheri128'
-		} else if (test_cpu == 'mips-hybrid' || test_cpu == 'mips-purecap') {
+		} else if (test_cpu == 'mips64-hybrid' || test_cpu == 'mips64-purecap') {
 			kernelPrefix = test_cpu == 'cheribsd128-cheri128'
 			imagePrefix = test_cpu == 'cheribsd128'
 			qemuCommand = "qemu-system-cheri128"
@@ -300,13 +300,6 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 	// compute sdkCPU from args
 	if (!proj.sdkCPU) {
 		proj.sdkCPU = proj.architecture
-		if (proj.sdkCPU == "mips-nocheri") {
-			proj.sdkCPU = "mips" // Handle old jenkins job names
-		} else if (proj.sdkCPU == "mips-hybrid" || proj.sdkCPU == "mips-purecap") {
-			proj.sdkCPU = "cheri128" // Handle old jenkins job names
-		} else {
-			proj.sdkCPU = proj.architecture
-		}
 	}
 	// Note: env.FOO = ... sets the environment globally across all nodes
 	// so it cannot be used if we want to support cheribuildProject inside
@@ -470,14 +463,16 @@ CheribuildProjectParams parseParams(Map args) {
 		params.cpu = "default"
 	}
 	if (!params.architecture) {
-		if (params.target.endsWith('-mips-nocheri')) {
-			params.architecture = 'mips'
+		if (params.target.endsWith('-mips-nocheri') || params.target.endsWith('-mips64')) {
+			params.architecture = 'mips64'
 		// Handle old hybrid target names
-		} else if (params.target.endsWith('-mips-hybrid') || params.target == 'cheribsd-cheri'
-				|| params.target == 'disk-image-cheri' || params.target == 'run-cheri') {
-			params.architecture = 'mips-hybrid'
-		} else if (params.target.endsWith('-mips-purecap') || params.target.endsWith('-cheri')) {
-			params.architecture = 'mips-purecap'
+		} else if (params.target.endsWith('-mips-hybrid') || params.target.endsWith('-mips64-hybrid')
+				|| params.target == 'cheribsd-cheri' || params.target == 'disk-image-cheri'
+				|| params.target == 'run-cheri') {
+			params.architecture = 'mips64-hybrid'
+		} else if (params.target.endsWith('-mips-purecap') || params.target.endsWith('-mips64-purecap')
+				|| params.target.endsWith('-cheri')) {
+			params.architecture = 'mips64-purecap'
 		} else if (params.target.endsWith('-riscv64')) {
 			params.architecture = 'riscv64'
 		} else if (params.target.endsWith('-riscv64-hybrid')) {
@@ -485,18 +480,18 @@ CheribuildProjectParams parseParams(Map args) {
 		} else if (params.target.endsWith('-riscv64-purecap')) {
 			params.architecture = 'riscv64-purecap'
 		} else if (params.target.endsWith('-purecap')) { // legacy target names
-			params.architecture = 'mips-purecap'
+			params.architecture = 'mips64-purecap'
 		} else if (params.target.endsWith('-native')) { // legacy target names
 			params.architecture = 'native'
 		}
 	}
 	if (!params.architecture) {
 		if (params.cpu == 'mips') {
-			params.architecture = 'mips-nocheri'
+			params.architecture = 'mips64'
 		} else if (params.cpu == 'hybrid-128') {
-			params.architecture = 'mips-hybrid'
+			params.architecture = 'mips64-hybrid'
 		} else if (params.cpu == 'cheri128') {
-			params.architecture = 'mips-purecap'
+			params.architecture = 'mips64-purecap'
 		} else if (params.cpu == 'native') {
 			params.architecture = 'native'
 		}
@@ -506,12 +501,12 @@ CheribuildProjectParams parseParams(Map args) {
 	}
 	// Canonicalize architecure:
 	if (params.architecture == 'purecap')
-		params.architecture = 'mips-purecap'
+		params.architecture = 'mips64-purecap'
 	if (params.architecture == 'cheri') {
 		if (params.target.startsWith('cheribsd') || params.target.startsWith('disk-image') || params.target.startsWith('run')) {
-			params.architecture = 'mips-hybrid'
+			params.architecture = 'mips64-hybrid'
 		} else {
-			params.architecture = 'mips-purecap'
+			params.architecture = 'mips64-purecap'
 		}
 	}
 	if (!params.tarballName) {
