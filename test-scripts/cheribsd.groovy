@@ -65,7 +65,7 @@ def buildImageAndRunTests(params, String suffix) {
         def testExtraArgs = ['--no-timestamped-test-subdir']
         if (GlobalVars.isTestSuiteJob) {
             testExtraArgs += ['--kyua-tests-files', '/usr/tests/Kyuafile',
-                              '--no-run-cheritest', // only run kyua tests
+                              '--no-run-cheribsdtest', // only run kyua tests
             ]
         } else {
             // Run the libc tests as a basic regression test (since the full testsuite takes too long)
