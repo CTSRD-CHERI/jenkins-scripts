@@ -15,6 +15,10 @@ def jobProperties = [rateLimitBuilds(throttle: [count: 2, durationName: 'hour', 
                      copyArtifactPermission('*'), // Downstream jobs need the compiler tarball
                      [$class: 'GithubProjectProperty', displayName: '', projectUrlStr: 'https://github.com/CTSRD-CHERI/llvm-project/'],
 ]
+
+// FIXME: remove once this is actually a multibranch project
+env.BRANCH_NAME = 'morello/master'
+
 if (env.JOB_NAME.startsWith('Morello-LLVM-linux/') || env.JOB_NAME.startsWith('Morello-LLVM-freebsd/')) {
     // Skip pull requests and non-default branches:
     def archiveBranches = ['morello/master']
