@@ -11,14 +11,18 @@ class CheribuildProjectParams implements Serializable {
 	// Whether to skip the clone/copy artifacts stage (useful if there are multiple cheribuild invocations)
 	boolean skipArtifacts = false
 	// Whether to skip the copy artifacts stage (useful if there are multiple cheribuild invocations)
-	boolean skipInitialSetup = false // skip both the copy artifacts and clone stage
+	boolean skipInitialSetup = false
+	// skip both the copy artifacts and clone stage
 	boolean skipTarball = false // don't create a tarball to archive
 	boolean skipArchiving = false // don't archive the artifacts
-	String nodeLabel = "linux" // if non-null allocate a new jenkins node using node()
+	String nodeLabel = "linux"
+	// if non-null allocate a new jenkins node using node()
 	String uniqueId = null // Used for the github/analysis ID
-	String buildOS = null // Used when copying artifacts (the label parameter for those other jobs)
+	String buildOS = null
+	// Used when copying artifacts (the label parameter for those other jobs)
 	BuildResult _result = BuildResult.PENDING // For github status updates
-	String getResult() { return _result; }
+	String getResult() { return _result }
+
 	void setResult(BuildResult newResult) {
 		if (newResult.ordinal() < _result.ordinal()) {
 			echo("Cannot change build result from ${_result} to ${newResult}")
@@ -27,15 +31,18 @@ class CheribuildProjectParams implements Serializable {
 			_result = newResult
 		}
 	}
+
 	void setResult(String newResult) {
 		setResult(newResult as BuildResult)
 	}
 	Closure callGlobalUnstable = null;
+
 	void statusUnstable(String message) {
 		setResult(BuildResult.UNSTABLE)
 		this.callGlobalUnstable(message)
 	}
 	Closure callGlobalError = null;
+
 	void statusFailure(String message) {
 		setResult(BuildResult.FAILURE)
 		this.callGlobalError(message)
@@ -43,9 +50,12 @@ class CheribuildProjectParams implements Serializable {
 	boolean setGitHubStatus = true
 	String gitHubStatusContext = null
 
-	Object scmOverride = null // Set this to use something other than the default scm variable for checkout
-	Object gitInfo = [:]  // This will be set the the git info from the checkout stage
-	Map gitInfoMap = null  // Can be used to pass in a map that will be updated with the git info
+	Object scmOverride = null
+	// Set this to use something other than the default scm variable for checkout
+	Object gitInfo = [:]
+	// This will be set the the git info from the checkout stage
+	Map gitInfoMap = null
+	// Can be used to pass in a map that will be updated with the git info
 	/// Custom gitInfo object for GitHub status updates (if the status should be
 	/// placed on a different repo than the one we are building
 	Object gitHubStatusArgs = null
@@ -60,30 +70,39 @@ class CheribuildProjectParams implements Serializable {
 	String extraArgs = '' // additional arguments to pass to cheribuild.py
 	String cpu = 'default' // --cpu flag for cheribuild (deprecated)
 	String architecture // suffix to be used for all output files, etc.
-	String sdkCPU  // the SDK used to build (e.g. for cheri256-hybrid will use the cheri256 sdk to build MIPS code)
+	String sdkCPU
+	// the SDK used to build (e.g. for cheri256-hybrid will use the cheri256 sdk to build MIPS code)
 	String capTableABI = null // use whatever the default is
 	boolean fetchCheriCompiler = true
 	boolean sdkCompilerOnly = false
 	boolean useNewLLVMJobs = true // Whether to use the new LLVM jobs
-	String llvmBranch = null  // Git branch of LLVM to use for building. When NULL infer from branch name.
+	String llvmBranch = null
+	// Git branch of LLVM to use for building. When NULL infer from branch name.
 	// otherwise pull just a specific set of artifacts
-	List artifactsToCopy = [] // List of (job:filter) for artifacts which need copying
+	List artifactsToCopy = []
+	// List of (job:filter) for artifacts which need copying
 	String sdkArchive  // The artifact name filter for the sdk job
-	String tarballName  // output tarball name (default is "${target}-${cpu}.tar.xz")
+	String tarballName
+	// output tarball name (default is "${target}-${cpu}.tar.xz")
 	String customGitCheckoutDir
 	// by default we try to do an incremental build and if that fails fall back to a full build
 	// FIXME: not sure this is actually working, it seems to rebuild all the time
-	boolean incrementalBuild = false // whether to force a clean build (i.e. don't pass --no-clean to cheribuild)
+	boolean incrementalBuild = false
+	// whether to force a clean build (i.e. don't pass --no-clean to cheribuild)
 
 	/// Test parameters:
 	def testTimeout = 120 * 60 // timeout for running tests (default 2 hours)
 	boolean minimalTestImage = true
 	boolean runTests = false
 	boolean useCheriKernelForMipsTests = false
-	String testScript  // if set this will be invoked by ./boot_cheribsd.py in the test stage. If not tests are skipped
-	String testExtraArgs = ''  // Additional command line options to be passed to ./boot_cheribsd.py
-	boolean runTestsInDocker = false // Seems to be really slow (1 min 44 until init instead of 15 secs)
-	String junitXmlFiles = null // Pattern for junit() step to record test results
+	String testScript
+	// if set this will be invoked by ./boot_cheribsd.py in the test stage. If not tests are skipped
+	String testExtraArgs = ''
+	// Additional command line options to be passed to ./boot_cheribsd.py
+	boolean runTestsInDocker = false
+	// Seems to be really slow (1 min 44 until init instead of 15 secs)
+	String junitXmlFiles = null
+	// Pattern for junit() step to record test results
 	// FIXME: implement this:
 	// List testOutputs  // if set these files will be scp'd from CheriBSD after running the tests (e.g. JUnit XML files)
 
@@ -96,12 +115,14 @@ class CheribuildProjectParams implements Serializable {
 	def beforeBuild  // callback before starting docker
 	def beforeBuildInDocker  // first command inside docker
 	def beforeTarball  // after building but before creating the tarball
-	def afterBuildInDocker  // after building and tarball (no longer inside docker)
+	def afterBuildInDocker
+	// after building and tarball (no longer inside docker)
 	def afterBuild  // after building and tarball (no longer inside docker)
 	def beforeTests // before running the tests (before docker)
 	def beforeTestsInDocker // before running the tests (inside docker)
 	// def afterTestsInCheriBSD // before running the tests (sent to cheribsd command line)
-	def afterTestsInDocker // before running the tests (inside docker, cheribsd no longer running)
+	def afterTestsInDocker
+	// before running the tests (inside docker, cheribsd no longer running)
 	def afterTests // before running the tests (no longer inside docker)
 
 	String commonCheribuildArgs() {
@@ -119,6 +140,9 @@ boolean updatePRStatus(CheribuildProjectParams proj, String message, String stat
 	if (!env.CHANGE_ID) {
 		return false
 	}
+	if (!proj.setGitHubStatus) {
+		return false
+	}
 	try {
 		if (!status) {
 			status = proj._result.name().toLowerCase()
@@ -132,7 +156,8 @@ boolean updatePRStatus(CheribuildProjectParams proj, String message, String stat
 		pullRequest.createStatus(status: status,
 				context: proj.gitHubStatusContext,
 				description: message,
-				targetUrl: "${env.RUN_DISPLAY_URL}") // TODO: CHANGE_URL? or BUILD_URL?
+				targetUrl: "${env.RUN_DISPLAY_URL}")
+		// TODO: CHANGE_URL? or BUILD_URL?
 	} catch (e) {
 		error("Failed to set PR status: ${e}")
 		return false;
@@ -171,7 +196,8 @@ def build(CheribuildProjectParams proj, String stageSuffix) {
 			def cheribuildCmd = "./cheribuild/jenkins-cheri-build.py --build ${proj.commonCheribuildArgs()}"
 			// By default do a full rebuild. This can be disabled by passing incrementalBuild: true
 			if (proj.incrementalBuild) {
-				sh label: "Building with cheribuild (incremental) ${stageSuffix} on ${env.NODE_LABELS}", script: "${cheribuildCmd} --no-clean || (echo 'incremental build failed!' && ${cheribuildCmd})"
+				sh label: "Building with cheribuild (incremental) ${stageSuffix} on ${env.NODE_LABELS}",
+						script: "${cheribuildCmd} --no-clean || (echo 'incremental build failed!' && ${cheribuildCmd})"
 			} else {
 				sh label: "Building with cheribuild ${stageSuffix} on ${env.NODE_LABELS}", script: "${cheribuildCmd}"
 			}
@@ -189,12 +215,13 @@ def runTestsImpl(CheribuildProjectParams proj, String testExtraArgs, String qemu
 		if (proj.testScript && proj.architecture != 'native') {
 			def testCommand = "'export CPU=${proj.cpu}; " + proj.testScript.replaceAll('\'', '\\\'') + "'"
 			echo "Test command = ${testCommand}"
-			testExitCode = sh returnStatus: true, label: "Running simple test (${testSuffix})", script: "\$WORKSPACE/cheribuild/test-scripts/run_simple_tests.py --qemu-cmd ${qemuPath} ${testExtraArgs} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
+			testExitCode = sh returnStatus: true, label: "Running simple test (${testSuffix})",
+					script: "\$WORKSPACE/cheribuild/test-scripts/run_simple_tests.py --qemu-cmd ${qemuPath} ${testExtraArgs} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
 		} else {
-			String cheribuildTestArgs = (proj.architecture == 'native')
-					? "${testExtraArgs} ${proj.testExtraArgs}"
-					: "--test-extra-args=\"--qemu-cmd ${qemuPath} ${testExtraArgs} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}\""
-			testExitCode = sh returnStatus: true, label: "Running tests with cheribuild ${testSuffix}", script: "\$WORKSPACE/cheribuild/jenkins-cheri-build.py --test ${proj.commonCheribuildArgs()} ${cheribuildTestArgs}"
+			String cheribuildTestArgs = (proj.architecture == 'native') ? "${testExtraArgs} ${proj.testExtraArgs}" :
+										"--test-extra-args=\"--qemu-cmd ${qemuPath} ${testExtraArgs} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}\""
+			testExitCode = sh returnStatus: true, label: "Running tests with cheribuild ${testSuffix}",
+					script: "\$WORKSPACE/cheribuild/jenkins-cheri-build.py --test ${proj.commonCheribuildArgs()} ${cheribuildTestArgs}"
 		}
 		if (testExitCode != 0) {
 			proj.statusUnstable("Test script returned ${testExitCode}")
@@ -206,10 +233,8 @@ def runTestsImpl(CheribuildProjectParams proj, String testExtraArgs, String qemu
 def runTests(CheribuildProjectParams proj, String testSuffix) {
 	updatePRStatus(proj, "Running tests for PR...")
 	// Custom test script only support for CheriBSD
-	if (proj.testScript &&
-			proj.architecture != "mips64" &&
-			proj.architecture != "mips64-hybrid" &&
-			proj.architecture != "mips64-purecap") {
+	if (proj.testScript && proj.architecture != "mips64" && proj.architecture != "mips64-hybrid" && proj.architecture !=
+		"mips64-purecap") {
 		error("Running tests for target ${proj.architecture} not supported yet")
 	}
 
@@ -239,12 +264,18 @@ def runTests(CheribuildProjectParams proj, String testSuffix) {
 		diskImageProjectName = "CheriBSD-allkernels-multi/BASE_ABI=${baseABI},CPU=${test_cpu},ISA=vanilla,label=freebsd"
 		sh 'rm -rfv $WORKSPACE/cheribsd-full.* $WORKSPACE/cheribsd-minimal.* $WORKSPACE/cheribsd-malta64-kernel*'
 		if (proj.minimalTestImage) {
-			copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-mfs-root-minimal-cheribuild-kernel.bz2", target: '.', fingerprintArtifacts: false, flatten: true, selector: lastSuccessful()
+			copyArtifacts projectName: diskImageProjectName,
+					filter: "ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-mfs-root-minimal-cheribuild-kernel.bz2",
+					target: '.', fingerprintArtifacts: false, flatten: true, selector: lastSuccessful()
 			sh "ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-mfs-root-minimal-cheribuild-kernel.bz2 \$WORKSPACE/${test_cpu}-malta64-minimal-kernel.bz2"
 			defaultTestExtraArgs = "--kernel ${test_cpu}-malta64-minimal-kernel.bz2"
 		} else {
-			copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-full.img.xz", target: '.', fingerprintArtifacts: false, flatten: true, selector: lastSuccessful()
-			copyArtifacts projectName: diskImageProjectName, filter: "ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-kernel.bz2", target: '.', fingerprintArtifacts: false, flatten: true, selector: lastSuccessful()
+			copyArtifacts projectName: diskImageProjectName,
+					filter: "ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-full.img.xz", target: '.',
+					fingerprintArtifacts: false, flatten: true, selector: lastSuccessful()
+			copyArtifacts projectName: diskImageProjectName,
+					filter: "ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-kernel.bz2", target: '.',
+					fingerprintArtifacts: false, flatten: true, selector: lastSuccessful()
 			sh """
 ln -sfn \$WORKSPACE/${imagePrefix}-full.img.xz \$WORKSPACE/${test_cpu}-full.img.xz
 ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/${test_cpu}-malta64-kernel.bz2
@@ -270,8 +301,10 @@ ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/${test_cpu}-m
 		if (test_cpu != "native") {
 			// copy qemu archive and run directly on the host
 			dir("qemu-${proj.buildOS}") { deleteDir() }
-			copyArtifacts projectName: "qemu/qemu-cheri", filter: "qemu-${proj.buildOS}/**", target: '.', fingerprintArtifacts: false
-			sh label: 'generate SSH key', script: 'test -e $WORKSPACE/id_ed25519 || ssh-keygen -t ed25519 -N \'\' -f $WORKSPACE/id_ed25519 < /dev/null'
+			copyArtifacts projectName: "qemu/qemu-cheri", filter: "qemu-${proj.buildOS}/**", target: '.',
+					fingerprintArtifacts: false
+			sh label: 'generate SSH key',
+					script: 'test -e $WORKSPACE/id_ed25519 || ssh-keygen -t ed25519 -N \'\' -f $WORKSPACE/id_ed25519 < /dev/null'
 			defaultTestExtraArgs += " --ssh-key \$WORKSPACE/id_ed25519.pub"
 		}
 		runTestsImpl(proj, defaultTestExtraArgs, "\$WORKSPACE/qemu-${proj.buildOS}/bin/${qemuCommand}", testSuffix)
@@ -279,7 +312,8 @@ ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/${test_cpu}-m
 	}
 	runCallback(proj, proj.afterTests)
 	if (proj.junitXmlFiles != null) {
-		def testSummary = junitReturnCurrentSummary allowEmptyResults: false, keepLongStdio: true, testResults: proj.junitXmlFiles
+		def testSummary = junitReturnCurrentSummary allowEmptyResults: false, keepLongStdio: true,
+				testResults: proj.junitXmlFiles
 		echo("Test results: ${testSummary.totalCount}, Failures: ${testSummary.failCount}, Skipped: ${testSummary.skipCount}, Passed: ${testSummary.passCount}")
 		if (testSummary.passCount == 0 || testSummary.totalCount == 0) {
 			proj.statusFailure("No tests successful?")
@@ -312,8 +346,9 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 		// echo("env in block=${env}")
 		if (!proj.uniqueId) {
 			proj.uniqueId = "${currentBuild.projectName}/${proj.target}"
-			if (proj.nodeLabel)
+			if (proj.nodeLabel) {
 				proj.uniqueId += "/${proj.nodeLabel}"
+			}
 			while (CheribuildProjectParams.uniqueIDs.containsKey(proj.uniqueId.toString())) {
 				proj.uniqueId += "_1"
 			}
@@ -329,8 +364,9 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 		try {
 			runCheribuildImplWithEnv(proj)
 			// If the status has not been changed (i.e. to UNSTABLE/FAILURE) it means we SUCCEEDED
-			if (proj._result == BuildResult.PENDING)
+			if (proj._result == BuildResult.PENDING) {
 				proj._result = BuildResult.SUCCESS
+			}
 		} catch (e) {
 			// e.printStackTrace()
 			echo("Marking current build as failed! (${e}:${e.getMessage()})")
@@ -341,16 +377,19 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			// if (proj.targetArchitectures.size() == 1 && proj._result == BuildResult.SUCCESS && "${currentBuild.currentResult}" == "UNSTABLE") {
 			//     proj._result = BuildResult.UNSTABLE
 			// }
-			echo("Setting github status after build\nproj.result=${proj.result}, currentBuild.result=${currentBuild.result} currentBuild.currentResult=${currentBuild.currentResult}")
 			if (proj._result == BuildResult.PENDING) {
 				proj.statusFailure("RESULT IS STILL PENDING! Something is very wrong...")
 			}
-			if (!updatePRStatus(proj, "Finished (${proj.result}).") && proj.setGitHubStatus) {
-				def message = "${currentBuild.projectName}"
-				if (proj.nodeLabel) {
-					message += " ${proj.nodeLabel}"
+			if (proj.setGitHubStatus) {
+				echo("Setting github status after build\nproj.result=${proj.result}, currentBuild.result=${currentBuild.result} currentBuild.currentResult=${currentBuild.currentResult}")
+				if (!updatePRStatus(proj, "Finished (${proj.result}).") && proj.setGitHubStatus) {
+					def message = "${currentBuild.projectName}"
+					if (proj.nodeLabel) {
+						message += " ${proj.nodeLabel}"
+					}
+					setGitHubStatus(proj.getRepoInfoForGitHubStatus() +
+									[message: message, result: proj.result, context: proj.gitHubStatusContext])
 				}
-				setGitHubStatus(proj.getRepoInfoForGitHubStatus() + [message: message, result: proj.result, context: proj.gitHubStatusContext])
 			}
 		}
 	}
@@ -384,17 +423,21 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 				echo("Checkout result: ${proj.gitInfo}")
 				gitHubCommitSHA = proj.gitInfo?.GIT_COMMIT
 				gitHubRepoURL = proj.gitInfo?.GIT_URL
-				if (proj.gitInfoMap != null)
-					proj.gitInfoMap << proj.gitInfo  // store it so it exists even on exception
+				if (proj.gitInfoMap != null) {
+					proj.gitInfoMap << proj.gitInfo
+				}
+				// store it so it exists even on exception
 			}
 		}
 		dir('cheribuild') {
-			def x = cloneGitRepoWithReference(url: "https://github.com/CTSRD-CHERI/cheribuild.git", changelog: false, poll: false, refdir: "cheribuild")
+			def x = cloneGitRepoWithReference(url: "https://github.com/CTSRD-CHERI/cheribuild.git", changelog: false,
+					poll: false, refdir: "cheribuild")
 			echo("Checked out cheribuild: ${x}")
 		}
 	}
-	if (!updatePRStatus(proj, "About to build PR...", 'pending') && proj.setGitHubStatus) {
-		setGitHubStatus(proj.getRepoInfoForGitHubStatus() + [message: "${currentBuild.projectName} building ...", context: proj.gitHubStatusContext])
+	if (proj.setGitHubStatus && !updatePRStatus(proj, "About to build PR...", 'pending') && proj.setGitHubStatus) {
+		setGitHubStatus(proj.getRepoInfoForGitHubStatus() +
+						[message: "${currentBuild.projectName} building ...", context: proj.gitHubStatusContext])
 	}
 	if (!proj.skipArtifacts) {
 		stage("Copying required artifacts") {
@@ -405,10 +448,10 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			// now copy all the artifacts
 			if (proj.fetchCheriCompiler) {
 				fetchCheriSDK(target: proj.target, cpu: proj.sdkCPU,
-						      compilerOnly: proj.sdkCompilerOnly, llvmBranch: proj.llvmBranch,
-							  buildOS: proj.buildOS, capTableABI: proj.capTableABI,
-							  useNewLLVMJobs: proj.useNewLLVMJobs,
-							  extraCheribuildArgs: proj.extraArgs)
+						compilerOnly: proj.sdkCompilerOnly, llvmBranch: proj.llvmBranch,
+						buildOS: proj.buildOS, capTableABI: proj.capTableABI,
+						useNewLLVMJobs: proj.useNewLLVMJobs,
+						extraCheribuildArgs: proj.extraArgs)
 			}
 			echo 'WORKSPACE after checkout:'
 			sh 'ls -la'
@@ -425,18 +468,25 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 	def analysisId = proj.stageSuffix ? proj.stageSuffix : "${proj.uniqueId}"
 	analysisId.replace(' ', '_').replace('/', '_')
 	warnError("FAILED TO RECORD ISSUES") {
-		recordIssues aggregatingResults: true, blameDisabled: true, enabledForFailure: true, forensicsDisabled: true, sourceCodeEncoding: 'UTF-8', tools: [clang(reportEncoding: 'UTF-8', id: "clang-${analysisId}")]
+		recordIssues aggregatingResults: true, blameDisabled: true, enabledForFailure: true, forensicsDisabled: true,
+				sourceCodeEncoding: 'UTF-8', tools: [clang(reportEncoding: 'UTF-8', id: "clang-${analysisId}")]
 	}
 	if (!proj.skipTarball) {
 		stage("Creating tarball for ${proj.target}") {
 			runCallback(proj, proj.beforeTarball)
-			sh label: "Create tarball ${buildSuffix}", script: "./cheribuild/jenkins-cheri-build.py --tarball --tarball-name ${proj.tarballName} --no-build ${proj.commonCheribuildArgs()}"
+			sh label: "Create tarball ${buildSuffix}",
+					script: "./cheribuild/jenkins-cheri-build.py --tarball --tarball-name ${proj.tarballName} --no-build ${proj.commonCheribuildArgs()}"
 			sh label: "List tarball ${buildSuffix}", script: 'ls -lah; ls -lah tarball || true'
 		}
 		if (!proj.skipArchiving) {
 			stage("Archiving artificats for ${proj.target}") {
-				updatePRStatus(proj, "Archiving artifacts...")
-				archiveArtifacts allowEmptyArchive: false, artifacts: proj.tarballName, fingerprint: true, onlyIfSuccessful: true
+				if (!updatePRStatus(proj, "Archiving artifacts...") && proj.setGitHubStatus) {
+					setGitHubStatus(proj.getRepoInfoForGitHubStatus() +
+									[message: "${currentBuild.projectName} archiving artifacts ...",
+									 context: proj.gitHubStatusContext])
+				}
+				archiveArtifacts allowEmptyArchive: false, artifacts: proj.tarballName, fingerprint: true,
+						onlyIfSuccessful: true
 			}
 		}
 	}
@@ -465,13 +515,13 @@ CheribuildProjectParams parseParams(Map args) {
 	if (!params.architecture) {
 		if (params.target.endsWith('-mips-nocheri') || params.target.endsWith('-mips64')) {
 			params.architecture = 'mips64'
-		// Handle old hybrid target names
-		} else if (params.target.endsWith('-mips-hybrid') || params.target.endsWith('-mips64-hybrid')
-				|| params.target == 'cheribsd-cheri' || params.target == 'disk-image-cheri'
-				|| params.target == 'run-cheri') {
+			// Handle old hybrid target names
+		} else if (params.target.endsWith('-mips-hybrid') || params.target.endsWith('-mips64-hybrid') ||
+				   params.target == 'cheribsd-cheri' || params.target == 'disk-image-cheri' || params.target ==
+				   'run-cheri') {
 			params.architecture = 'mips64-hybrid'
-		} else if (params.target.endsWith('-mips-purecap') || params.target.endsWith('-mips64-purecap')
-				|| params.target.endsWith('-cheri')) {
+		} else if (params.target.endsWith('-mips-purecap') || params.target.endsWith('-mips64-purecap') ||
+				   params.target.endsWith('-cheri')) {
 			params.architecture = 'mips64-purecap'
 		} else if (params.target.endsWith('-riscv64')) {
 			params.architecture = 'riscv64'
@@ -500,10 +550,12 @@ CheribuildProjectParams parseParams(Map args) {
 		error("Could not infer 'architecture' parameter from target (${params.target}) or cpu (${params.cpu})")
 	}
 	// Canonicalize architecure:
-	if (params.architecture == 'purecap')
+	if (params.architecture == 'purecap') {
 		params.architecture = 'mips64-purecap'
+	}
 	if (params.architecture == 'cheri') {
-		if (params.target.startsWith('cheribsd') || params.target.startsWith('disk-image') || params.target.startsWith('run')) {
+		if (params.target.startsWith('cheribsd') || params.target.startsWith('disk-image') ||
+			params.target.startsWith('run')) {
 			params.architecture = 'mips64-hybrid'
 		} else {
 			params.architecture = 'mips64-purecap'
@@ -559,7 +611,9 @@ def call(Map args) {
 	targetArchitectures.each { String suffix ->
 		tasks[suffix] = { ->
 			String targetWithoutSuffix = args.getOrDefault('target', 'target must be set!')
-			Map newMap = args + [target: targetWithoutSuffix + "-${suffix}", _targetWithoutSuffix: targetWithoutSuffix, architecture: "${suffix}"]
+			Map newMap = args + [target              : targetWithoutSuffix + "-${suffix}",
+								 _targetWithoutSuffix: targetWithoutSuffix,
+								 architecture        : "${suffix}"]
 			echo("newMap=${newMap}")
 			// just call the real method here so that I can run the tests
 			// the problem is that if I invoke call I get endless recursion
@@ -569,8 +623,9 @@ def call(Map args) {
 	}
 	if (env?.UNIT_TEST) {
 		tasks.each { key, closure ->
-			if (key == "failFast")
+			if (key == "failFast") {
 				return
+			}
 			echo("Running ${key}")
 			closure()
 			echo("Finished running ${key}")
