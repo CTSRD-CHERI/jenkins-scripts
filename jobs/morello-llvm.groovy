@@ -80,7 +80,7 @@ Map defaultArgs = [target              : 'morello-llvm', architecture: 'native',
                    customGitCheckoutDir: 'morello-llvm-project',
                    nodeLabel           : nodeLabel,
                    fetchCheriCompiler  : false, // We are building the CHERI compiler, don't fetch it...
-                   extraArgs           : cheribuildArgs.join(" ") + " --pretend",
+                   extraArgs           : cheribuildArgs.join(" "),
                    skipArchiving       : true,
                    skipTarball         : true,
                    tarballName         : "morello-clang-llvm.tar.xz",
