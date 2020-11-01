@@ -133,7 +133,7 @@ if (archiveArtifacts) {
         String ltoCheribuildArgs = cheribuildArgs.join(" ")
         ltoCheribuildArgs = ltoCheribuildArgs.replace('--morello-llvm/build-everything', '')
         ltoCheribuildArgs = ltoCheribuildArgs.replace('--morello-llvm/install-toolchain-only', '')
-        ltoCheribuildArgs += ' --morello-llvm/use-lto --morello-llvm/build-minimal-toolchain --morello-llvm/build-all-targets'
+        ltoCheribuildArgs += ' --morello-llvm/use-lto --morello-llvm/build-minimal-toolchain'
         cheribuildProject(defaultArgs + [runTests : false,
                                          skipArchiving: false, skipTarball: false,
                                          uniqueId: env.JOB_NAME + "-LTO",
