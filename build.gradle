@@ -45,7 +45,7 @@ repositories {
 }
 
 dependencies {
-    compile 'org.codehaus.groovy:groovy-all:2.5.8'
+    compile 'org.codehaus.groovy:groovy-all:3.0.6'
     compile group: 'org.jenkins-ci.main', name: 'jenkins-core', version: 'latest.release'
     // compile group: 'org.jenkins-ci.plugins.workflow', name: 'workflow-multibranch', version: '+'
     // compile 'org.jenkins-ci.plugins:junit:jar:1.24'
