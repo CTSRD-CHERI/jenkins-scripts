@@ -17,9 +17,10 @@ def jobProperties = [rateLimitBuilds(throttle: [count: 2, durationName: 'hour', 
 ]
 
 // FIXME: remove once this is actually a multibranch project
-env.BRANCH_NAME = 'morello/master'
-
-if (env.JOB_NAME.startsWith('Morello-LLVM-linux/') || env.JOB_NAME.startsWith('Morello-LLVM-freebsd/')) {
+if (true) {
+    archiveArtifacts = true
+    cheribuildArgs.add("--use-all-cores")
+} else if (env.JOB_NAME.startsWith('Morello-LLVM-linux/') || env.JOB_NAME.startsWith('Morello-LLVM-freebsd/')) {
     // Skip pull requests and non-default branches:
     def archiveBranches = ['morello/master']
     if (!env.CHANGE_ID && (archiveBranches.contains(env.BRANCH_NAME))) {
