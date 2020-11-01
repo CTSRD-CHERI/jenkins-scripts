@@ -5,7 +5,7 @@ import com.cloudbees.groovy.cps.NonCPS
 
 @NonCPS
 def currentTestResult() {
-    def rawBuild = currentBuild.rawBuild;
+    def rawBuild = currentBuild.rawBuild
     if (rawBuild == null) {
         echo("WARNING: could not get rawBuild!")
         return [totalCount : 0,
