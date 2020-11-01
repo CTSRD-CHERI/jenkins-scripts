@@ -23,7 +23,7 @@ def call(Map args) {
                     depth  : args.getOrDefault("depth", 1),
                     noTags : true,
                     shallow: args.getOrDefault("shallow", true),
-                    refdir : refdir,
+                    reference : refdir,
                     timeout: 5]
     result["extensions"] = [cloneOpt]
     return result
