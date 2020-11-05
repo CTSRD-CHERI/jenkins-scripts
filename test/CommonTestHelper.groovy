@@ -42,6 +42,10 @@ class CommonTestHelper {
 
     static Map doCheckout(Map args) {
         String url = args.getOrDefault("url", null)
+        if (args.get('$class', null) == 'SubversionSCM') {
+            println("SVN repo: ${args}")
+            return ["SVN": "not supported"]
+        }
         println(args)
         if (!url) {
             // Sometimes it's nested in an scm node
