@@ -3,7 +3,6 @@ class FetchCheriSDKArgs implements Serializable {
     String target
     String cpu
     boolean compilerOnly = false
-    boolean useNewLLVMJobs = true
     String buildOS
     String llvmBranch = null
     String capTableABI = null
@@ -60,17 +59,16 @@ def call(Map args) {
     }
     // stage("Setup SDK for ${params.target} (${params.cpu})") {
         // now copy all the artifacts
-        def llvmJob = params.useNewLLVMJobs ? "CLANG-LLVM-${params.buildOS}/master" : "CLANG-LLVM-master/CPU=cheri-multi,label=${params.buildOS}"
-        if (params.llvmBranch != 'master') {
-            llvmJob = "CLANG-LLVM-${params.buildOS}/${params.llvmBranch}"
-        }
-        String llvmArtifact = params.useNewLLVMJobs ? "cheri-clang-llvm.tar.xz" : "cheri-multi-${params.llvmBranch}-clang-llvm.tar.xz"
+        def llvmJob = "CLANG-LLVM-${params.buildOS}/${params.llvmBranch}"
+        String llvmArtifact = "cheri-clang-llvm.tar.xz"
         copyArtifacts projectName: llvmJob, flatten: true, optional: false, filter: llvmArtifact, selector: lastSuccessful()
-        if (params.llvmBranch != 'master' || params.useNewLLVMJobs) {
+        if (params.llvmBranch != 'master') {
             // Rename the archive to the expected name
+            // FIXME: add cheribuild argument to allow overriding this
             sh "mv -vf \"${llvmArtifact}\" cheri-multi-master-clang-llvm.tar.xz"
         }
         if (!params.compilerOnly) {
+            // FIXME: needs to be updated to use the new job names
             def cheribsdProject = null
             if (params.capTableABI == "legacy") {
                 cheribsdProject = "CHERIBSD-WORLD/CPU=${params.cpu},ISA=legacy"

@@ -73,7 +73,6 @@ class CheribuildProjectParams implements Serializable {
 	String capTableABI = null // use whatever the default is
 	boolean fetchCheriCompiler = true
 	boolean sdkCompilerOnly = false
-	boolean useNewLLVMJobs = true // Whether to use the new LLVM jobs
 	String llvmBranch = null
 	// Git branch of LLVM to use for building. When NULL infer from branch name.
 	// otherwise pull just a specific set of artifacts
@@ -441,7 +440,6 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 				fetchCheriSDK(target: proj.target, cpu: proj.architecture,
 						compilerOnly: proj.sdkCompilerOnly, llvmBranch: proj.llvmBranch,
 						buildOS: proj.buildOS, capTableABI: proj.capTableABI,
-						useNewLLVMJobs: proj.useNewLLVMJobs,
 						extraCheribuildArgs: proj.extraArgs)
 			}
 			echo 'WORKSPACE after checkout:'
