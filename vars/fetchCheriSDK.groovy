@@ -67,7 +67,6 @@ def call(Map args) {
             sh "mv -vf \"${llvmArtifact}\" cheri-multi-master-clang-llvm.tar.xz"
         }
         if (!params.compilerOnly) {
-            // copyArtifacts projectName: "CHERI-SDK/ALLOC=jemalloc,ISA=vanilla,SDK_CPU=${proj.sdkCPU},label=${proj.label}", filter: '*-sdk.tar.xz', fingerprintArtifacts: true
             def cheribsdProject = null
             if (params.capTableABI == "legacy") {
                 cheribsdProject = "CHERIBSD-WORLD/CPU=${params.cpu},ISA=legacy"

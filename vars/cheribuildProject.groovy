@@ -70,8 +70,6 @@ class CheribuildProjectParams implements Serializable {
 	String extraArgs = '' // additional arguments to pass to cheribuild.py
 	String cpu = 'default' // --cpu flag for cheribuild (deprecated)
 	String architecture // suffix to be used for all output files, etc.
-	String sdkCPU
-	// the SDK used to build (e.g. for cheri256-hybrid will use the cheri256 sdk to build MIPS code)
 	String capTableABI = null // use whatever the default is
 	boolean fetchCheriCompiler = true
 	boolean sdkCompilerOnly = false
@@ -331,18 +329,11 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 		echo("Inferred build OS: '${proj.buildOS}'")
 	}
 
-	// compute sdkCPU from args
-	if (!proj.sdkCPU) {
-		proj.sdkCPU = proj.architecture
-	}
 	// Note: env.FOO = ... sets the environment globally across all nodes
 	// so it cannot be used if we want to support cheribuildProject inside
 	// parallel blocks
-	// env.CPU = proj.cpu
-	// env.SDK_CPU = proj.sdkCPU
-
 	// echo("env before =${env}")
-	withEnv(["CPU=${proj.cpu}", "SDK_CPU=${proj.sdkCPU}", "CHERIBUILD_ARCH=${proj.architecture}"]) {
+	withEnv(["CPU=${proj.cpu}", "SDK_CPU=${proj.architecture}", "CHERIBUILD_ARCH=${proj.architecture}"]) {
 		// echo("env in block=${env}")
 		if (!proj.uniqueId) {
 			proj.uniqueId = "${currentBuild.projectName}/${proj.target}"
@@ -406,8 +397,8 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 	}
 	stage("Checkout") {
 		if (!proj.skipScm) {
-			echo "Target arch: ${proj.architecture}, SDK CPU: ${proj.sdkCPU}, output: ${proj.tarballName}"
-			// def sdkImage = docker.image("ctsrd/cheri-sdk-${proj.sdkCPU}:latest")
+			echo "Target arch: ${proj.architecture}, output: ${proj.tarballName}"
+			// def sdkImage = docker.image("ctsrd/cheri-sdk:latest")
 			// sdkImage.pull() // make sure we have the latest available from Docker Hub
 			runCallback(proj, proj.beforeSCM)
 
@@ -447,7 +438,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			}
 			// now copy all the artifacts
 			if (proj.fetchCheriCompiler) {
-				fetchCheriSDK(target: proj.target, cpu: proj.sdkCPU,
+				fetchCheriSDK(target: proj.target, cpu: proj.architecture,
 						compilerOnly: proj.sdkCompilerOnly, llvmBranch: proj.llvmBranch,
 						buildOS: proj.buildOS, capTableABI: proj.capTableABI,
 						useNewLLVMJobs: proj.useNewLLVMJobs,
