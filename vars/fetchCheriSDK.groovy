@@ -67,11 +67,9 @@ def call(Map args) {
             llvmArtifact = "morello-clang-llvm.tar.xz"
         }
         copyArtifacts projectName: llvmJob, flatten: true, optional: false, filter: llvmArtifact, selector: lastSuccessful()
-        if (params.llvmBranch != 'master') {
-            // Rename the archive to the expected name
-            // FIXME: add cheribuild argument to allow overriding this
-            sh "mv -vf \"${llvmArtifact}\" cheri-multi-master-clang-llvm.tar.xz"
-        }
+        // Rename the archive to the expected name
+        // FIXME: add cheribuild argument to allow overriding this
+        sh "mv -vf \"${llvmArtifact}\" cheri-multi-master-clang-llvm.tar.xz"
         if (!params.compilerOnly) {
             // FIXME: needs to be updated to use the new job names
             def cheribsdProject = null
