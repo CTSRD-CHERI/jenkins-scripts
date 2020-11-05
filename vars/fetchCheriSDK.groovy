@@ -61,6 +61,11 @@ def call(Map args) {
         // now copy all the artifacts
         def llvmJob = "CLANG-LLVM-${params.buildOS}/${params.llvmBranch}"
         String llvmArtifact = "cheri-clang-llvm.tar.xz"
+        if (params.cpu.startsWith("morello")) {
+            // Note: this is not a multi-branch job (yet?), we always build the morello/master branch.
+            llvmJob = "Morello-LLVM-linux"
+            llvmArtifact = "morello-clang-llvm.tar.xz"
+        }
         copyArtifacts projectName: llvmJob, flatten: true, optional: false, filter: llvmArtifact, selector: lastSuccessful()
         if (params.llvmBranch != 'master') {
             // Rename the archive to the expected name
