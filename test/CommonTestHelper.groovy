@@ -1,6 +1,9 @@
 import com.lesfurets.jenkins.unit.BasePipelineTest
+import com.lesfurets.jenkins.unit.MethodSignature
+import com.lesfurets.jenkins.unit.PipelineTestHelper
 import org.junit.rules.TemporaryFolder
 
+import static com.lesfurets.jenkins.unit.MethodSignature.method
 import static com.lesfurets.jenkins.unit.global.lib.LibraryConfiguration.library
 import static com.lesfurets.jenkins.unit.global.lib.LocalSource.localSource
 import static com.lesfurets.jenkins.unit.global.lib.ProjectSource.projectSource
@@ -55,6 +58,24 @@ class CommonTestHelper {
         return [GIT_URL:url, GIT_COMMIT:"abcdef123456"]
     }
 
+    static void registerMethod(PipelineTestHelper helper, String name, Closure closure = null) {
+        registerMethod(helper, name, [], closure)
+    }
+    static void registerMethod(PipelineTestHelper helper, String name, List<Class> args, Closure closure = null) {
+        def found = helper.allowedMethodCallbacks.findAll {it.key.getName() == name }
+        for (it in found) {
+            if (it.key.getArgs() == args.toArray())
+                throw new IllegalArgumentException("Method already registered: ${it}")
+            else
+                println("Method ${name}(${args}) already registered with different args: ${it}")
+        }
+        helper.registerAllowedMethod(name, args, closure)
+    }
+    // Replace the implementation from com.lesfurets.jenkins.unit.BasePipelineTest
+    static void registerMethodOverride(PipelineTestHelper helper, String name, List<Class> args, Closure closure = null) {
+        helper.registerAllowedMethod(name, args, closure)
+    }
+
     static void setupTestEnv(TemporaryFolder folder, BasePipelineTest test, String testName) {
         def helper = test.helper
         def binding = test.binding
@@ -66,12 +87,16 @@ class CommonTestHelper {
                 // FIXME: doesn't work .retriever(projectSource('vars'))
                 .retriever(localSource('build/libs/'))
                 .build()
+
+        // helper.allowedMethodCallbacks.each { it -> println("${it.key}") }
         helper.registerSharedLibrary(library)
-        helper.registerAllowedMethod("timeout", [Integer.class, Closure.class], null)
-        helper.registerAllowedMethod("timeout", [Map.class, Closure.class], null)
-        helper.registerAllowedMethod("lock", [String.class, Closure.class], null)
-        helper.registerAllowedMethod("culprits", [], null)
-        helper.registerAllowedMethod("catchError", [Closure.class], { Closure c ->
+        registerMethod(helper, "timeout", [Integer.class, Closure.class], { Integer time, Closure c ->
+            c.delegate = delegate
+            helper.callClosure(c)
+        })
+        registerMethod(helper, "lock", [String.class, Closure.class], null)
+        registerMethod(helper, "culprits", [], null)
+        registerMethod(helper, "catchError", [Closure.class], { Closure c ->
             try {
                 c.delegate = delegate
                 helper.callClosure(c)
@@ -79,75 +104,46 @@ class CommonTestHelper {
                 binding.getVariable('currentBuild').result = 'FAILURE'
             }
         })
-        helper.registerAllowedMethod("warnError", [String, Closure], { String s, Closure c ->
-            try {
-                c.delegate = delegate
-                helper.callClosure(c)
-            } catch (ignored) {
-                echo("Warning: ${s}")
-                binding.getVariable('currentBuild').result = 'UNSTABLE'
-            }
-        })
         // Properties() helpers
-        helper.registerAllowedMethod("compressBuildLog", { -> ["compressBuildLog"] })
-        helper.registerAllowedMethod("disableConcurrentBuilds", { -> ["disableConcurrentBuilds"] })
-        helper.registerAllowedMethod("rateLimitBuilds", [Map.class], { args -> ["rateLimitBuilds": args] })
-        helper.registerAllowedMethod("copyArtifactPermission", [String.class], { arg -> ["copyArtifactPermission": arg] })
-        helper.registerAllowedMethod("durabilityHint", [String.class], { arg -> ["durabilityHint": arg] })
-        helper.registerAllowedMethod("disableResume", { -> ["disableResume"] })
-        helper.registerAllowedMethod("githubPush", { -> ["githubPush"] })
+        registerMethod(helper, "compressBuildLog", { -> ["compressBuildLog"] })
+        registerMethod(helper, "rateLimitBuilds", [Map.class], { args -> ["rateLimitBuilds": args] })
+        registerMethod(helper, "copyArtifactPermission", [String.class], { arg -> ["copyArtifactPermission": arg] })
+        registerMethod(helper, "durabilityHint", [String.class], { arg -> ["durabilityHint": arg] })
+        registerMethod(helper, "disableResume", { -> ["disableResume"] })
+        registerMethod(helper, "githubPush", { -> ["githubPush"] })
 
-        helper.registerAllowedMethod("brokenBuildSuspects", [], null)
-        helper.registerAllowedMethod("brokenTestsSuspects", [], null)
-        helper.registerAllowedMethod("issueCommentTrigger", [String], null)
-        helper.registerAllowedMethod("requestor", [], null)
-        helper.registerAllowedMethod("emailext", [Map.class], null)
-        helper.registerAllowedMethod("pollSCM", [String.class], null)
-        helper.registerAllowedMethod("lastSuccessful", [], null)
-        helper.registerAllowedMethod("deleteDir", [], null)
-        helper.registerAllowedMethod("checkout", [Map.class],
+        registerMethod(helper, "brokenBuildSuspects", [], null)
+        registerMethod(helper, "brokenTestsSuspects", [], null)
+        registerMethod(helper, "issueCommentTrigger", [String], null)
+        registerMethod(helper, "requestor", [], null)
+        registerMethod(helper, "emailext", [Map.class], null)
+        registerMethod(helper, "lastSuccessful", [], null)
+        registerMethodOverride(helper, "checkout", [Map.class],
                 { args -> doCheckout(args) })
-        helper.registerAllowedMethod("junit", [Map.class], { args -> [totalCount: 1234, failCount: 1, skipCount: 5, passCount: 1229] })
-        helper.registerAllowedMethod("timestamps", [Closure.class], null)
-        helper.registerAllowedMethod("ansiColor", [String.class, Closure.class], null)
-        helper.registerAllowedMethod("copyArtifacts", [Map.class], /*{ args -> println "Copying $args" }*/null)
-        helper.registerAllowedMethod("warnings", [Map.class], /*{ args -> println "Copying $args" }*/null)
-        helper.registerAllowedMethod("recordIssues", [Map.class], /*{ args -> println "Copying $args" }*/null)
-        helper.registerAllowedMethod("clang", [], { args -> ["clang"]})
-        helper.registerAllowedMethod("clang", [Map.class], { args -> ["clang"]})
-        helper.registerAllowedMethod("git", [String.class], { url -> [GIT_URL:url, GIT_COMMIT:"abcdef123456"] })
-        helper.registerAllowedMethod("git", [Map.class], { args -> [GIT_URL:args.url, GIT_COMMIT:"abcdef123456"] })
-        helper.registerAllowedMethod("githubNotify", [Map.class], null)
-        //FIXME: work around bug
-        helper.registerAllowedMethod("dir", [String, Closure]) { String path, Closure c ->
-            c.delegate = delegate
-            helper.callClosure(c)
-        }
+        registerMethod(helper, "junit", [Map.class], { args -> [totalCount: 1234, failCount: 1, skipCount: 5, passCount: 1229] })
+        registerMethod(helper, "timestamps", [Closure.class], null)
+        registerMethod(helper, "ansiColor", [String.class, Closure.class], null)
+        registerMethod(helper, "warnings", [Map.class], /*{ args -> println "Copying $args" }*/null)
+        registerMethod(helper, "recordIssues", [Map.class], /*{ args -> println "Copying $args" }*/null)
+        registerMethod(helper, "clang", [], { args -> ["clang"]})
+        registerMethod(helper, "clang", [Map.class], { args -> ["clang"]})
+        registerMethod(helper, "git", [String.class], { url -> [GIT_URL:url, GIT_COMMIT:"abcdef123456"] })
+        registerMethod(helper, "git", [Map.class], { args -> [GIT_URL:args.url, GIT_COMMIT:"abcdef123456"] })
+        registerMethod(helper, "githubNotify", [Map.class], null)
         // binding.getVariable('env').JOB_NAME = "CHERI1-TEST-pipeline"
-        // helper.registerAllowedMethod("cheriHardwareTest", [Map.class], { args -> cheriHardwareTest.call(args) })
+        // registerMethod(helper, "cheriHardwareTest", [Map.class], { args -> cheriHardwareTest.call(args) })
         def scmBranch = "feature_test"
         binding.setVariable('scm', [branch: 'master', url: 'https://www.github.com/CTSRD-CHERI/' + testName + '.git'])
         binding.setVariable('docker', new DockerMock())
-        /* binding.setVariable('scm', [
-                $class                           : 'GitSCM',
-                branches                         : [[name: scmBranch]],
-                doGenerateSubmoduleConfigurations: false,
-                extensions                       : [],
-                submoduleCfg                     : [],
-                userRemoteConfigs                : [[
-                                                            credentialsId: 'gitlab_git_ssh',
-                                                            url          : 'github.com/lesfurets/JenkinsPipelineUnit.git'
-                                                    ]]
-        ]) */
-        binding.setVariable('env', [NODE_LABELS: "linux14 linux docker", UNIT_TEST: "true", CHANGE_ID: null])
-        // Override the default helper
-        helper.registerAllowedMethod("error", [String], { msg ->
-            println(msg)
-            binding.getVariable('currentBuild').result = 'FAILURE'
+        test.addEnvVar('NODE_LABELS', 'linux14 linux docker')
+        test.addEnvVar('UNIT_TEST', 'true')
+        test.addEnvVar('CHANGE_ID', null)
+
+        // Override the default helper to ensure the exception is raised
+        registerMethodOverride(helper, "error", [String], { msg ->
+            test.updateBuildStatus('FAILURE')
             throw new RuntimeException(msg)
         })
-        helper.registerAllowedMethod("unstable", [String.class], null)
-        // binding.setVariable('currentBuild', [result: null, currentResult: 'SUCCESS', durationString: "XXX seconds"])
     }
 
     static void addEnvVars(BasePipelineTest test, Map<String, String> vars) {
