@@ -1,7 +1,7 @@
 
 class FetchCheriSDKArgs implements Serializable {
     String target
-    String cpu = "cheri128"
+    String cpu
     boolean compilerOnly = false
     boolean useNewLLVMJobs = true
     String buildOS
@@ -33,6 +33,10 @@ def call(Map args) {
             return params
         }
     }
+    if (params.cpu == null) {
+        error("fetchCheriSDK: Missing 'cpu' parameter")
+    }
+
 
     // Infer the correct LLVM for this project (dev/devel builds with LLVM dev)
     if (!params.llvmBranch) {
