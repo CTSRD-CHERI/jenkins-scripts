@@ -11,7 +11,7 @@ if (env.CHANGE_ID && !shouldBuildPullRequest()) {
 }
 
 echo("JOB_NAME='${env.JOB_NAME}', JOB_BASE_NAME='${env.JOB_BASE_NAME}'")
-def rateLimit = rateLimitBuilds(throttle: [count: 1, durationName: 'day', userBoost: true])
+def rateLimit = rateLimitBuilds(throttle: [count: 1, durationName: 'hour', userBoost: true])
 if (env.JOB_NAME.contains("CheriBSD-testsuite")) {
     GlobalVars.isTestSuiteJob = true
     // This job takes a long time to run (approximately 20 hours) so limit it to twice a week
@@ -54,7 +54,6 @@ def buildImageAndRunTests(params, String suffix) {
         }
     }
     stage("Running tests") {
-        def haveCheritest = suffix.endsWith('-hybrid') || suffix.endsWith('-purecap')
         // copy qemu archive and run directly on the host
         dir("qemu-${params.buildOS}") { deleteDir() }
         copyArtifacts projectName: "qemu/qemu-cheri", filter: "qemu-${params.buildOS}/**", target: '.', fingerprintArtifacts: false
@@ -68,8 +67,8 @@ def buildImageAndRunTests(params, String suffix) {
                               '--no-run-cheribsdtest', // only run kyua tests
             ]
         } else {
-            // Run the libc tests as a basic regression test (since the full testsuite takes too long)
-            testExtraArgs += ['--kyua-tests-files', '/usr/tests/lib/libc/Kyuafile']
+            // Run a small subset of tests to check that we didn't break running tests (since the full testsuite takes too long)
+            testExtraArgs += ['--kyua-tests-files', '/usr/tests/bin/cat/Kyuafile']
         }
         def exitCode = sh returnStatus: true, label: "Run tests in QEMU", script: """
 rm -rf cheribsd-test-results && mkdir cheribsd-test-results
