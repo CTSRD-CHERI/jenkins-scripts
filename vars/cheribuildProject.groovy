@@ -182,7 +182,6 @@ def runCallback(CheribuildProjectParams proj, cb) {
 }
 
 def build(CheribuildProjectParams proj, String stageSuffix) {
-	runCallback(proj, proj.beforeBuild)
 	// No docker yet
 	// sdkImage.inside('-u 0') {
 	ansiColor('xterm') {
@@ -429,6 +428,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 		setGitHubStatus(proj.getRepoInfoForGitHubStatus() +
 						[message: "${currentBuild.projectName} building ...", context: proj.gitHubStatusContext])
 	}
+	runCallback(proj, proj.beforeBuild)
 	if (!proj.skipArtifacts) {
 		stage("Copying required artifacts") {
 			// Can't use a for loop here: https://issues.jenkins-ci.org/browse/JENKINS-49732
