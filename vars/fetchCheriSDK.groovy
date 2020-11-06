@@ -60,17 +60,21 @@ def call(Map args) {
     // stage("Setup SDK for ${params.target} (${params.cpu})") {
         // now copy all the artifacts
         def llvmJob = "CLANG-LLVM-${params.buildOS}/${params.llvmBranch}"
-        String llvmArtifact = "cheri-clang-llvm.tar.xz"
+        String llvmArtifact = 'cheri-clang-llvm.tar.xz'
+        String compilerType = 'cheri-llvm'
         if (params.cpu.startsWith("morello")) {
             // Note: this is not a multi-branch job (yet?), we always build the morello/master branch.
-            llvmJob = "Morello-LLVM-linux"
-            llvmArtifact = "morello-clang-llvm.tar.xz"
+            llvmJob = 'Morello-LLVM-linux'
+            llvmArtifact = 'morello-clang-llvm.tar.xz'
+            compilerType = 'morello-llvm'
         }
         copyArtifacts projectName: llvmJob, flatten: true, optional: false, filter: llvmArtifact, selector: lastSuccessful()
         // Rename the archive to the expected name
         // FIXME: add cheribuild argument to allow overriding this
-        sh "mv -vf \"${llvmArtifact}\" cheri-multi-master-clang-llvm.tar.xz"
-        if (!params.compilerOnly) {
+        def extraArgs = ["--compiler-archive=${llvmArtifact}", "--compiler-type=${compilerType}"]
+        if (params.compilerOnly) {
+            extraArgs += ['--extract-compiler-only']
+        } else {
             // FIXME: needs to be updated to use the new job names
             def cheribsdProject = null
             if (params.capTableABI == "legacy") {
@@ -81,10 +85,9 @@ def call(Map args) {
                 error("Cannot infer SDK name for capTableABI=${params.capTableABI}")
             }
             copyArtifacts projectName: cheribsdProject, flatten: true, optional: false, filter: '*', selector: lastSuccessful()
-            ansiColor('xterm') {
-                extraArgs = params.capTableABI ? "--cap-table-abi=${params.capTableABI}" : ""
-                sh "env SDK_CPU=${params.cpu} ${params.cheribuildPath}/jenkins-cheri-build.py extract-sdk --cpu ${params.cpu} ${params.extraCheribuildArgs} ${extraArgs}"
-            }
+        }
+        ansiColor('xterm') {
+            sh "${params.cheribuildPath}/jenkins-cheri-build.py extract-sdk ${extraArgs.join(" ")}"
         }
     // }
 }
