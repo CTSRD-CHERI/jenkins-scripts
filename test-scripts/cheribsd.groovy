@@ -5,7 +5,7 @@ class GlobalVars { // "Groovy"
     public static boolean isTestSuiteJob = false;
 }
 
-if (env.CHANGE_ID && !shouldBuildPullRequest()) {
+if (env.CHANGE_ID && !shouldBuildPullRequest(context: proj.gitHubStatusContext)) {
     echo "Not building this pull request."
     return
 }
@@ -61,7 +61,7 @@ def buildImageAndRunTests(params, String suffix) {
 
         sh 'find qemu* && ls -lah'
         // TODO: run full testsuite (ideally in parallel)
-        def testExtraArgs = ['--no-timestamped-test-subdir']
+        def testExtraArgs = ['--no-timestamped-test-subdir', "--test-output-dir=\$WORKSPACE/test-results/${suffix}"]
         if (GlobalVars.isTestSuiteJob) {
             testExtraArgs += ['--kyua-tests-files', '/usr/tests/Kyuafile',
                               '--no-run-cheribsdtest', // only run kyua tests
@@ -71,20 +71,25 @@ def buildImageAndRunTests(params, String suffix) {
             testExtraArgs += ['--kyua-tests-files', '/usr/tests/bin/cat/Kyuafile']
         }
         def exitCode = sh returnStatus: true, label: "Run tests in QEMU", script: """
-rm -rf cheribsd-test-results && mkdir cheribsd-test-results
+rm -rf test-results && mkdir test-results/${suffix}
 ./cheribuild/jenkins-cheri-build.py --test run-${suffix} '--test-extra-args=${testExtraArgs.join(" ")}' ${params.extraArgs} --test-ssh-key \$WORKSPACE/id_ed25519.pub
-find cheribsd-test-results
+find test-results
 """
-        def summary = junitReturnCurrentSummary allowEmptyResults: false, keepLongStdio: true, testResults: 'cheribsd-test-results/*.xml'
+        // The test script returns 2 if the tests step is unstable, any other non-zero exit code is a fatal error
+        if (exitCode != 0 && exitCode != 2) {
+            params.statusFailure("Test script returned fatal exit code ${exitCode}! ${testResultMessage}")
+        }
+        def summary = junitReturnCurrentSummary allowEmptyResults: false, keepLongStdio: true, testResults: "test-results/${suffix}/*.xml"
         def testResultMessage = "Test summary: ${summary.totalCount}, Failures: ${summary.failCount}, Skipped: ${summary.skipCount}, Passed: ${summary.passCount}"
         echo("${suffix}: ${testResultMessage}")
-        if (exitCode != 0 || summary.failCount != 0) {
-            // Note: Junit set should have set stage/build status to unstable already, but we still need to set
-            // the per-configuration status, since Jenkins doesn't have a build result for each parallel branch.
-            params.statusUnstable("Test script returned ${exitCode}! ${testResultMessage}")
-        }
         if (summary.passCount == 0 || summary.totalCount == 0) {
             params.statusFailure("No tests successful? ${testResultMessage}")
+        } else if (exitCode == 2 || summary.failCount != 0) {
+            // Note: Junit set should have set stage/build status to unstable already, but we still need to set
+            // the per-configuration status, since Jenkins doesn't have a build result for each parallel branch.
+            params.statusUnstable("Unstable test results, test script returned ${exitCode}: ${testResultMessage}")
+            // If there were test failures, we archive the JUnitXML file to simplify debugging
+            archiveArtifacts allowEmptyArchive: true, artifacts: "test-results/${suffix}/*.xml", onlyIfSuccessful: false
         }
     }
     if (GlobalVars.archiveArtifacts) {
