@@ -127,6 +127,11 @@ class CheribuildProjectParams implements Serializable {
 		if (this.capTableABI) {
 			result += " --cap-table-abi=${this.capTableABI}"
 		}
+		// FIXME: ugly hack to avoid having to update the CheriBSD jenkinsfile
+		//  right now since the shell script expects the sysroot to end up in
+		//  the cherisdk dir.
+		if (!result.contains('--sysroot-output-path'))
+			result += " --sysroot-output-path=cherisdk"
 		return result
 	}
 }
