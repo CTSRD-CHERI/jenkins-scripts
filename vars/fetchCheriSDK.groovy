@@ -87,7 +87,10 @@ def call(Map args) {
             copyArtifacts projectName: cheribsdProject, flatten: true, optional: false, filter: '*', selector: lastSuccessful()
         }
         ansiColor('xterm') {
-            sh "${params.cheribuildPath}/jenkins-cheri-build.py extract-sdk ${extraArgs.join(" ")}"
+            sh label: 'extracting SDK archive:', script: """
+# delete old SDK first and then use cheribuild to extract the new one
+rm -rf cherisdk/ morello-sdk/ native-sdk/ upstream-llvm-sdk/
+${params.cheribuildPath}/jenkins-cheri-build.py extract-sdk ${extraArgs.join(" ")}"""
         }
     // }
 }

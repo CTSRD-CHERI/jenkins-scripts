@@ -442,8 +442,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 						buildOS: proj.buildOS, capTableABI: proj.capTableABI,
 						extraCheribuildArgs: proj.extraArgs)
 			}
-			echo 'WORKSPACE after checkout:'
-			sh 'ls -la'
+			sh label: 'WORKSPACE after checkout:', script: 'ls -lah'
 		}
 	}
 	def buildSuffix = proj.stageSuffix ? proj.stageSuffix : ""
