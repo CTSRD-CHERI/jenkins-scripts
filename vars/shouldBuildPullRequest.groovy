@@ -10,15 +10,6 @@ def callImpl(String expectedContext) {
         echo("WARNING: This should only be called for pull requests")
         return true
     }
-    // Depends on https://github.com/jenkinsci/pipeline-github-plugin/pull/77
-    // if (pullRequest.draft) {
-    //	echo("Skipping Jenkins for pull request since draft flag was set")
-    //	return
-    //}
-    //    if (!pullRequest.mergeable) {
-    //        error("Pull request is not mergeable -> Won't build!")
-    //        return false
-    //    }
     echo "BUILD CAUSES: ${currentBuild.buildCauses}"
     boolean manualBuild = false
     currentBuild.buildCauses.eachWithIndex { item, index ->
@@ -27,9 +18,6 @@ def callImpl(String expectedContext) {
             manualBuild = true
     }
     echo "IS MANUAL BUILD: ${manualBuild}"
-    if (manualBuild) {
-        return true
-    }
     String skipLabel = 'NO-JENKINS'
     String alwaysRunLabel = 'ALWAYS-JENKINS'
     boolean hasSkipLabel = false
@@ -41,9 +29,17 @@ def callImpl(String expectedContext) {
         if (label == alwaysRunLabel)
             hasAlwaysRunLabel = true
     }
+    if (manualBuild) {
+        return true
+    }
     if (hasSkipLabel) {
         echo("Skipping Jenkins for pull request since '${skipLabel}' label was set")
         return false
+    }
+    // Depends on https://github.com/jenkinsci/pipeline-github-plugin/pull/77
+    if (pullRequest.draft) {
+        echo("Skipping Jenkins for pull request since draft flag was set")
+        return
     }
     echo "Checking if PR has already been built:"
     boolean alreadyRun = false
