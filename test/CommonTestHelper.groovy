@@ -134,6 +134,7 @@ class CommonTestHelper {
         registerMethod(helper, "git", [String.class], { url -> [GIT_URL:url, GIT_COMMIT:"abcdef123456"] })
         registerMethod(helper, "git", [Map.class], { args -> [GIT_URL:args.url, GIT_COMMIT:"abcdef123456"] })
         registerMethod(helper, "githubNotify", [Map.class], null)
+        // for parameters
         // binding.getVariable('env').JOB_NAME = "CHERI1-TEST-pipeline"
         // registerMethod(helper, "cheriHardwareTest", [Map.class], { args -> cheriHardwareTest.call(args) })
         def scmBranch = "feature_test"
@@ -142,6 +143,10 @@ class CommonTestHelper {
         test.addEnvVar('NODE_LABELS', 'linux14 linux docker')
         test.addEnvVar('UNIT_TEST', 'true')
         test.addEnvVar('CHANGE_ID', null)
+        // For parameters
+        registerMethod(helper, "text", [Map.class], { args ->  test.addParam(args.name, args.defaultValue); args})
+        registerMethod(helper, "parameters", [List.class], { args -> println(args) })
+        binding.setVariable('params', [:])
 
         // Override the default helper to ensure the exception is raised
         registerMethodOverride(helper, "error", [String], { msg ->
