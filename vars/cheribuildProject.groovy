@@ -596,7 +596,7 @@ def call(Map args) {
 	List targetArchitectures = args.getOrDefault('targetArchitectures', [''])
 	def failFast = args.getOrDefault('failFast', true) as Boolean
 	args.remove('failFast')
-	if (targetArchitectures.size() == 1) {
+	if (targetArchitectures.isEmpty()) {
 		return runCheribuild(parseParams(args))
 	}
 	// Otherwise run multiple architectures in parallel

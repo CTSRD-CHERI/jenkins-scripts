@@ -77,14 +77,15 @@ def call(Map args) {
         } else {
             // FIXME: needs to be updated to use the new job names
             def cheribsdProject = null
-            if (params.capTableABI == "legacy") {
-                cheribsdProject = "CHERIBSD-WORLD/CPU=${params.cpu},ISA=legacy"
-            } else if (params.capTableABI == null || params.capTableABI == "pcrel") {
-                cheribsdProject = "CHERIBSD-WORLD/CPU=${params.cpu},ISA=cap-table-pcrel"
+            def sysrootArchive = null
+            if (!params.capTableABI || params.capTableABI == "pcrel") {
+                cheribsdProject = "CheriBSD-pipeline/master"
+                sysrootArchive = "artifacts-${params.cpu}/cheribsd-sysroot.tar.xz"
             } else {
                 error("Cannot infer SDK name for capTableABI=${params.capTableABI}")
             }
-            copyArtifacts projectName: cheribsdProject, flatten: true, optional: false, filter: '*', selector: lastSuccessful()
+            extraArgs += ["--sysroot-archive=${sysrootArchive}"]
+            copyArtifacts projectName: cheribsdProject, flatten: true, optional: false, filter: sysrootArchive, selector: lastSuccessful()
         }
         ansiColor('xterm') {
             sh label: 'extracting SDK archive:', script: """

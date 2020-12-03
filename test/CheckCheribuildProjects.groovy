@@ -57,6 +57,18 @@ class CheckCheribuildProjects extends BaseRegressionTest {
     }
 
     @Test
+    void newlib_test() throws Exception {
+        CommonTestHelper.addEnvVars(this, [JOB_NAME       : "newlib-baremetal/master",
+                                           BRANCH_NAME    : "master",
+                                           WORKSPACE      : "/workspace",
+                                           EXECUTOR_NUMBER: "8",])
+        def script = runScript("test-scripts/newlib-baremetal.groovy")
+        // script.run()
+        printCallStack()
+        assertJobStatusSuccess()
+    }
+
+    @Test
     void cheribsd_test() throws Exception {
         CommonTestHelper.addEnvVars(this, [JOB_NAME       : "cheribsd/master",
                                            BRANCH_NAME    : "master",

@@ -1,7 +1,7 @@
 @Library('ctsrd-jenkins-scripts') _
 
 // Set the default job properties (work around properties() not being additive but replacing)
-setDefaultJobProperties([rateLimitBuilds(throttle: [count: 2, durationName: 'hour', userBoost: true]),
+setDefaultJobProperties([rateLimitBuilds([count: 2, durationName: 'hour', userBoost: true]),
                          [$class: 'GithubProjectProperty', projectUrlStr: 'https://github.com/CTSRD-CHERI/postgres'],
                          // copyArtifactPermission('*'),
 ])
@@ -12,7 +12,9 @@ rm -rf tarball/opt/*/include
 '''
 
 
-cheribuildProject(target: 'postgres', targetArchitectures: ["mips64", "mips64-purecap"],
+cheribuildProject(target: 'postgres',
+        // targetArchitectures: ["mips64", "mips64-purecap", "riscv64", "riscv64-purecap"],
+        targetArchitectures: ["mips64"],
         // extraArgs: '--with-libstatcounters --postgres/no-debug-info --postgres/no-assertions',
         extraArgs: '--no-with-libstatcounters --postgres/assertions --postgres/linkage=dynamic',
         beforeTarball: cleanupScript,
