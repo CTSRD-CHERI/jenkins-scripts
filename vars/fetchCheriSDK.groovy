@@ -86,7 +86,7 @@ def call(Map args) {
                 error("Cannot infer SDK name for capTableABI=${params.capTableABI}")
             }
             extraArgs += ["--sysroot-archive=${sysrootArchive}"]
-            copyArtifacts projectName: cheribsdProject, flatten: true, optional: false, filter: sysrootArchive, selector: lastSuccessful()
+            copyArtifacts projectName: cheribsdProject, flatten: false, optional: false, filter: sysrootArchive, selector: lastSuccessful()
         }
         ansiColor('xterm') {
             sh label: 'extracting SDK archive:', script: """
