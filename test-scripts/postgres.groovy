@@ -18,7 +18,7 @@ cheribuildProject(target: 'postgres',
         extraArgs: '--no-with-libstatcounters --postgres/assertions --postgres/linkage=dynamic',
         beforeTarball: cleanupScript,
         skipArchiving: true,
-        runTests: false,
+        runTests: true,
         cheribsdBranch: 'dev', // just for testing
         beforeBuild: 'ls -la $WORKSPACE',
         testTimeout: 4 * 60 * 60, // increase the test timeout to 4 hours (CHERI can take a loooong time)

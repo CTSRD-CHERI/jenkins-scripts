@@ -92,7 +92,7 @@ class CheribuildProjectParams implements Serializable {
 	def testTimeout = 120 * 60 // timeout for running tests (default 2 hours)
 	boolean minimalTestImage = true
 	boolean runTests = false
-	boolean useCheriKernelForMipsTests = false
+	boolean useCheriKernelForTests = true
 	String testScript
 	// if set this will be invoked by ./boot_cheribsd.py in the test stage. If not tests are skipped
 	String testExtraArgs = ''
@@ -210,18 +210,18 @@ def build(CheribuildProjectParams proj, String stageSuffix) {
 	runCallback(proj, proj.afterBuild)
 }
 
-def runTestsImpl(CheribuildProjectParams proj, String testExtraArgs, String qemuPath, String testSuffix) {
+def runTestsImpl(CheribuildProjectParams proj, String testExtraArgs, String testSuffix) {
 	ansiColor('xterm') {
-		def testExitCode = 0
+		def testExitCode
 		runCallback(proj, proj.beforeTestsInDocker)
 		if (proj.testScript && proj.architecture != 'native') {
 			def testCommand = "'export CPU=${proj.cpu}; " + proj.testScript.replaceAll('\'', '\\\'') + "'"
 			echo "Test command = ${testCommand}"
 			testExitCode = sh returnStatus: true, label: "Running simple test (${testSuffix})",
-					script: "\$WORKSPACE/cheribuild/test-scripts/run_simple_tests.py --qemu-cmd ${qemuPath} ${testExtraArgs} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
+					script: "\$WORKSPACE/cheribuild/test-scripts/run_simple_tests.py ${testExtraArgs} --test-command ${testCommand} --test-archive ${proj.tarballName} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}"
 		} else {
 			String cheribuildTestArgs = (proj.architecture == 'native') ? "${testExtraArgs} ${proj.testExtraArgs}" :
-										"--test-extra-args=\"--qemu-cmd ${qemuPath} ${testExtraArgs} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}\""
+										"--test-extra-args=\"${testExtraArgs} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}\""
 			testExitCode = sh returnStatus: true, label: "Running tests with cheribuild ${testSuffix}",
 					script: "\$WORKSPACE/cheribuild/jenkins-cheri-build.py --test ${proj.commonCheribuildArgs()} ${cheribuildTestArgs}"
 		}
@@ -240,50 +240,32 @@ def runTests(CheribuildProjectParams proj, String testSuffix) {
 		error("Running tests for target ${proj.architecture} not supported yet")
 	}
 
-	String baseABI = 'n64'
-	String imagePrefix = "ERROR"
-	String kernelPrefix = "ERROR"
-	String qemuCommand = "ERROR"
-	String test_cpu = proj.architecture
-	if (test_cpu == 'mips64' && proj.useCheriKernelForMipsTests) {
-		test_cpu = 'mips64-hybrid'
+	String testCPU = proj.architecture
+	if ((testCPU == 'mips64' || testCPU == 'riscv64') && proj.useCheriKernelForTests) {
+		testCPU += '-hybrid'
 	}
 	def defaultTestExtraArgs = ''
-	if (test_cpu != "native") {
-		if (test_cpu == 'mips64') {
-			kernelPrefix = 'freebsd'
-			imagePrefix = 'freebsd'
-			qemuCommand = 'qemu-system-cheri128'
-		} else if (test_cpu == 'mips64-hybrid' || test_cpu == 'mips64-purecap') {
-			kernelPrefix = test_cpu == 'cheribsd128-cheri128'
-			imagePrefix = test_cpu == 'cheribsd128'
-			qemuCommand = "qemu-system-cheri128"
-		} else {
-			error("FATAL: unsupported arch ${test_cpu}")
-		}
-		// boot a world with a hybrid userspace (it contains all the necessary shared libs)
-		// There is no need for the binaries to be CHERIABI
-		diskImageProjectName = "CheriBSD-allkernels-multi/BASE_ABI=${baseABI},CPU=${test_cpu},ISA=vanilla,label=freebsd"
-		sh 'rm -rfv $WORKSPACE/cheribsd-full.* $WORKSPACE/cheribsd-minimal.* $WORKSPACE/cheribsd-malta64-kernel*'
+	if (testCPU != "native") {
+		def diskImageProjectName = "CheriBSD-pipeline/${proj.cheribsdBranch}"
+		sh "rm -rfv artifacts-${testCPU}/cheribsd-*.img* artifacts-${testCPU}/kernel*"
+		def compressedKernel = "artifacts-${testCPU}/kernel.xz"
+		def compressedDiskImage
 		if (proj.minimalTestImage) {
+			// TODO: use the MFS_ROOT kernel instead
+			compressedDiskImage = "artifacts-${testCPU}/cheribsd-minimal-${testCPU}.img.xz"
 			copyArtifacts projectName: diskImageProjectName,
-					filter: "ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-mfs-root-minimal-cheribuild-kernel.bz2",
-					target: '.', fingerprintArtifacts: false, flatten: true, selector: lastSuccessful()
-			sh "ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-mfs-root-minimal-cheribuild-kernel.bz2 \$WORKSPACE/${test_cpu}-malta64-minimal-kernel.bz2"
-			defaultTestExtraArgs = "--kernel ${test_cpu}-malta64-minimal-kernel.bz2"
+					filter: "${compressedDiskImage}, ${compressedKernel}",
+					target: '.', fingerprintArtifacts: false, flatten: false, selector: lastSuccessful()
+			defaultTestExtraArgs = "--kernel kernel.xz --disk-image"
 		} else {
 			copyArtifacts projectName: diskImageProjectName,
-					filter: "ctsrd/cheribsd/trunk/bsdtools/${imagePrefix}-full.img.xz", target: '.',
-					fingerprintArtifacts: false, flatten: true, selector: lastSuccessful()
-			copyArtifacts projectName: diskImageProjectName,
-					filter: "ctsrd/cheribsd/trunk/bsdtools/${kernelPrefix}-malta64-kernel.bz2", target: '.',
-					fingerprintArtifacts: false, flatten: true, selector: lastSuccessful()
-			sh """
-ln -sfn \$WORKSPACE/${imagePrefix}-full.img.xz \$WORKSPACE/${test_cpu}-full.img.xz
-ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/${test_cpu}-malta64-kernel.bz2
-"""
-			defaultTestExtraArgs = "--disk-image \$WORKSPACE/${test_cpu}-full.img.xz"
-			defaultTestExtraArgs += " --kernel \$WORKSPACE/${test_cpu}-malta64-kernel.bz2 --no-keep-compressed-images"
+				filter: "${compressedDiskImage}, ${compressedKernel}",
+				target: '.', fingerprintArtifacts: false, flatten: false, selector: lastSuccessful()
+			compressedDiskImage = "artifacts-${testCPU}/cheribsd-${testCPU}.img.xz"
+		}
+		defaultTestExtraArgs = "--kernel ${compressedKernel} --no-keep-compressed-images"
+		if (compressedDiskImage) {
+			defaultTestExtraArgs += " --disk-image ${compressedDiskImage}"
 		}
 		sh "ls -la \$WORKSPACE"
 	}
@@ -297,10 +279,10 @@ ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/${test_cpu}-m
 		// Currently the full image is 5.59G
 		cheribsdImage.inside('-u 0 --rm --tmpfs /images:rw,noexec,nosuid,size=7g') {
 			sh 'df -h /images'
-			runTestsImpl(proj, defaultTestExtraArgs, "/usr/local/bin/${qemuCommand}", testSuffix)
+			runTestsImpl(proj, defaultTestExtraArgs, testSuffix)
 		}
 	} else {
-		if (test_cpu != "native") {
+		if (testCPU != "native") {
 			// copy qemu archive and run directly on the host
 			dir("qemu-${proj.buildOS}") { deleteDir() }
 			copyArtifacts projectName: "qemu/qemu-cheri", filter: "qemu-${proj.buildOS}/**", target: '.',
@@ -309,8 +291,7 @@ ln -sfn \$WORKSPACE/${kernelPrefix}-malta64-kernel.bz2 \$WORKSPACE/${test_cpu}-m
 					script: 'test -e $WORKSPACE/id_ed25519 || ssh-keygen -t ed25519 -N \'\' -f $WORKSPACE/id_ed25519 < /dev/null'
 			defaultTestExtraArgs += " --ssh-key \$WORKSPACE/id_ed25519.pub"
 		}
-		runTestsImpl(proj, defaultTestExtraArgs, "\$WORKSPACE/qemu-${proj.buildOS}/bin/${qemuCommand}", testSuffix)
-
+		runTestsImpl(proj, defaultTestExtraArgs, testSuffix)
 	}
 	runCallback(proj, proj.afterTests)
 	if (proj.junitXmlFiles != null) {
@@ -370,7 +351,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 		} finally {
 			// In the single project case propagate the unstable flag:
 			// if (proj.targetArchitectures.size() == 1 && proj._result == BuildResult.SUCCESS && "${currentBuild.currentResult}" == "UNSTABLE") {
-			//     proj._result = BuildResult.UNSTABLE
+			//	 proj._result = BuildResult.UNSTABLE
 			// }
 			if (proj._result == BuildResult.PENDING) {
 				proj.statusFailure("RESULT IS STILL PENDING! Something is very wrong...")
@@ -606,9 +587,9 @@ def call(Map args) {
 	targetArchitectures.each { String suffix ->
 		tasks[suffix] = { ->
 			String targetWithoutSuffix = args.getOrDefault('target', 'target must be set!')
-			Map newMap = args + [target              : targetWithoutSuffix + "-${suffix}",
+			Map newMap = args + [target			  : targetWithoutSuffix + "-${suffix}",
 								 _targetWithoutSuffix: targetWithoutSuffix,
-								 architecture        : "${suffix}"]
+								 architecture		: "${suffix}"]
 			echo("newMap=${newMap}")
 			// just call the real method here so that I can run the tests
 			// the problem is that if I invoke call I get endless recursion
