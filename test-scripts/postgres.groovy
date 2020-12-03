@@ -13,13 +13,13 @@ rm -rf tarball/opt/*/include
 
 
 cheribuildProject(target: 'postgres',
-        // targetArchitectures: ["mips64", "mips64-purecap", "riscv64", "riscv64-purecap"],
-        targetArchitectures: ["mips64"],
+        targetArchitectures: ["mips64", "mips64-purecap", "riscv64", "riscv64-purecap"],
         // extraArgs: '--with-libstatcounters --postgres/no-debug-info --postgres/no-assertions',
         extraArgs: '--no-with-libstatcounters --postgres/assertions --postgres/linkage=dynamic',
         beforeTarball: cleanupScript,
         skipArchiving: true,
-        runTests: true,
+        runTests: false,
+        cheribsdBranch: 'dev', // just for testing
         beforeBuild: 'ls -la $WORKSPACE',
         testTimeout: 4 * 60 * 60, // increase the test timeout to 4 hours (CHERI can take a loooong time)
         /* sequential: true, // for now run all in order until we have it stable */)

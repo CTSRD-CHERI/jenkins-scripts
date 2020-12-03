@@ -5,6 +5,7 @@ class FetchCheriSDKArgs implements Serializable {
     boolean compilerOnly = false
     String buildOS
     String llvmBranch = null
+    String cheribsdBranch = 'master'
     String capTableABI = null
     String extraCheribuildArgs = ""
     String cheribuildPath = '$WORKSPACE/cheribuild'
@@ -79,7 +80,7 @@ def call(Map args) {
             def cheribsdProject = null
             def sysrootArchive = null
             if (!params.capTableABI || params.capTableABI == "pcrel") {
-                cheribsdProject = "CheriBSD-pipeline/master"
+                cheribsdProject = "CheriBSD-pipeline/${params.cheribsdBranch}"
                 sysrootArchive = "artifacts-${params.cpu}/cheribsd-sysroot.tar.xz"
             } else {
                 error("Cannot infer SDK name for capTableABI=${params.capTableABI}")
