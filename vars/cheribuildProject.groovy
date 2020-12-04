@@ -562,8 +562,9 @@ def runCheribuild(CheribuildProjectParams params) {
 			try {
 				runCheribuildImpl(params)
 			} finally {
-				// If we allocated a new node, clean up by default:
-				if (params.deleteAfterBuild) {
+				// If we allocated a new node, clean up by default.
+				// However, keep the dir if there was an error (for debugging).
+				if (params.deleteAfterBuild && params._result != BuildResult.FAILURE) {
 					deleteDir()
 				}
 			}
