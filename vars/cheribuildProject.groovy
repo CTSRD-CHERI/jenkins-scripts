@@ -577,7 +577,7 @@ def runCheribuild(CheribuildProjectParams params) {
 
 // This is what gets called from jenkins
 def call(Map args) {
-	List targetArchitectures = args.getOrDefault('targetArchitectures', [''])
+	List targetArchitectures = args.getOrDefault('targetArchitectures', [])
 	def failFast = args.getOrDefault('failFast', true) as Boolean
 	args.remove('failFast')
 	if (targetArchitectures.isEmpty()) {
