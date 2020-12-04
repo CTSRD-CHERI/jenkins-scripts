@@ -5,5 +5,5 @@ def call() {
         if ("${item._class}" == 'hudson.model.Cause$UserIdCause')
             manualBuild = true
     }
-    retur manualBuild
+    return manualBuild
 }
