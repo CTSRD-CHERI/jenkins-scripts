@@ -256,14 +256,14 @@ def runTests(CheribuildProjectParams proj, String testSuffix) {
 			copyArtifacts projectName: diskImageProjectName,
 					filter: "${compressedDiskImage}, ${compressedKernel}",
 					target: '.', fingerprintArtifacts: false, flatten: false, selector: lastSuccessful()
-			defaultTestExtraArgs = "--minimal-image --kernel kernel.xz --disk-image"
+			defaultTestExtraArgs = "--minimal-image "
 		} else {
 			compressedDiskImage = "artifacts-${testCPU}/cheribsd-${testCPU}.img.xz"
 			copyArtifacts projectName: diskImageProjectName,
 				filter: "${compressedDiskImage}, ${compressedKernel}",
 				target: '.', fingerprintArtifacts: false, flatten: false, selector: lastSuccessful()
 		}
-		defaultTestExtraArgs = "--kernel ${compressedKernel} --no-keep-compressed-images"
+		defaultTestExtraArgs += "--kernel ${compressedKernel} --no-keep-compressed-images"
 		if (compressedDiskImage) {
 			defaultTestExtraArgs += " --disk-image ${compressedDiskImage}"
 		}
