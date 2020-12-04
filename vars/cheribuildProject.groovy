@@ -256,7 +256,7 @@ def runTests(CheribuildProjectParams proj, String testSuffix) {
 			copyArtifacts projectName: diskImageProjectName,
 					filter: "${compressedDiskImage}, ${compressedKernel}",
 					target: '.', fingerprintArtifacts: false, flatten: false, selector: lastSuccessful()
-			defaultTestExtraArgs = "--kernel kernel.xz --disk-image"
+			defaultTestExtraArgs = "--minimal-image --kernel kernel.xz --disk-image"
 		} else {
 			copyArtifacts projectName: diskImageProjectName,
 				filter: "${compressedDiskImage}, ${compressedKernel}",
