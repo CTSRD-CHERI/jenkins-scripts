@@ -11,12 +11,7 @@ def callImpl(String expectedContext) {
         return true
     }
     echo "BUILD CAUSES: ${currentBuild.buildCauses}"
-    boolean manualBuild = false
-    currentBuild.buildCauses.eachWithIndex { item, index ->
-        echo "Build cause ${index}: ${item} -- class=${item._class}"
-        if ("${item._class}" == 'hudson.model.Cause$UserIdCause')
-            manualBuild = true
-    }
+    boolean manualBuild = isManualBuild()
     echo "IS MANUAL BUILD: ${manualBuild}"
     String skipLabel = 'NO-JENKINS'
     String alwaysRunLabel = 'ALWAYS-JENKINS'
