@@ -48,6 +48,8 @@ def call(Map args) {
         }
         if (gitBranch == 'dev' || gitBranch == 'devel')
             params.llvmBranch = 'dev'
+        else if (gitBranch == 'morello-dev')
+            params.llvmBranch = 'dev' // FIXME: remove when morello-dev is gone
         else if (gitBranch == 'faster-testsuite-runs' || gitBranch == 'cheri-purecap-kernel')
             params.llvmBranch = 'dev' // FIXME: remove when LLVM dev->master merge complete
         else if (gitBranch == 'abi-breaking-changes')
