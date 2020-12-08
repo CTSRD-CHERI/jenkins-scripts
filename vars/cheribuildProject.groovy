@@ -451,7 +451,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 		stage("Creating tarball for ${proj.target}") {
 			runCallback(proj, proj.beforeTarball)
 			sh label: "Create tarball ${buildSuffix}",
-					script: "./cheribuild/jenkins-cheri-build.py --tarball --tarball-name ${proj.tarballName} --no-build ${proj.commonCheribuildArgs()}"
+					script: "./cheribuild/jenkins-cheri-build.py --tarball --tarball-name ${proj.tarballName} ${proj.commonCheribuildArgs()}"
 			sh label: "List tarball ${buildSuffix}", script: 'ls -lah; ls -lah tarball || true'
 		}
 		if (!proj.skipArchiving) {
