@@ -79,7 +79,6 @@ class CheribuildProjectParams implements Serializable {
 	String cheribsdBranch = 'master' // Branch of CheriBSD to use for the disk images/sysroot
 	List artifactsToCopy = []
 	// List of (job:filter) for artifacts which need copying
-	String sdkArchive  // The artifact name filter for the sdk job
 	String tarballName
 	// output tarball name (default is "${target}-${cpu}.tar.xz")
 	String customGitCheckoutDir
@@ -128,11 +127,6 @@ class CheribuildProjectParams implements Serializable {
 		if (this.capTableABI) {
 			result += " --cap-table-abi=${this.capTableABI}"
 		}
-		// FIXME: ugly hack to avoid having to update the CheriBSD jenkinsfile
-		//  right now since the shell script expects the sysroot to end up in
-		//  the cherisdk dir.
-		if (!result.contains('--sysroot-output-path'))
-			result += " --sysroot-output-path=cherisdk"
 		return result
 	}
 }
