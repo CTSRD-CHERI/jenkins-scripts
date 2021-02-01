@@ -124,4 +124,15 @@ class CheckCheribuildProjects extends BaseRegressionTest {
         printCallStack()
         assertJobStatusSuccess()
     }
+
+    @Test
+    void gdb_test() throws Exception {
+        CommonTestHelper.addEnvVars(this, [JOB_NAME   : "GDB/mips-cheri_8.3",
+                                           BRANCH_NAME: "mips-cheri_8.3",
+                                           WORKSPACE  : "/workspace",])
+        def script = runScript("test-scripts/gdb.groovy")
+        // script.run()
+        printCallStack()
+        assertJobStatusSuccess()
+    }
 }
