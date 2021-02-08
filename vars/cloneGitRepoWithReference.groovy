@@ -6,10 +6,11 @@ def fileOutsideWorkspaceExists(String path) {
 def call(Map args) {
     def cheribuildSCM = [
             $class                           : 'GitSCM',
-            branches                         : [[name: '*/master']],
+            branches                         : [[name: args.getOrDefault('branches', '*/master')]],
             doGenerateSubmoduleConfigurations: false,
             submoduleCfg                     : [],
-            userRemoteConfigs                : [[url: args.url]]
+            userRemoteConfigs                : [[url: args.url,
+                                                 credentialsId: args.getOrDefault('credentialsId', 'github-app-cheri-jenkins')]]
     ]
     String refdir = "/var/tmp/git-reference-repos/" + args.getOrDefault("refdir", "invalid-directory")
     if (fileOutsideWorkspaceExists(refdir)) {
