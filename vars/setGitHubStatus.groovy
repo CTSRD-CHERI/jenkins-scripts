@@ -92,7 +92,8 @@ def call(Map<String, String> args = [:]) {
             error("GIT_URL")
         }
         def newGitHubStatusSetterArgs = [
-                credentialsId: 'ctsrd-jenkins-new-github-api-key',
+                // credentialsId: 'ctsrd-jenkins-new-github-api-key',
+                credentialsId: 'github-app-cheri-jenkins',
                 context: githubCommitStatusContext,
                 description: message,
                 status: result,
