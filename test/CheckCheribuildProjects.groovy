@@ -135,4 +135,14 @@ class CheckCheribuildProjects extends BaseRegressionTest {
         printCallStack()
         assertJobStatusSuccess()
     }
+
+    @Test
+    void mibench_new_test() throws Exception {
+        CommonTestHelper.addEnvVars(this, [JOB_NAME   : "Mibench-pipeline",
+                                           WORKSPACE  : "/workspace",])
+        def script = runScript("test-scripts/mibench-new.groovy")
+        // script.run()
+        printCallStack()
+        assertJobStatusSuccess()
+    }
 }

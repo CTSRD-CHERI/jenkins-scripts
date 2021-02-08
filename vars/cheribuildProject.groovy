@@ -532,7 +532,11 @@ CheribuildProjectParams parseParams(Map args) {
 		}
 	}
 	if (!params.tarballName) {
-		params.tarballName = "${params.target}-${params.architecture}.tar.xz"
+		// Don't add the target suffix to the tarball twice
+		if (params.target.endsWith(params.architecture))
+			params.tarballName = "${params.target}.tar.xz"
+		else
+			params.tarballName = "${params.target}-${params.architecture}.tar.xz"
 	}
 	// Skip archiving and tarballs for pull requests:
 	if (env.CHANGE_ID) {
