@@ -303,11 +303,6 @@ def runTests(CheribuildProjectParams proj, String testSuffix) {
 }
 
 def runCheribuildImpl(CheribuildProjectParams proj) {
-	if (!proj.buildOS) {
-		proj.buildOS = inferBuildOS()
-		echo("Inferred build OS: '${proj.buildOS}'")
-	}
-
 	// Note: env.FOO = ... sets the environment globally across all nodes
 	// so it cannot be used if we want to support cheribuildProject inside
 	// parallel blocks
@@ -418,6 +413,10 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			}
 			// now copy all the artifacts
 			if (proj.fetchCheriCompiler) {
+				if (!proj.buildOS) {
+					proj.buildOS = inferBuildOS()
+					echo("Inferred build OS: '${proj.buildOS}'")
+				}
 				fetchCheriSDK(target: proj.target, cpu: proj.architecture,
 						compilerOnly: proj.sdkCompilerOnly, llvmBranch: proj.llvmBranch,
 						cheribsdBranch: proj.cheribsdBranch,
