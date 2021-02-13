@@ -370,6 +370,10 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 		proj.skipArtifacts = true
 	}
 	stage("Checkout") {
+		if (!proj.buildOS) {
+			proj.buildOS = inferBuildOS()
+			echo("Inferred build OS: '${proj.buildOS}'")
+		}
 		if (!proj.skipScm) {
 			echo "Target arch: ${proj.architecture}, output: ${proj.tarballName}"
 			// def sdkImage = docker.image("ctsrd/cheri-sdk:latest")
@@ -413,10 +417,6 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			}
 			// now copy all the artifacts
 			if (proj.fetchCheriCompiler) {
-				if (!proj.buildOS) {
-					proj.buildOS = inferBuildOS()
-					echo("Inferred build OS: '${proj.buildOS}'")
-				}
 				fetchCheriSDK(target: proj.target, cpu: proj.architecture,
 						compilerOnly: proj.sdkCompilerOnly, llvmBranch: proj.llvmBranch,
 						cheribsdBranch: proj.cheribsdBranch,
