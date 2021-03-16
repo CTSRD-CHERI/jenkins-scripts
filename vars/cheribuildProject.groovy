@@ -77,6 +77,7 @@ class CheribuildProjectParams implements Serializable {
 	// Git branch of LLVM to use for building. When NULL infer from branch name.
 	// otherwise pull just a specific set of artifacts
 	String cheribsdBranch = 'master' // Branch of CheriBSD to use for the disk images/sysroot
+	String cheribuildBranch = null  // Branch of cheribuild to use for building
 	List artifactsToCopy = []
 	// List of (job:filter) for artifacts which need copying
 	String tarballName
@@ -399,8 +400,12 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			}
 		}
 		dir('cheribuild') {
-			def x = cloneGitRepoWithReference(url: "https://github.com/CTSRD-CHERI/cheribuild.git", changelog: false,
-					poll: false, refdir: "cheribuild")
+			cheribuildCloneArgs = [url: "https://github.com/CTSRD-CHERI/cheribuild.git",
+					       changelog: false, poll: false, refdir: "cheribuild"]
+			if (proj.cheribuildBranch) {
+				cheribuildCloneArgs['branches'] = '*/' + proj.cheribuildBranch
+			}
+			def x = cloneGitRepoWithReference(cheribuildCloneArgs)
 			echo("Checked out cheribuild: ${x}")
 		}
 	}
