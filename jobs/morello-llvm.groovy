@@ -80,8 +80,6 @@ cmakeArgs.add("-DLLVM_LIT_ARGS=--xunit-xml-output llvm-test-output.xml --max-tim
 cheribuildCmakeOption = '\'--morello-llvm/cmake-options=\"' + cmakeArgs.join('\" \"') + '\"\''
 echo("CMake options = ${cheribuildCmakeOption}")
 cheribuildArgs.add(cheribuildCmakeOption)
-// FIXME: Remove once morello/master can build CheriBSD?
-cheribuildArgs.add("--morello-llvm/git-revision=morello/dev")
 
 Map defaultArgs = [target              : 'morello-llvm', architecture: 'native',
                    customGitCheckoutDir: 'morello-llvm-project',
@@ -108,7 +106,8 @@ Map defaultArgs = [target              : 'morello-llvm', architecture: 'native',
 
 defaultArgs["setGitHubStatus"] = false
 repo = gitRepoWithLocalReference(url: 'https://git.morello-project.org/morello/llvm-project.git', reponame: 'morello-llvm-project')
-repo["branches"] = [[name: '*/morello/master']]
+// FIXME: Change once morello/master can build CheriBSD?
+repo["branches"] = [[name: '*/morello/dev']]
 defaultArgs["scmOverride"] = repo
 
 if (archiveArtifacts) {
