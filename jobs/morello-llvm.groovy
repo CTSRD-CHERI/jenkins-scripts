@@ -106,8 +106,7 @@ Map defaultArgs = [target              : 'morello-llvm', architecture: 'native',
 
 defaultArgs["setGitHubStatus"] = false
 repo = gitRepoWithLocalReference(url: 'https://git.morello-project.org/morello/llvm-project.git', reponame: 'morello-llvm-project')
-// FIXME: Change once morello/master can build CheriBSD?
-repo["branches"] = [[name: '*/morello/dev']]
+repo["branches"] = [[name: '*/morello/master']]
 defaultArgs["scmOverride"] = repo
 
 if (archiveArtifacts) {
