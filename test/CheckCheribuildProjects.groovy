@@ -145,4 +145,15 @@ class CheckCheribuildProjects extends BaseRegressionTest {
         printCallStack()
         assertJobStatusSuccess()
     }
+
+    @Test
+    void qtbase_test() throws Exception {
+        CommonTestHelper.addEnvVars(this, [JOB_NAME   : "QtBase-pipeline",
+                                           BRANCH_NAME: "5.15",
+                                           WORKSPACE  : "/workspace",])
+        def script = runScript("jobs/qtbase.groovy")
+        // script.run()
+        printCallStack()
+        assertJobStatusUnstable()
+    }
 }
