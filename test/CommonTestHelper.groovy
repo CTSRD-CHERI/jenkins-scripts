@@ -94,10 +94,6 @@ class CommonTestHelper {
 
         // helper.allowedMethodCallbacks.each { it -> println("${it.key}") }
         helper.registerSharedLibrary(library)
-        registerMethod(helper, "timeout", [Integer.class, Closure.class], { Integer time, Closure c ->
-            c.delegate = delegate
-            helper.callClosure(c)
-        })
         registerMethod(helper, "lock", [String.class, Closure.class], null)
         registerMethod(helper, "culprits", [], null)
         registerMethod(helper, "catchError", [Closure.class], { Closure c ->
