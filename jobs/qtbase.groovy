@@ -8,8 +8,7 @@ setDefaultJobProperties([
 ])
 
 cheribuildProject(target: 'qtbase',
-                  // targetArchitectures: ["amd64", "riscv64-purecap"],
-                  targetArchitectures: ["amd64"],
+                  targetArchitectures: ["amd64", "riscv64-purecap", "riscv64", "native"],
                   customGitCheckoutDir: "qt5/qtbase", // cheribuild expects a different directory
                   extraArgs: '--qtbase/build-tests --qtbase/minimal --qtbase/build-type=Release', // TODO: also build the GUI bits
                   skipArchiving: true,
