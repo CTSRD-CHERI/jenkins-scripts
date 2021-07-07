@@ -12,9 +12,9 @@ def call(Map args) {
             userRemoteConfigs                : [[url: args.url]]
     ]
     String reponame = args.getOrDefault("reponame", null)
-    String branches = args.getOrDefault("branches", null)
-    if (branches != null) {
-        result["branches"] = branches
+    String branch = args.getOrDefault("branch", null)
+    if (branch != null) {
+        result["branches"] = [name: "*/${branch}"]
     }
     if (reponame == null) {
         reponame = "${args.url}".substring("${args.url}".lastIndexOf('/') + 1)
