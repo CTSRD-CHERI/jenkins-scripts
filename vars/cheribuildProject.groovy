@@ -230,12 +230,11 @@ def runTestsImpl(CheribuildProjectParams proj, String testExtraArgs, String test
 def runTests(CheribuildProjectParams proj, String testSuffix) {
 	updatePRStatus(proj, "Running tests for PR...")
 	// Custom test script only support for CheriBSD
-	if (proj.testScript && proj.architecture != "mips64" && proj.architecture != "mips64-hybrid" && proj.architecture !=
-		"mips64-purecap") {
+	String testCPU = proj.architecture
+	if (proj.testScript && testCPU != "mips64" && testCPU != "mips64-hybrid" && testCPU != "mips64-purecap") {
 		error("Running tests for target ${proj.architecture} not supported yet")
 	}
 
-	String testCPU = proj.architecture
 	if ((testCPU == 'mips64' || testCPU == 'riscv64') && proj.useCheriKernelForTests) {
 		testCPU += '-hybrid'
 	}
@@ -280,7 +279,8 @@ def runTests(CheribuildProjectParams proj, String testSuffix) {
 		if (testCPU != "native") {
 			// copy qemu archive and run directly on the host
 			dir("qemu-${proj.buildOS}") { deleteDir() }
-			copyArtifacts projectName: "qemu/qemu-cheri", filter: "qemu-${proj.buildOS}/**", target: '.',
+			def qemuProject = testCPU.contains('morello') ? 'qemu/qemu-morello-merged' : 'qemu/qemu-cheri'
+			copyArtifacts projectName: qemuProject, filter: "qemu-${proj.buildOS}/**", target: '.',
 					fingerprintArtifacts: false
 			sh label: 'generate SSH key',
 					script: 'test -e $WORKSPACE/id_ed25519 || ssh-keygen -t ed25519 -N \'\' -f $WORKSPACE/id_ed25519 < /dev/null'
