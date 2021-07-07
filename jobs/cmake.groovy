@@ -6,8 +6,11 @@ setDefaultJobProperties([
         copyArtifactPermission('*'),
 ])
 
+def cmakeRepo = gitRepoWithLocalReference(url: 'https://github.com/CTSRD-CHERI/riscv-pk.git', branches: ["*/release"])
 cheribuildProject(target: 'cmake',
                   targetArchitectures: ["amd64", "riscv64-purecap", "riscv64", "native"], // TODO: morello
+                  scmOverride: cmakeRepo,
                   skipArchiving: false,
                   runTests: false,
+                  setGitHubStatus: false, // external repo
 )

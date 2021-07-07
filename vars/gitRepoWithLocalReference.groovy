@@ -12,6 +12,10 @@ def call(Map args) {
             userRemoteConfigs                : [[url: args.url]]
     ]
     String reponame = args.getOrDefault("reponame", null)
+    String branches = args.getOrDefault("branches", null)
+    if (branches != null) {
+        result["branches"] = branches
+    }
     if (reponame == null) {
         reponame = "${args.url}".substring("${args.url}".lastIndexOf('/') + 1)
         if (reponame.endsWith('.git'))
