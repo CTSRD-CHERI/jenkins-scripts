@@ -14,7 +14,8 @@ def call(Map args) {
     String reponame = args.getOrDefault("reponame", null)
     String branch = args.getOrDefault("branch", null)
     if (branch != null) {
-        result["branches"] = [name: "*/${branch}"]
+        // TODO: myabe we need $class: 'BranchSpec'  here
+        result["branches"] = [[name: "*/${branch}"]]
     }
     if (reponame == null) {
         reponame = "${args.url}".substring("${args.url}".lastIndexOf('/') + 1)
