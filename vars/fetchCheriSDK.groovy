@@ -75,7 +75,7 @@ def call(Map args) {
         // Rename the archive to the expected name
         // FIXME: add cheribuild argument to allow overriding this
         def extraArgs = ["--compiler-archive=${llvmArtifact}", "--compiler-type=${compilerType}"]
-        if (params.compilerOnly) {
+        if (params.compilerOnly || params.target == 'native') {
             extraArgs += ['--extract-compiler-only']
         } else {
             // FIXME: needs to be updated to use the new job names
