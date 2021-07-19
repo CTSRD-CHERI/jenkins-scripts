@@ -15,14 +15,9 @@ def jobProperties = [rateLimitBuilds(throttle: [count: 2, durationName: 'hour', 
                      copyArtifactPermission('*'), // Downstream jobs need the compiler tarball
                      [$class: 'GithubProjectProperty', displayName: '', projectUrlStr: 'https://github.com/CTSRD-CHERI/llvm-project/'],
 ]
-
-// FIXME: remove once this is actually a multibranch project
-if (true) {
-    archiveArtifacts = true
-    cheribuildArgs.add("--use-all-cores")
-} else if (env.JOB_NAME.startsWith('Morello-LLVM-linux/') || env.JOB_NAME.startsWith('Morello-LLVM-freebsd/')) {
+ if (env.JOB_NAME.startsWith('Morello-LLVM-linux/') || env.JOB_NAME.startsWith('Morello-LLVM-freebsd/')) {
     // Skip pull requests and non-default branches:
-    def archiveBranches = ['morello/master']
+    def archiveBranches = ['morello/master', 'morello/dev']
     if (!env.CHANGE_ID && (archiveBranches.contains(env.BRANCH_NAME))) {
         archiveArtifacts = true
         cheribuildArgs.add("--use-all-cores")
@@ -89,6 +84,7 @@ Map defaultArgs = [target              : 'morello-llvm', architecture: 'native',
                    skipArchiving       : true,
                    skipTarball         : true,
                    tarballName         : "morello-clang-llvm.tar.xz",
+                   setGitHubStatus     : false,
                    runTests            : true,
                    uniqueId            : env.JOB_NAME,
                    afterTests          : {
@@ -103,11 +99,6 @@ Map defaultArgs = [target              : 'morello-llvm', architecture: 'native',
                    },
                    junitXmlFiles       : "morello-llvm-project-build/llvm-test-output.xml",
 ]
-
-defaultArgs["setGitHubStatus"] = false
-repo = gitRepoWithLocalReference(url: 'https://git.morello-project.org/morello/llvm-project.git', reponame: 'morello-llvm-project')
-repo["branches"] = [[name: '*/morello/master']]
-defaultArgs["scmOverride"] = repo
 
 if (archiveArtifacts) {
     parallel "Build+Test": {

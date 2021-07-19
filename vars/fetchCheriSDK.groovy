@@ -48,8 +48,6 @@ def call(Map args) {
         }
         if (gitBranch == 'dev' || gitBranch == 'devel')
             params.llvmBranch = 'dev'
-        else if (gitBranch == 'morello-dev')
-            params.llvmBranch = 'dev' // FIXME: remove when morello-dev is gone
         else if (gitBranch == 'faster-testsuite-runs' || gitBranch == 'cheri-purecap-kernel')
             params.llvmBranch = 'dev' // FIXME: remove when LLVM dev->master merge complete
         else if (gitBranch == 'abi-breaking-changes')
@@ -66,8 +64,8 @@ def call(Map args) {
         String llvmArtifact = 'cheri-clang-llvm.tar.xz'
         String compilerType = 'cheri-llvm'
         if (params.cpu.startsWith("morello")) {
-            // Note: this is not a multi-branch job (yet?), we always build the morello/master branch.
-            llvmJob = 'Morello-LLVM-linux'
+            // Note: Morello LLVM has a morello/master and a morello/dev branch, so we just prefix llvmBranch with morello/
+            llvmJob = 'Morello-LLVM-linux/morello/${params.llvmBranch}'
             llvmArtifact = 'morello-clang-llvm.tar.xz'
             compilerType = 'morello-llvm'
         }
