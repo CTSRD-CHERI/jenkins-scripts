@@ -65,7 +65,7 @@ def call(Map args) {
         String compilerType = 'cheri-llvm'
         if (params.cpu.startsWith("morello")) {
             // Note: Morello LLVM has a morello/master and a morello/dev branch, so we just prefix llvmBranch with morello/
-            llvmJob = 'Morello-LLVM-linux/morello/${params.llvmBranch}'
+            llvmJob = "Morello-LLVM-linux/morello/${params.llvmBranch}"
             llvmArtifact = 'morello-clang-llvm.tar.xz'
             compilerType = 'morello-llvm'
         }
