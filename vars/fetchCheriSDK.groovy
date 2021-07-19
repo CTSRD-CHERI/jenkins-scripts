@@ -5,6 +5,7 @@ class FetchCheriSDKArgs implements Serializable {
     boolean compilerOnly = false
     String buildOS
     String llvmBranch = null
+    String morelloLlvmBranch = null
     String cheribsdBranch = 'master'
     String capTableABI = null
     String extraCheribuildArgs = ""
@@ -39,13 +40,13 @@ def call(Map args) {
 
 
     // Infer the correct LLVM for this project (dev/devel builds with LLVM dev)
+    def gitBranch = 'master'
+    if (env.CHANGE_ID) {
+        gitBranch = env.CHANGE_TARGET
+    } else if (env.BRANCH_NAME) {
+        gitBranch = env.BRANCH_NAME
+    }
     if (!params.llvmBranch) {
-        def gitBranch = 'master'
-        if (env.CHANGE_ID) {
-            gitBranch = env.CHANGE_TARGET
-        } else if (env.BRANCH_NAME) {
-            gitBranch = env.BRANCH_NAME
-        }
         if (gitBranch == 'dev' || gitBranch == 'devel')
             params.llvmBranch = 'dev'
         else if (gitBranch == 'faster-testsuite-runs' || gitBranch == 'cheri-purecap-kernel')
@@ -58,15 +59,22 @@ def call(Map args) {
             params.llvmBranch = 'master'
         // echo("Inferred LLVM branch from current git branch (${gitBranch}): ${params.llvmBranch}")
     }
+    if (!params.morelloLlvmBranch) {
+        // Note: Morello LLVM has a morello/master and a morello/dev branch, so we just prefix llvmBranch with
+        // morello%2F (Jenkins URL-encodes the branch name)
+        if (gitBranch == 'abi-breaking-changes' || gitBranch == 'upstream-llvm-merge')
+            params.morelloLlvmBranch = 'morello%2Fdev'
+        else
+            params.morelloLlvmBranch = "morello%2F${params.llvmBranch}"
+    }
     // stage("Setup SDK for ${params.target} (${params.cpu})") {
+    if (true) {
         // now copy all the artifacts
         def llvmJob = "CLANG-LLVM-${params.buildOS}/${params.llvmBranch}"
         String llvmArtifact = 'cheri-clang-llvm.tar.xz'
         String compilerType = 'cheri-llvm'
         if (params.cpu.startsWith("morello")) {
-            // Note: Morello LLVM has a morello/master and a morello/dev branch, so we just prefix llvmBranch with morello%2F
-            // (Jenkins URL-encodes the branch name)
-            llvmJob = "Morello-LLVM-linux/morello%2F${params.llvmBranch}"
+            llvmJob = "Morello-LLVM-linux/${params.morelloLlvmBranch}"
             llvmArtifact = 'morello-clang-llvm.tar.xz'
             compilerType = 'morello-llvm'
         }
@@ -95,5 +103,5 @@ def call(Map args) {
 rm -rf cherisdk/ morello-sdk/ native-sdk/ upstream-llvm-sdk/
 ${params.cheribuildPath}/jenkins-cheri-build.py extract-sdk ${extraArgs.join(" ")}"""
         }
-    // }
+    }
 }
