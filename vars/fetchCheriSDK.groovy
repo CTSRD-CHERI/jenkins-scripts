@@ -64,8 +64,9 @@ def call(Map args) {
         String llvmArtifact = 'cheri-clang-llvm.tar.xz'
         String compilerType = 'cheri-llvm'
         if (params.cpu.startsWith("morello")) {
-            // Note: Morello LLVM has a morello/master and a morello/dev branch, so we just prefix llvmBranch with morello/
-            llvmJob = "Morello-LLVM-linux/morello/${params.llvmBranch}"
+            // Note: Morello LLVM has a morello/master and a morello/dev branch, so we just prefix llvmBranch with morello%2F
+            // (Jenkins URL-encodes the branch name)
+            llvmJob = "Morello-LLVM-linux/morello%2F${params.llvmBranch}"
             llvmArtifact = 'morello-clang-llvm.tar.xz'
             compilerType = 'morello-llvm'
         }
