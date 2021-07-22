@@ -13,7 +13,6 @@ cheribuildArgs = ['--morello-llvm/build-type=Release', // DEBUG builds are too s
 def archiveArtifacts = false
 def jobProperties = [rateLimitBuilds(throttle: [count: 2, durationName: 'hour', userBoost: true]),
                      copyArtifactPermission('*'), // Downstream jobs need the compiler tarball
-                     [$class: 'GithubProjectProperty', displayName: '', projectUrlStr: 'https://github.com/CTSRD-CHERI/llvm-project/'],
 ]
  if (env.JOB_NAME.startsWith('Morello-LLVM-linux/') || env.JOB_NAME.startsWith('Morello-LLVM-freebsd/')) {
     // Skip pull requests and non-default branches:
