@@ -9,7 +9,7 @@ def call(Map args) {
             // branches                         : [[name: '*/master']],
             doGenerateSubmoduleConfigurations: false,
             submoduleCfg                     : [],
-            userRemoteConfigs                : [[url: args.url]]
+            userRemoteConfigs                : [[url: args.url, credentialsId: args.getOrDefault('credentialsId', 'github-app-cheri-jenkins')]]
     ]
     String reponame = args.getOrDefault("refdir", null)
     String branch = args.getOrDefault("branch", null)
