@@ -11,7 +11,7 @@ def call(Map args) {
             submoduleCfg                     : [],
             userRemoteConfigs                : [[url: args.url]]
     ]
-    String reponame = args.getOrDefault("reponame", null)
+    String reponame = args.getOrDefault("refdir", null)
     String branch = args.getOrDefault("branch", null)
     if (branch != null) {
         // TODO: myabe we need $class: 'BranchSpec'  here
@@ -22,13 +22,13 @@ def call(Map args) {
         if (reponame.endsWith('.git'))
             reponame = reponame.substring(0, reponame.length() - 4)
     }
-    String refdir = "/var/tmp/git-reference-repos/" + reponame
+    String refdirAbs = "/var/tmp/git-reference-repos/" + reponame
     // echo("Guessed refdir: ${refdir}")
     def cloneOpt = [$class : 'CloneOption',
                     depth  : args.getOrDefault("depth", 1),
                     noTags : true,
                     shallow: args.getOrDefault("shallow", true),
-                    reference : refdir,
+                    reference : refdirAbs,
                     timeout: 5]
     result["extensions"] = [cloneOpt]
     return result
