@@ -70,6 +70,7 @@ class CheribuildProjectParams implements Serializable {
 	String extraArgs = '' // additional arguments to pass to cheribuild.py
 	String cpu = 'default' // --cpu flag for cheribuild (deprecated)
 	String architecture // suffix to be used for all output files, etc.
+	String sysrootArchitecture // sysroot architecture (e.g. riscv64-purecap for foo-hybrid-for-purecap-rootfs)
 	String capTableABI = null // use whatever the default is
 	boolean fetchCheriCompiler = true
 	boolean sdkCompilerOnly = false
@@ -422,7 +423,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			}
 			// now copy all the artifacts
 			if (proj.fetchCheriCompiler) {
-				fetchCheriSDK(target: proj.target, cpu: proj.architecture,
+				fetchCheriSDK(target: proj.target, cpu: proj.sysrootArchitecture,
 						compilerOnly: proj.sdkCompilerOnly, llvmBranch: proj.llvmBranch,
 						cheribsdBranch: proj.cheribsdBranch,
 						buildOS: proj.buildOS, capTableABI: proj.capTableABI,
@@ -535,6 +536,19 @@ CheribuildProjectParams parseParams(Map args) {
 			params.architecture = 'mips64-purecap'
 		}
 	}
+	if (!params.sysrootArchitecture) {
+		// By default the sysroot architecture matches the architecture suffix, but if we are building
+		// a target such as gdb-riscv64-hybrid-for-purecap-rootfs we have to use the purecap riscv sysroot.
+		params.sysrootArchitecture = params.architecture
+		// We assume that the base architecture never contains a dash.
+		String baseArchitecture = params.sysrootArchitecture.split('-')[0];
+		if (params.sysrootArchitecture.endsWith('for-purecap-rootfs')) {
+			params.sysrootArchitecture = baseArchitecture + "-purecap"
+		} else if (params.sysrootArchitecture.endsWith('for-hybrid-rootfs')) {
+			params.sysrootArchitecture = baseArchitecture + "-hybrid"
+		}
+	}
+
 	if (!params.tarballName) {
 		// Don't add the target suffix to the tarball twice
 		if (params.target.endsWith(params.architecture))

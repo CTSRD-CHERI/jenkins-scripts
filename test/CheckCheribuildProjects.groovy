@@ -156,4 +156,15 @@ class CheckCheribuildProjects extends BaseRegressionTest {
         printCallStack()
         assertJobStatusUnstable()
     }
+
+    @Test
+    void cmake_test() throws Exception {
+        CommonTestHelper.addEnvVars(this, [JOB_NAME   : "CMake",
+                                           BRANCH_NAME: "release",
+                                           WORKSPACE  : "/workspace",])
+        def script = runScript("jobs/cmake.groovy")
+        // script.run()
+        printCallStack()
+        assertJobStatusSuccess()
+    }
 }
