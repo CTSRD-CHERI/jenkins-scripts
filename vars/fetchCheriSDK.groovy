@@ -6,7 +6,7 @@ class FetchCheriSDKArgs implements Serializable {
     String buildOS
     String llvmBranch = null
     String morelloLlvmBranch = null
-    String cheribsdBranch = 'master'
+    String cheribsdBranch = 'main'
     String capTableABI = null
     String extraCheribuildArgs = ""
     String cheribuildPath = '$WORKSPACE/cheribuild'

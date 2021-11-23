@@ -77,7 +77,7 @@ class CheribuildProjectParams implements Serializable {
 	String llvmBranch = null
 	// Git branch of LLVM to use for building. When NULL infer from branch name.
 	// otherwise pull just a specific set of artifacts
-	String cheribsdBranch = 'master' // Branch of CheriBSD to use for the disk images/sysroot
+	String cheribsdBranch = 'main' // Branch of CheriBSD to use for the disk images/sysroot
 	String cheribuildBranch = null  // Branch of cheribuild to use for building
 	List artifactsToCopy = []
 	// List of (job:filter) for artifacts which need copying
