@@ -441,7 +441,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 		}
 	}
 	def analysisId = proj.stageSuffix ? proj.stageSuffix : "${proj.uniqueId}"
-	analysisId = analysisId.replace(' ', '_').replace('/', '_')
+	analysisId = analysisId.replaceAll('[^\\p{Alnum}-_.]', '_')
 	warnError("FAILED TO RECORD ISSUES") {
 		recordIssues aggregatingResults: true, blameDisabled: true, enabledForFailure: true, forensicsDisabled: true,
 				sourceCodeEncoding: 'UTF-8', tools: [clang(reportEncoding: 'UTF-8', id: "clang-${analysisId}")]
