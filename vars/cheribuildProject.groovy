@@ -402,7 +402,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 		dir('cheribuild') {
 			cheribuildCloneArgs = [url: "https://github.com/CTSRD-CHERI/cheribuild.git",
 					       changelog: false, poll: false, refdir: "cheribuild"]
-			cheribuildCloneArgs['branches'] = '*/' + (proj.cheribuildBranch ?: "main")
+			cheribuildCloneArgs['branch'] = proj.cheribuildBranch ?: "main"
 			def x = cloneGitRepoWithReference(cheribuildCloneArgs)
 			echo("Checked out cheribuild: ${x}")
 		}
