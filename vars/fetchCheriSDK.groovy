@@ -99,7 +99,7 @@ def call(Map args) {
             sh label: 'extracting SDK archive:', script: """
 # delete old SDK first and then use cheribuild to extract the new one
 rm -rf cherisdk/ morello-sdk/ native-sdk/ upstream-llvm-sdk/
-${params.cheribuildPath}/jenkins-cheri-build.py extract-sdk ${extraArgs.join(" ")}"""
+${params.cheribuildPath}/jenkins-cheri-build.py --extract-sdk ${extraArgs.join(" ")}"""
         }
     }
 }
