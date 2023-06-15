@@ -437,11 +437,13 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			runTests(proj, testSuffix)
 		}
 	}
-	def analysisId = proj.stageSuffix ? proj.stageSuffix : "${proj.uniqueId}"
-	analysisId = analysisId.replaceAll('[^\\p{Alnum}-_.]', '_')
-	warnError("FAILED TO RECORD ISSUES") {
-		recordIssues aggregatingResults: true, blameDisabled: true, enabledForFailure: true, forensicsDisabled: true,
-				sourceCodeEncoding: 'UTF-8', tools: [clang(reportEncoding: 'UTF-8', id: "clang-${analysisId}")]
+	stage("Record static analysis") {
+		def analysisId = proj.stageSuffix ? proj.stageSuffix : "${proj.uniqueId}"
+		analysisId = analysisId.replaceAll('[^\\p{Alnum}-_.]', '_')
+		warnError("FAILED TO RECORD ISSUES") {
+			recordIssues aggregatingResults: true, blameDisabled: true, enabledForFailure: true, forensicsDisabled: true,
+					sourceCodeEncoding: 'UTF-8', tools: [clang(reportEncoding: 'UTF-8', id: "clang-${analysisId}")]
+		}
 	}
 	if (!proj.skipTarball) {
 		stage("Creating tarball for ${proj.target}") {
