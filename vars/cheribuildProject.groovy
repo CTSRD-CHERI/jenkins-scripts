@@ -206,7 +206,7 @@ def build(CheribuildProjectParams proj, String stageSuffix) {
 	runCallback(proj, proj.afterBuild)
 }
 
-def runTestsImpl(CheribuildProjectParams proj, String testExtraArgs, String testSuffix) {
+def runTestsImpl(CheribuildProjectParams proj, String testExtraArgs, String cheribuildExtraTestArgs, String testSuffix) {
 	ansiColor('xterm') {
 		def testExitCode
 		runCallback(proj, proj.beforeTestsInDocker)
@@ -219,7 +219,7 @@ def runTestsImpl(CheribuildProjectParams proj, String testExtraArgs, String test
 			String cheribuildTestArgs = (proj.architecture == 'native') ? "${testExtraArgs} ${proj.testExtraArgs}" :
 										"--test-extra-args=\"${testExtraArgs} --test-timeout ${proj.testTimeout} ${proj.testExtraArgs}\""
 			testExitCode = sh returnStatus: true, label: "Running tests with cheribuild ${testSuffix}",
-					script: "\$WORKSPACE/cheribuild/jenkins-cheri-build.py --test ${proj.commonCheribuildArgs()} ${cheribuildTestArgs}"
+					script: "\$WORKSPACE/cheribuild/jenkins-cheri-build.py --test ${proj.commonCheribuildArgs()} ${cheribuildTestArgs} ${cheribuildExtraTestArgs}"
 		}
 		if (testExitCode != 0) {
 			proj.statusUnstable("Test script returned ${testExitCode}")
@@ -240,6 +240,7 @@ def runTests(CheribuildProjectParams proj, String testSuffix) {
 		testCPU += '-hybrid'
 	}
 	def defaultTestExtraArgs = ''
+	def defaultCheribuildExtraTestArgs = ''
 	if (testCPU != "native") {
 		def diskImageProjectName = "CheriBSD-pipeline/${proj.cheribsdBranch}"
 		sh "rm -rfv artifacts-${testCPU}/cheribsd-*.img* artifacts-${testCPU}/kernel*"
@@ -262,6 +263,9 @@ def runTests(CheribuildProjectParams proj, String testSuffix) {
 		if (compressedDiskImage) {
 			defaultTestExtraArgs += " --disk-image ${compressedDiskImage}"
 		}
+
+		def defaultKernelAbi = cheribsdInfo.getDefaultKernelAbi(proj.cheribsdBranch)
+		defaultCheribuildExtraTestArgs += "--cheribsd/default-kernel-abi=${defaultKernelAbi}"
 		sh "ls -la \$WORKSPACE"
 	}
 
@@ -274,7 +278,7 @@ def runTests(CheribuildProjectParams proj, String testSuffix) {
 		// Currently the full image is 5.59G
 		cheribsdImage.inside('-u 0 --rm --tmpfs /images:rw,noexec,nosuid,size=7g') {
 			sh 'df -h /images'
-			runTestsImpl(proj, defaultTestExtraArgs, testSuffix)
+			runTestsImpl(proj, defaultTestExtraArgs, defaultCheribuildExtraTestArgs, testSuffix)
 		}
 	} else {
 		if (testCPU != "native") {
@@ -286,7 +290,7 @@ def runTests(CheribuildProjectParams proj, String testSuffix) {
 					script: 'test -e $WORKSPACE/id_ed25519 || ssh-keygen -t ed25519 -N \'\' -f $WORKSPACE/id_ed25519 < /dev/null'
 			defaultTestExtraArgs += " --ssh-key \$WORKSPACE/id_ed25519.pub"
 		}
-		runTestsImpl(proj, defaultTestExtraArgs, testSuffix)
+		runTestsImpl(proj, defaultTestExtraArgs, defaultCheribuildExtraTestArgs, testSuffix)
 	}
 	runCallback(proj, proj.afterTests)
 	if (proj.junitXmlFiles != null) {
