@@ -8,7 +8,7 @@ setDefaultJobProperties([
 
 def cmakeRepo = gitRepoWithLocalReference(url: 'https://gitlab.kitware.com/cmake/cmake.git', branch: 'release')
 cheribuildProject(target: 'cmake',
-                  targetArchitectures: ["native", "amd64", "riscv64-for-purecap-rootfs", "riscv64"], // TODO: morello
+                  targetArchitectures: ["native", "aarch64", "amd64", "morello-purecap", "riscv64", "riscv64-purecap"],
                   scmOverride: cmakeRepo,
                   skipArchiving: false,
                   runTests: false,
