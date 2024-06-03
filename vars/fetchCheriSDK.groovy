@@ -62,6 +62,8 @@ def call(Map args) {
         // morello%2F (Jenkins URL-encodes the branch name)
         if (gitBranch == 'abi-breaking-changes' || gitBranch == 'upstream-llvm-merge')
             params.morelloLlvmBranch = 'morello%2Fdev'
+        else if (gitBranch == 'demo-2024-06')
+            params.morelloLlvmBranch = 'elf_sig'
         else
             params.morelloLlvmBranch = "morello%2F${params.llvmBranch}"
     }
