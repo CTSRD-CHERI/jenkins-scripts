@@ -1,7 +1,7 @@
 def getDefaultKernelAbi(String branch = "main") {
-    if (branch == "releng/22.12" || branch == "releng/23.11" || branch == "main")
+    if (branch == "releng/22.12" || branch == "releng/23.11" || branch == "releng/24.05" || branch == "main")
         return "hybrid"
-    return "hybrid" // "purecap"
+    return "purecap"
 }
 
 def getKernelConfig(String arch, String abi, String branch = "main") {
