@@ -25,3 +25,12 @@ def getKernelConfig(String arch, String abi, String branch = "main") {
     }
     error("Unknown architecture: '${arch}'")
 }
+
+def getReleasedVersions() {
+    return [
+        "22.05",
+        "22.05p1",
+        "22.12",
+        "23.11",
+    ]
+}
