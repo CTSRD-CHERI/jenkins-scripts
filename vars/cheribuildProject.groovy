@@ -585,7 +585,7 @@ CheribuildProjectParams parseParams(Map args) {
 		def extraInstallDirTargets = []
 		params.sysrootDependencies.each { dep ->
 			def target = dep.target
-			def targetWithSuffix = "${target}-${params.baseArchitecture}"
+			def targetWithSuffix = "${target}-${params.architecture}"
 			def job = dep.job
 			def archive = "${targetWithSuffix}.tar.xz"
 			if (dep.containsKey('archive')) {
