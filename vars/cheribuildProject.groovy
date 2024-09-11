@@ -81,6 +81,8 @@ class CheribuildProjectParams implements Serializable {
 	String cheribuildBranch = null  // Branch of cheribuild to use for building
 	List artifactsToCopy = []
 	// List of (job:filter) for artifacts which need copying
+	List sysrootExtraArchives = []
+	// List of archives in the workspace to extract to the sysroot
 	String tarballName
 	// output tarball name (default is "${target}-${cpu}.tar.xz")
 	String customGitCheckoutDir
@@ -428,6 +430,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 						compilerOnly: proj.sdkCompilerOnly, llvmBranch: proj.llvmBranch,
 						cheribsdBranch: proj.cheribsdBranch,
 						buildOS: proj.buildOS, capTableABI: proj.capTableABI,
+						sysrootExtraArchives: proj.sysrootExtraArchives,
 						extraCheribuildArgs: proj.extraArgs)
 			}
 			sh label: 'WORKSPACE after checkout:', script: 'ls -lah'

@@ -10,6 +10,7 @@ class FetchCheriSDKArgs implements Serializable {
     String capTableABI = null
     String extraCheribuildArgs = ""
     String cheribuildPath = '$WORKSPACE/cheribuild'
+    List sysrootExtraArchives = []
 }
 
 def call(Map args) {
@@ -95,6 +96,9 @@ def call(Map args) {
                 error("Cannot infer SDK name for capTableABI=${params.capTableABI}")
             }
             extraArgs += ["--sysroot-archive=${sysrootArchive}"]
+            if (!params.sysrootExtraArchives.isEmpty()) {
+                extraArgs += ["--sysroot-extra-archives='${params.sysrootExtraArchives.join(" ")}'"]
+            }
             copyArtifacts projectName: cheribsdProject, flatten: false, optional: false, filter: sysrootArchive, selector: lastSuccessful()
         }
         ansiColor('xterm') {
