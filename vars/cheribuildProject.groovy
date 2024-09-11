@@ -83,6 +83,10 @@ class CheribuildProjectParams implements Serializable {
 	// List of (job:filter) for artifacts which need copying
 	List sysrootExtraArchives = []
 	// List of archives in the workspace to extract to the sysroot
+	List sysrootInstallDirTargets = []
+	// List of targets for which the sysroot should be used as the install directory
+	List sysrootDependencies = []
+	// List of (target: job: (archive:)) for sysroot dependencies that are built by other jobs
 	String tarballName
 	// output tarball name (default is "${target}-${cpu}.tar.xz")
 	String customGitCheckoutDir
@@ -126,10 +130,16 @@ class CheribuildProjectParams implements Serializable {
 	// before running the tests (inside docker, cheribsd no longer running)
 	def afterTests // before running the tests (no longer inside docker)
 
-	String commonCheribuildArgs() {
-		def result = "${this.target} ${this.extraArgs}"
+	String commonCheribuildArgs(boolean withTarget = true) {
+		def result = "${this.extraArgs}"
 		if (this.capTableABI) {
 			result += " --cap-table-abi=${this.capTableABI}"
+		}
+		if (!this.sysrootInstallDirTargets.isEmpty()) {
+			result += " --sysroot-install-dir-targets=${this.sysrootInstallDirTargets.join(" ")}"
+		}
+		if (withTarget) {
+			result = "${this.target} ${result}"
 		}
 		return result
 	}
@@ -431,7 +441,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 						cheribsdBranch: proj.cheribsdBranch,
 						buildOS: proj.buildOS, capTableABI: proj.capTableABI,
 						sysrootExtraArchives: proj.sysrootExtraArchives,
-						extraCheribuildArgs: proj.extraArgs)
+						extraCheribuildArgs: proj.commonCheribuildArgs(false))
 			}
 			sh label: 'WORKSPACE after checkout:', script: 'ls -lah'
 		}
@@ -567,6 +577,27 @@ CheribuildProjectParams parseParams(Map args) {
 		params.skipArchiving = true
 		params.skipTarball = true
 		params.deleteAfterBuild = true
+	}
+
+	if (!params.sysrootDependencies.isEmpty()) {
+		def extraArtifacts = []
+		def extraArchives = []
+		def extraInstallDirTargets = []
+		params.sysrootInstallDirTargets.each { dep ->
+			def target = dep.target
+			def targetWithSuffix = "${target}-${params.baseArchitecture}"
+			def job = dep.job
+			def archive = "${targetWithSuffix}.tar.xz"
+			if (dep.containsKey('archive')) {
+				archive = dep.archive
+			}
+			extraArtifacts.add([job: job, filter: archive])
+			extraArchives.add(archive)
+			extraInstallDirTargets.add(targetWithSuffix)
+		}
+		params.artifactsToCopy += extraArtifacts
+		params.sysrootExtraArchives += extraArchives
+		params.sysrootInstallDirTargets += extraInstallDirTargets
 	}
 
 	// WTF. Work around weird scoping rules. Groovy really sucks...
