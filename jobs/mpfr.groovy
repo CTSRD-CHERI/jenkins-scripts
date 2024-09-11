@@ -14,7 +14,7 @@ def allArchitectures = [
 
 def mpfrRepo = gitRepoWithLocalReference(url: 'https://gitlab.inria.fr/mpfr/mpfr.git')
 def sysrootDeps = [
-        [target: "gmp", job: "GMP"]
+        [target: "gmp", job: "GMP"],
 ]
 cheribuildProject(target: "mpfr", targetArchitectures: allArchitectures,
                   scmOverride: mpfrRepo,
