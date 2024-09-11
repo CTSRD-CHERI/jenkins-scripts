@@ -12,9 +12,9 @@ def allArchitectures = [
         'riscv64', 'riscv64-hybrid', 'riscv64-purecap', 'riscv64-hybrid-for-purecap-rootfs'
 ]
 
-def cmakeRepo = gitRepoWithLocalReference(url: 'https://github.com/gmp-mirror/gmp')
+def gmpRepo = gitRepoWithLocalReference(url: 'https://github.com/gmp-mirror/gmp')
 cheribuildProject(target: "gmp", targetArchitectures: allArchitectures,
-                  scmOverride: cmakeRepo,
+                  scmOverride: gmpRepo,
                   customGitCheckoutDir: 'libgmp',
                   skipArchiving: false,
                   runTests: false,
