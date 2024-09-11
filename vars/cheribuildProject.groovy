@@ -583,7 +583,7 @@ CheribuildProjectParams parseParams(Map args) {
 		def extraArtifacts = []
 		def extraArchives = []
 		def extraInstallDirTargets = []
-		params.sysrootInstallDirTargets.each { dep ->
+		params.sysrootDependencies.each { dep ->
 			def target = dep.target
 			def targetWithSuffix = "${target}-${params.baseArchitecture}"
 			def job = dep.job
