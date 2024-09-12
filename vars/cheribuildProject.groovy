@@ -136,7 +136,7 @@ class CheribuildProjectParams implements Serializable {
 			result += " --cap-table-abi=${this.capTableABI}"
 		}
 		if (!this.sysrootInstallDirTargets.isEmpty()) {
-			result += " --sysroot-install-dir-targets=${this.sysrootInstallDirTargets.join(" ")}"
+			result += " --sysroot-install-dir-targets='${this.sysrootInstallDirTargets.join(" ")}'"
 		}
 		if (withTarget) {
 			result = "${this.target} ${result}"
