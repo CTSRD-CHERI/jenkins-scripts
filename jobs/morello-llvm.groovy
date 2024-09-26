@@ -16,7 +16,7 @@ def jobProperties = [rateLimitBuilds(throttle: [count: 2, durationName: 'hour', 
 ]
  if (env.JOB_NAME.startsWith('Morello-LLVM-linux/') || env.JOB_NAME.startsWith('Morello-LLVM-freebsd/')) {
     // Skip pull requests and non-default branches:
-    def archiveBranches = ['morello/master', 'morello/dev', 'elf_sig']
+    def archiveBranches = ['morello/master', 'morello/dev', 'elf_sig', 'kernel-c18n']
     if (!env.CHANGE_ID && (archiveBranches.contains(env.BRANCH_NAME))) {
         archiveArtifacts = true
         cheribuildArgs.add("--use-all-cores")
