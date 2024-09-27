@@ -48,7 +48,8 @@ def call(Map args) {
         gitBranch = env.BRANCH_NAME
     }
     if (!params.llvmBranch) {
-        if (gitBranch in ['c18n', 'caprevoke', 'cocall', 'cocalls', 'coexecve', 'dev', 'devel', 'demo-2024-03', 'demo-2024-10'])
+        if (gitBranch in ['c18n', 'caprevoke', 'cocall', 'cocalls', 'coexecve',
+                          'dev', 'devel', 'demo-2024-03', 'kernel-c18n', 'demo-2024-10'])
             params.llvmBranch = 'dev'
         else if (gitBranch == 'abi-breaking-changes')
             params.llvmBranch = 'abi-breaking-changes'
@@ -65,6 +66,8 @@ def call(Map args) {
             params.morelloLlvmBranch = 'morello%2Fdev'
         else if (gitBranch == 'demo-2024-06')
             params.morelloLlvmBranch = 'elf_sig'
+        else if (gitBranch == 'kernel-c18n')
+            params.morelloLlvmBranch = 'kernel-c18n'
         else
             params.morelloLlvmBranch = "morello%2F${params.llvmBranch}"
     }

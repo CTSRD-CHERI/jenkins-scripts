@@ -8,26 +8,6 @@ setDefaultJobProperties([
 
 def applyPatches() {
     stage("Apply patches") {
-        sh label: "Apply https://review.openocd.org/c/openocd/+/8489 bug fix", script: """
-cd riscv-openocd && patch -p1 -F0 << EOF
-diff --git a/src/helper/binarybuffer.c b/src/helper/binarybuffer.c
-index 3e09143c6..a0f2ed91a 100644
---- a/src/helper/binarybuffer.c
-+++ b/src/helper/binarybuffer.c
-@@ -73,9 +73,9 @@ bool buf_cmp(const void *_buf1, const void *_buf2, unsigned size)
- 		return _buf1 != _buf2;
-
- 	unsigned last = size / 8;
- 	if (memcmp(_buf1, _buf2, last) != 0)
--		return false;
-+		return true;
-
- 	unsigned trailing = size % 8;
- 	if (!trailing)
- 		return false;
-EOF
-"""
-
         sh label: "Apply Bluespec DM workarounds", script: """
 cd riscv-openocd && patch -p1 << EOF
 diff --git a/src/target/riscv/riscv-013.c b/src/target/riscv/riscv-013.c
