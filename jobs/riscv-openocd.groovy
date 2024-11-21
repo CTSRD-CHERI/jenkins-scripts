@@ -68,6 +68,7 @@ index f2c467618..9422a9513 100644
  			}
  		} while (get_field32(dmcontrol, DM_DMCONTROL_DMACTIVE));
  		LOG_TARGET_DEBUG(target, "DM reset initiated.");
+EOF
 """
     }
 }
