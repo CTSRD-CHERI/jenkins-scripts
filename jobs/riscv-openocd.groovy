@@ -9,7 +9,7 @@ setDefaultJobProperties([
 def applyPatches() {
     stage("Apply patches") {
         sh label: "Apply Bluespec DM workarounds", script: """
-cd riscv-openocd && patch -p1 << EOF
+cd riscv-openocd && patch -p1 << "EOF"
 diff --git a/src/target/riscv/riscv-013.c b/src/target/riscv/riscv-013.c
 index f2c467618..9422a9513 100644
 --- a/src/target/riscv/riscv-013.c
@@ -63,7 +63,7 @@ index f2c467618..9422a9513 100644
  						"Increase the timeout with 'riscv set_command_timeout_sec'.",
  						riscv_get_command_timeout_sec());
 -				return ERROR_TIMEOUT_REACHED;
-+				/* XXX: Bluespec's DM auto-sets \\`dmactive.dmactive\\` */
++				/* XXX: Bluespec's DM auto-sets `dmactive.dmactive` */
 +				break; /* return ERROR_TIMEOUT_REACHED; */
  			}
  		} while (get_field32(dmcontrol, DM_DMCONTROL_DMACTIVE));
