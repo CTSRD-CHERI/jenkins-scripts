@@ -63,7 +63,7 @@ index f2c467618..9422a9513 100644
  						"Increase the timeout with 'riscv set_command_timeout_sec'.",
  						riscv_get_command_timeout_sec());
 -				return ERROR_TIMEOUT_REACHED;
-+				/* XXX: Bluespec's DM auto-sets `dmactive.dmactive` */
++				/* XXX: Bluespec's DM auto-sets \\`dmactive.dmactive\\` */
 +				break; /* return ERROR_TIMEOUT_REACHED; */
  			}
  		} while (get_field32(dmcontrol, DM_DMCONTROL_DMACTIVE));
