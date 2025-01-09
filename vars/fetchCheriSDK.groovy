@@ -49,7 +49,8 @@ def call(Map args) {
     }
     if (!params.llvmBranch) {
         if (gitBranch in ['c18n', 'caprevoke', 'cocall', 'cocalls', 'coexecve',
-                          'dev', 'devel', 'demo-2024-03', 'kernel-c18n', 'demo-2024-10'])
+                          'dev', 'devel', 'demo-2024-03', 'kernel-c18n', 'demo-2024-10',
+                          'linux-next'])
             params.llvmBranch = 'dev'
         else if (gitBranch == 'abi-breaking-changes')
             params.llvmBranch = 'abi-breaking-changes'
