@@ -73,50 +73,6 @@ EOF
     }
 }
 
-def fetchLibusbDev(proj) {
-    stage("Fetch libusb-1.0-0-dev") {
-        def libusbDevCheck = sh returnStatus: true, label: "Checking if libusb-1.0-0-dev is already present",
-                                script: "dpkg-query -s libusb-1.0-0-dev"
-        if (libusbDevCheck == 0) {
-            echo "Skipping download"
-        } else {
-            sh label: "Fetch libusb-1.0-0-dev", script: """
-cd $WORKSPACE
-rm -f libusb-1.0-0-dev*.deb
-rm -rf libusb-1.0-0-dev
-apt-get download -y libusb-1.0-0-dev
-mkdir libusb-1.0-0-dev
-dpkg -x libusb-1.0-0-dev*.deb libusb-1.0-0-dev
-arch="`dpkg-architecture -qDEB_HOST_MULTIARCH`"
-link="libusb-1.0-0-dev/usr/lib/\$arch/libusb-1.0.so"
-target="`readlink "\$link"`"
-case "\$target" in
-    '/'*)
-        ;;
-    *)
-        ln -fs "/usr/lib/\$arch/\$target" "\$link"
-        ;;
-esac
-sed -i "s,^prefix=/usr\$,prefix=$WORKSPACE/libusb-1.0-0-dev/usr," "libusb-1.0-0-dev/usr/lib/\$arch/pkgconfig/libusb-1.0.pc"
-"""
-            def LIBUSB1_CFLAGS = sh returnStdout: true, label: "Get libusb-1.0-0-dev CFLAGS", script: """
-arch="`dpkg-architecture -qDEB_HOST_MULTIARCH`"
-pkg-config --cflags "libusb-1.0-0-dev/usr/lib/\$arch/pkgconfig/libusb-1.0.pc"
-"""
-            def LIBUSB1_LIBS = sh returnStdout: true, label: "Get libusb-1.0-0-dev LIBS", script: """
-arch="`dpkg-architecture -qDEB_HOST_MULTIARCH`"
-pkg-config --libs "libusb-1.0-0-dev/usr/lib/\$arch/pkgconfig/libusb-1.0.pc"
-"""
-            LIBUSB1_CFLAGS = LIBUSB1_CFLAGS.trim()
-            LIBUSB1_LIBS = LIBUSB1_LIBS.trim()
-            if (!proj.extraArgs.isEmpty()) {
-                proj.extraArgs += " "
-            }
-            proj.extraArgs += "--${proj.target}/configure-options='LIBUSB1_CFLAGS=\"${LIBUSB1_CFLAGS}\" LIBUSB1_LIBS=\"${LIBUSB1_LIBS}\"'"
-        }
-    }
-}
-
 def buildNative(String name, String nodeLabel) {
     def riscvOpenocdRepo = gitRepoWithLocalReference(url: 'https://github.com/riscv-collab/riscv-openocd', branch: 'riscv')
     def extraArgs = [
@@ -130,12 +86,7 @@ def buildNative(String name, String nodeLabel) {
                       tarballName: "riscv-openocd-${name}.tar.xz",
                       nodeLabel: nodeLabel,
                       sdkCompilerOnly: true,
-                      beforeBuild: { proj ->
-                          applyPatches()
-                          if (name == "native-linux") {
-                              fetchLibusbDev(proj )
-                          }
-                      },
+                      beforeBuild: { proj -> applyPatches() },
                       extraArgs: extraArgs.join(" "),
     )
 }
