@@ -48,16 +48,14 @@ def call(Map args) {
         gitBranch = env.BRANCH_NAME
     }
     if (!params.llvmBranch) {
-        if (gitBranch in ['c18n', 'caprevoke', 'cocall', 'cocalls', 'coexecve',
-                          'dev', 'devel', 'demo-2024-03', 'kernel-c18n', 'demo-2024-10',
-                          'linux-next'])
-            params.llvmBranch = 'dev'
+        if (gitBranch == 'main')
+            params.llvmBranch = 'master'
         else if (gitBranch == 'abi-breaking-changes')
             params.llvmBranch = 'abi-breaking-changes'
         else if (gitBranch == 'upstream-llvm-merge')
             params.llvmBranch = 'upstream-llvm-merge'
         else
-            params.llvmBranch = 'master'
+            params.llvmBranch = 'dev'
         // echo("Inferred LLVM branch from current git branch (${gitBranch}): ${params.llvmBranch}")
     }
     if (!params.morelloLlvmBranch) {
