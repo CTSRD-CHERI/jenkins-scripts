@@ -95,6 +95,8 @@ jobs = [:]
 
 def allNativeBuilds = [
         'linux': 'linux-baseline',
+        'linux-jammy': 'jammy',
+        'linux-noble': 'noble',
         'freebsd': 'freebsd',
 ]
 allNativeBuilds.each { osName, nodeLabel ->
