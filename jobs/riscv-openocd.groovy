@@ -84,6 +84,7 @@ def buildNative(String name, String nodeLabel) {
                       runTests: false,
                       setGitHubStatus: false, // external repo
                       tarballName: "riscv-openocd-${name}.tar.xz",
+                      llvmBranch:  "linux-next" if "noble" in name else null
                       nodeLabel: nodeLabel,
                       sdkCompilerOnly: true,
                       beforeBuild: { proj -> applyPatches() },
