@@ -69,6 +69,8 @@ def call(Map args) {
             params.morelloLlvmBranch = 'elf_sig'
         else if (gitBranch == 'kernel-c18n')
             params.morelloLlvmBranch = 'kernel-c18n'
+        else if (gitBranch == 'dev_c18n')
+            params.morelloLlvmBranch = 'c18n_policy'
         else
             params.morelloLlvmBranch = "morello%2F${params.llvmBranch}"
     }
