@@ -78,17 +78,12 @@ def buildNative(String name, String nodeLabel) {
     def extraArgs = [
             '--install-prefix=/',
     ]
-    def llvmBranch = null
-    if (name.contains("noble")) {
-        llvmBranch = "linux-next"
-    }
     cheribuildProject(target: "riscv-openocd", architecture: "native",
                       scmOverride: riscvOpenocdRepo,
                       skipArchiving: false,
                       runTests: false,
                       setGitHubStatus: false, // external repo
                       tarballName: "riscv-openocd-${name}.tar.xz",
-                      llvmBranch:  llvmBranch,
                       nodeLabel: nodeLabel,
                       sdkCompilerOnly: true,
                       beforeBuild: { proj -> applyPatches() },
