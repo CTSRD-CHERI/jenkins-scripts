@@ -470,7 +470,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			sh label: "List tarball ${buildSuffix}", script: 'ls -lah; ls -lah tarball || true'
 		}
 		if (!proj.skipArchiving) {
-			stage("Archiving artificats for ${proj.target}") {
+			stage("Archiving artifacts for ${proj.target}") {
 				if (!updatePRStatus(proj, "Archiving artifacts...") && proj.setGitHubStatus) {
 					setGitHubStatus(proj.getRepoInfoForGitHubStatus() +
 									[message: "${currentBuild.projectName} archiving artifacts ...",
