@@ -636,20 +636,30 @@ def call(Map args) {
 	List targetArchitectures = args.getOrDefault('targetArchitectures', [])
 	def failFast = args.getOrDefault('failFast', true) as Boolean
 	args.remove('failFast')
-	if (targetArchitectures.isEmpty()) {
-		return runCheribuild(parseParams(args))
+	boolean singleArch = targetArchitectures.isEmpty()
+	def taskArgs = [:]
+	if (singleArch) {
+		taskArgs[0] = args
+	} else {
+		targetArchitectures.each { String suffix ->
+			String targetWithoutSuffix = args.getOrDefault('target', 'target must be set!')
+			Map newMap = args + [target			  : targetWithoutSuffix + "-${suffix}",
+								 _targetWithoutSuffix: targetWithoutSuffix,
+								 architecture		: "${suffix}"]
+			echo("newMap=${newMap}")
+			taskArgs[suffix] = newMap
+		}
+	}
+	def tasks = [:]
+	taskArgs.each = { key, val ->
+		def params = parseParams(val)
+		tasks[key] = { -> return runCheribuild(params) }
+	}
+	if (singleArch) {
+		assert tasks.size() == 1
+		return tasks[0]()
 	}
 	// Otherwise run multiple architectures in parallel
-	def tasks = [:]
-	targetArchitectures.each { String suffix ->
-		String targetWithoutSuffix = args.getOrDefault('target', 'target must be set!')
-		Map newMap = args + [target			  : targetWithoutSuffix + "-${suffix}",
-							 _targetWithoutSuffix: targetWithoutSuffix,
-							 architecture		: "${suffix}"]
-		echo("newMap=${newMap}")
-		def params = parseParams(newMap)
-		tasks[suffix] = { -> return runCheribuild(params) }
-	}
 	if (env?.UNIT_TEST) {
 		tasks.each { key, closure ->
 			echo("Running ${key}")
