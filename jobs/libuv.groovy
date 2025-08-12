@@ -7,7 +7,7 @@ setDefaultJobProperties([
 ])
 
 // NB: Currently overrides https://github.com/libuv/libuv.git in cheribuild
-def libuvRepo = gitRepoWithLocalReference(url: 'https://github.com/arichardson/libuv.git')
+def libuvRepo = gitRepoWithLocalReference(url: 'https://github.com/arichardson/libuv.git', branch: 'v1.x')
 cheribuildProject(target: 'libuv',
                   scmOverride: libuvRepo,
                   targetArchitectures: ["aarch64", "amd64", "morello-purecap", "riscv64", "riscv64-purecap"],
