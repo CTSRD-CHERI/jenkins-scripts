@@ -648,8 +648,6 @@ def call(Map args) {
 								 _targetWithoutSuffix: targetWithoutSuffix,
 								 architecture		: "${suffix}"]
 			echo("newMap=${newMap}")
-			// just call the real method here so that I can run the tests
-			// the problem is that if I invoke call I get endless recursion
 			def params = parseParams(newMap)
 			return runCheribuild(params)
 		}
