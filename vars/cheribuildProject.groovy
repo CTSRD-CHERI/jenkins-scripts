@@ -642,15 +642,13 @@ def call(Map args) {
 	// Otherwise run multiple architectures in parallel
 	def tasks = [failFast: failFast]
 	targetArchitectures.each { String suffix ->
-		tasks[suffix] = { ->
-			String targetWithoutSuffix = args.getOrDefault('target', 'target must be set!')
-			Map newMap = args + [target			  : targetWithoutSuffix + "-${suffix}",
-								 _targetWithoutSuffix: targetWithoutSuffix,
-								 architecture		: "${suffix}"]
-			echo("newMap=${newMap}")
-			def params = parseParams(newMap)
-			return runCheribuild(params)
-		}
+		String targetWithoutSuffix = args.getOrDefault('target', 'target must be set!')
+		Map newMap = args + [target			  : targetWithoutSuffix + "-${suffix}",
+							 _targetWithoutSuffix: targetWithoutSuffix,
+							 architecture		: "${suffix}"]
+		echo("newMap=${newMap}")
+		def params = parseParams(newMap)
+		tasks[suffix] = { -> return runCheribuild(params) }
 	}
 	if (env?.UNIT_TEST) {
 		tasks.each { key, closure ->
