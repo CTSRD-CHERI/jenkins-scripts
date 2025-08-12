@@ -86,7 +86,7 @@ class CheribuildProjectParams implements Serializable {
 	List sysrootInstallDirTargets = []
 	// List of targets for which the sysroot should be used as the install directory
 	List sysrootDependencies = []
-	// List of (target: job: (archive:)) for sysroot dependencies that are built by other jobs
+	// List of (target: job: (archive:) (filter:)) for sysroot dependencies that are built by other jobs
 	String tarballName
 	// output tarball name (default is "${target}-${cpu}.tar.xz")
 	String customGitCheckoutDir
@@ -584,6 +584,9 @@ CheribuildProjectParams parseParams(Map args) {
 		def extraArchives = []
 		def extraInstallDirTargets = []
 		params.sysrootDependencies.each { dep ->
+			if (dep.containsKey('filter') && !dep.filter(params)) {
+				return
+			}
 			def target = dep.target
 			def targetWithSuffix = "${target}-${params.architecture}"
 			def job = dep.job
