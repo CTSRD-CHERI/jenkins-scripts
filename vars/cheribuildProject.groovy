@@ -326,10 +326,6 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 	// echo("env before =${env}")
 	withEnv(["CPU=${proj.cpu}", "SDK_CPU=${proj.architecture}", "CHERIBUILD_ARCH=${proj.architecture}"]) {
 		// echo("env in block=${env}")
-		if (env.CHANGE_ID && !shouldBuildPullRequest(context: proj.gitHubStatusContext)) {
-			echo "Not building this pull request."
-			return
-		}
 		try {
 			runCheribuildImplWithEnv(proj)
 			// If the status has not been changed (i.e. to UNSTABLE/FAILURE) it means we SUCCEEDED
@@ -652,9 +648,19 @@ def call(Map args) {
 		}
 	}
 	def tasks = [:]
+	boolean shouldBuild = false
+	def skippedBuildTask = { -> echo "Not building this pull request." }
 	taskArgs.each = { key, val ->
 		def params = parseParams(val)
+		if (env.CHANGE_ID && !shouldBuildPullRequest(context: params.gitHubStatusContext)) {
+			tasks[key] = skippedBuildTask
+			return
+		}
+		shouldBuild = true
 		tasks[key] = { -> return runCheribuild(params) }
+	}
+	if (!shouldBuild) {
+		return skippedBuildTask()
 	}
 	if (singleArch) {
 		assert tasks.size() == 1
