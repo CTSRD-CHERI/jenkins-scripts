@@ -326,19 +326,6 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 	// echo("env before =${env}")
 	withEnv(["CPU=${proj.cpu}", "SDK_CPU=${proj.architecture}", "CHERIBUILD_ARCH=${proj.architecture}"]) {
 		// echo("env in block=${env}")
-		if (!proj.uniqueId) {
-			proj.uniqueId = "${currentBuild.projectName}/${proj.target}"
-			if (proj.nodeLabel) {
-				proj.uniqueId += "/${proj.nodeLabel}"
-			}
-			while (CheribuildProjectParams.uniqueIDs.containsKey(proj.uniqueId.toString())) {
-				proj.uniqueId += "_1"
-			}
-			CheribuildProjectParams.uniqueIDs.put(proj.uniqueId, proj.uniqueId)
-		}
-		if (!proj.gitHubStatusContext) {
-			proj.gitHubStatusContext = "jenkins/${proj.uniqueId}"
-		}
 		if (env.CHANGE_ID && !shouldBuildPullRequest(context: proj.gitHubStatusContext)) {
 			echo "Not building this pull request."
 			return
@@ -601,6 +588,20 @@ CheribuildProjectParams parseParams(Map args) {
 		params.artifactsToCopy += extraArtifacts
 		params.sysrootExtraArchives += extraArchives
 		params.sysrootInstallDirTargets += extraInstallDirTargets
+	}
+
+	if (!params.uniqueId) {
+		params.uniqueId = "${currentBuild.projectName}/${params.target}"
+		if (params.nodeLabel) {
+			params.uniqueId += "/${params.nodeLabel}"
+		}
+		while (CheribuildProjectParams.uniqueIDs.containsKey(params.uniqueId.toString())) {
+			params.uniqueId += "_1"
+		}
+		CheribuildProjectParams.uniqueIDs.put(params.uniqueId, params.uniqueId)
+	}
+	if (!params.gitHubStatusContext) {
+		params.gitHubStatusContext = "jenkins/${params.uniqueId}"
 	}
 
 	// WTF. Work around weird scoping rules. Groovy really sucks...
