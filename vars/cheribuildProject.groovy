@@ -67,7 +67,8 @@ class CheribuildProjectParams implements Serializable {
 	/// general/build parameters
 	String target // the cheribuild project name
 	String _targetWithoutSuffix  // Set when building multiple architectures
-	String extraArgs = '' // additional arguments to pass to cheribuild.py
+	def extraArgs = '' // additional arguments to pass to cheribuild.py
+	// A String (quoted) or List of String (unquoted), normalised to a String (quoted) by parseParams
 	String cpu = 'default' // --cpu flag for cheribuild (deprecated)
 	String architecture // suffix to be used for all output files, etc.
 	String sysrootArchitecture // sysroot architecture (e.g. riscv64-purecap for foo-hybrid-for-purecap-rootfs)
@@ -598,6 +599,13 @@ CheribuildProjectParams parseParams(Map args) {
 	}
 	if (!params.gitHubStatusContext) {
 		params.gitHubStatusContext = "jenkins/${params.uniqueId}"
+	}
+
+	if (params.extraArgs instanceof List) {
+		params.extraArgs = params.extraArgs.collect({ shellQuote(it) }).join(" ")
+	}
+	if (!(params.extraArgs instanceof String)) {
+		throw new IllegalArgumentException("extraArgs must be a String or List of String")
 	}
 
 	// WTF. Work around weird scoping rules. Groovy really sucks...
