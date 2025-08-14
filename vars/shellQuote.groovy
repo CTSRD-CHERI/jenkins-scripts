@@ -3,5 +3,5 @@ String call(String s) {
     // NB: Empty string needs quoting too
     if (s ==~ /[\w@%+=:,.\/-]+/)
         return s
-    return "'" + s.replaceAll('\'', '\\\'') + "'"
+    return "'" + s.replaceAll('\'', '\\\\\'') + "'"
 }
