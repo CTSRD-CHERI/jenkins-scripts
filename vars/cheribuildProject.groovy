@@ -636,13 +636,20 @@ def call(Map args) {
 	boolean singleArch = targetArchitectures.isEmpty()
 	def taskArgs = [:]
 	if (singleArch) {
+		if ('archArgs' in args) {
+			throw new IllegalArgumentException('Cannot use archArgs without targetArchitectures')
+		}
 		taskArgs[0] = args
 	} else {
+		Map archArgs = args.getOrDefault('archArgs', [:])
+		args.remove('archArgs')
 		targetArchitectures.each { String suffix ->
 			String targetWithoutSuffix = args.getOrDefault('target', 'target must be set!')
-			Map newMap = args + [target			  : targetWithoutSuffix + "-${suffix}",
-								 _targetWithoutSuffix: targetWithoutSuffix,
-								 architecture		: "${suffix}"]
+			Map newMap = args + [
+				target: targetWithoutSuffix + "-${suffix}",
+				_targetWithoutSuffix: targetWithoutSuffix,
+				architecture: "${suffix}"
+			] + archArgs.getOrDefault(suffix, [:])
 			echo("newMap=${newMap}")
 			taskArgs[suffix] = newMap
 		}
