@@ -28,7 +28,11 @@ def call(List args) {
                     // Note: not added for all projects: copyArtifactPermission('*'),
                     // Those that want artifacts to be copied should set this flag
                     durabilityHint('PERFORMANCE_OPTIMIZED'),
-                    pipelineTriggers([githubPush(), pollSCM('@daily'), issueCommentTrigger('.*test this please.*')])
+                    pipelineTriggers([
+                            githubPush(),
+                            pollSCM('@daily'),
+                            issueCommentTrigger('.*test this please.*'),
+                    ]),
             ] + args
             properties(newProperties)
         } catch (e) {
