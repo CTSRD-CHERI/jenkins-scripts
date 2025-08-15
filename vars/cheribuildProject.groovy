@@ -155,7 +155,17 @@ boolean updatePRStatus(CheribuildProjectParams proj, String message, String stat
 	if (!proj.setGitHubStatus) {
 		return false
 	}
+
+	def expectedCommit = proj.getRepoInfoForGitHubStatus()?.GIT_COMMIT
 	try {
+		// Not sure if the current GlobalVariable for this will create a fresh copy on every reference within
+		// the same function or not, so use a local variable to be sure.
+		def pr = pullRequest
+		// If the PR's head has changed, fall back on updating the commit
+		if (expectedCommit != null && pr.head != expectedCommit) {
+			echo("PR${env.CHANGE_ID} head ${pr.head} not ${expectedCommit}")
+			return false
+		}
 		if (!status) {
 			status = proj._result.name().toLowerCase()
 			if (status == 'failure') {
@@ -165,7 +175,7 @@ boolean updatePRStatus(CheribuildProjectParams proj, String message, String stat
 			}
 		}
 		echo("Setting PR${env.CHANGE_ID} status: ${status} for ${proj.gitHubStatusContext}: ${message}")
-		pullRequest.createStatus(status: status,
+		pr.createStatus(status: status,
 				context: proj.gitHubStatusContext,
 				description: message,
 				targetUrl: "${env.RUN_DISPLAY_URL}")
@@ -361,6 +371,30 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 	}
 }
 
+@NonCPS
+String getMarkedCommit(String headSha) {
+	def rawBuild = currentBuild.rawBuild
+	if (rawBuild == null) {
+		return null
+	}
+	def actions = rawBuild.getActions(hudson.plugins.git.util.BuildData)
+	def marked = [] as Set
+	actions.each {
+		def lastBuild = it.lastBuild
+		if (lastBuild != null && lastBuild.revision == headSha) {
+			marked += lastBuild.marked.sha1String
+		}
+	}
+	if (marked.empty) {
+		return null
+	}
+	if (marked.size() > 1) {
+		echo("Found multiple possible marked commits: ${marked}")
+		return null
+	}
+	return marked[0]
+}
+
 def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 	def gitHubCommitSHA = null
 	def gitHubRepoURL = null
@@ -395,6 +429,15 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 				gitHubRepoURL = proj.gitInfo?.GIT_URL
 				if (proj.gitInfoMap != null) {
 					proj.gitInfoMap << proj.gitInfo
+				}
+				// For PRs we want the status to be attached to the branch's commit, not the test merge
+				// commit that we've checked out.
+				if (env.CHANGE_ID && gitHubCommitSHA != null && proj.gitHubStatusArgs == null) {
+					def markedCommit = getMarkedCommit(gitHubCommitSHA)
+					if (markedCommit != null) {
+						echo("Using ${markedCommit} for PR status updates")
+						proj.gitHubStatusArgs = proj.gitInfo + [GIT_COMMIT: markedCommit]
+					}
 				}
 				// store it so it exists even on exception
 			}
