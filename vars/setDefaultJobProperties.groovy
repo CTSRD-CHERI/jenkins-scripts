@@ -31,7 +31,7 @@ def call(List args) {
                     pipelineTriggers([
                             githubPush(),
                             pollSCM('@daily'),
-                            issueCommentTrigger('.*test this please.*'),
+                            issueCommentTrigger('/jenkins build'),
                     ]),
             ] + args
             properties(newProperties)
