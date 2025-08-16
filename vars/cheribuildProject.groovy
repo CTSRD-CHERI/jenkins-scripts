@@ -354,9 +354,23 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			if (proj._result == BuildResult.PENDING) {
 				proj.statusFailure("RESULT IS STILL PENDING! Something is very wrong...")
 			}
+			String prStatus
+			switch (proj._result) {
+			case BuildResult.SUCCESS:
+				prStatus = "Successful"
+				break
+			case BuildResult.UNSTABLE:
+				prStatus = "Failed"
+				break
+			default:
+				proj.statusFailure("Unexpected result ${proj._result}")
+			case BuildResult.FAILURE:
+				prStatus = "Error"
+				break
+			}
 			if (proj.setGitHubStatus) {
 				echo("Setting github status after build\nproj.result=${proj.result}, currentBuild.result=${currentBuild.result} currentBuild.currentResult=${currentBuild.currentResult}")
-				if (!updatePRStatus(proj, "Finished (${proj.result}).") && proj.setGitHubStatus) {
+				if (!updatePRStatus(proj, prStatus) && proj.setGitHubStatus) {
 					def message = "${currentBuild.projectName}"
 					if (proj.nodeLabel) {
 						message += " ${proj.nodeLabel}"
