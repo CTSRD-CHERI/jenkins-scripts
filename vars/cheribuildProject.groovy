@@ -417,7 +417,7 @@ String getMarkedCommit(String headSha) {
 def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 	def gitHubCommitSHA = null
 	def gitHubRepoURL = null
-	updatePRStatus(proj, "Starting build...")
+	updatePRStatus(proj, "Setting up...")
 
 	if (proj.skipInitialSetup) {
 		proj.skipScm = true
