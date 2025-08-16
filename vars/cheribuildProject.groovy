@@ -250,7 +250,7 @@ def runTestsImpl(CheribuildProjectParams proj, String testExtraArgs, String cher
 }
 
 def runTests(CheribuildProjectParams proj, String testSuffix) {
-	updatePRStatus(proj, "Running tests for PR...")
+	updatePRStatus(proj, "Running tests...")
 	// Custom test script only support for CheriBSD
 	String testCPU = proj.architecture
 	if (proj.testScript && testCPU != "mips64" && testCPU != "mips64-hybrid" && testCPU != "mips64-purecap") {
@@ -448,7 +448,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			echo("Checked out cheribuild: ${x}")
 		}
 	}
-	if (!updatePRStatus(proj, "Building PR...") && proj.setGitHubStatus) {
+	if (!updatePRStatus(proj, "Building...") && proj.setGitHubStatus) {
 		setGitHubStatus(proj.getRepoInfoForGitHubStatus() +
 						[message: "${currentBuild.projectName} building ...", context: proj.gitHubStatusContext])
 	}
