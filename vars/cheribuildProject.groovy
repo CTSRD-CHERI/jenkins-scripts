@@ -381,7 +381,7 @@ String getMarkedCommit(String headSha) {
 	def marked = [] as Set
 	actions.each {
 		def lastBuild = it.lastBuild
-		if (lastBuild != null && lastBuild.revision == headSha) {
+		if (lastBuild != null && lastBuild.revision.sha1String == headSha) {
 			marked += lastBuild.marked.sha1String
 		}
 	}
