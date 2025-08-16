@@ -450,7 +450,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			echo("Checked out cheribuild: ${x}")
 		}
 	}
-	if (proj.setGitHubStatus && !updatePRStatus(proj, "About to build PR...", 'pending') && proj.setGitHubStatus) {
+	if (!updatePRStatus(proj, "About to build PR...", 'pending') && proj.setGitHubStatus) {
 		setGitHubStatus(proj.getRepoInfoForGitHubStatus() +
 						[message: "${currentBuild.projectName} building ...", context: proj.gitHubStatusContext])
 	}
