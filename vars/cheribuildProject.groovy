@@ -166,7 +166,14 @@ boolean updatePRStatus(CheribuildProjectParams proj, String message) {
 			echo("PR${env.CHANGE_ID} head ${pr.head} not ${expectedCommit}")
 			return false
 		}
-		def status = proj._result.name().toLowerCase()
+		def result = proj._result
+		// If we don't have any commit info, don't set a non-pending status, otherwise we will skip future builds.
+		// This can happen if a build fails / is aborted before it checks out the PR, for example.
+		if (expectedCommit == null && result != BuildResult.PENDING) {
+			echo("No commit info for PR${env.CHANGE_ID}, not setting non-pending PR status (${result})")
+			return false
+		}
+		def status = result.name().toLowerCase()
 		if (status == 'failure') {
 			status = 'error'
 		} else if (status == 'unstable') {
