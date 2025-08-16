@@ -148,7 +148,7 @@ class CheribuildProjectParams implements Serializable {
 
 // FIXME: all this jenkins transforming stuff is ugly... how can I access the jenkins globals?
 
-boolean updatePRStatus(CheribuildProjectParams proj, String message, String status = null) {
+boolean updatePRStatus(CheribuildProjectParams proj, String message) {
 	if (!env.CHANGE_ID) {
 		return false
 	}
@@ -166,13 +166,11 @@ boolean updatePRStatus(CheribuildProjectParams proj, String message, String stat
 			echo("PR${env.CHANGE_ID} head ${pr.head} not ${expectedCommit}")
 			return false
 		}
-		if (!status) {
-			status = proj._result.name().toLowerCase()
-			if (status == 'failure') {
-				status = 'error'
-			} else if (status == 'unstable') {
-				status = 'failure'
-			}
+		def status = proj._result.name().toLowerCase()
+		if (status == 'failure') {
+			status = 'error'
+		} else if (status == 'unstable') {
+			status = 'failure'
 		}
 		echo("Setting PR${env.CHANGE_ID} status: ${status} for ${proj.gitHubStatusContext}: ${message}")
 		pr.createStatus(status: status,
