@@ -39,6 +39,8 @@ def call(Map<String, String> args = [:]) {
         // Map from Jenkins states to GitHub states: https://github.com/github-api/github-api/blob/master/src/main/java/org/kohsuke/github/GHCommitState.java
         if (result == 'UNSTABLE')
             result = 'FAILURE';
+        else if (result == 'FAILURE')
+            result = 'ERROR';
 
         // Maximum github message length is 140
         if (message.length() > 140) {
