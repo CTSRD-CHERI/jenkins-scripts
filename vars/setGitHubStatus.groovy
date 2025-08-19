@@ -34,7 +34,7 @@ def call(Map<String, String> args = [:]) {
         }
 
         if (includeTestStatus)
-            message += "\n${getTestStatus()
+            message += "\n${getTestStatus()}"
 
         // Map from Jenkins states to GitHub states: https://github.com/github-api/github-api/blob/master/src/main/java/org/kohsuke/github/GHCommitState.java
         if (result == 'UNSTABLE')
