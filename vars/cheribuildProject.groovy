@@ -192,6 +192,28 @@ boolean updatePRStatus(CheribuildProjectParams proj, String message) {
 	return true;
 }
 
+def updateStatus(CheribuildProjectParams proj, String message) {
+	if (!proj.setGitHubStatus)
+		return
+
+	echo("Setting GitHub status to ${message} (${proj.result})")
+
+	if (updatePRStatus(proj, message)
+		return
+
+	// If we haven't yet checked out the source to set the status for we
+	// can't set a commit status as we don't have the gitInfo.
+	Map info = proj.getRepoInfoForGitHubStatus()
+	if (info == null)
+		return
+
+	setGitHubStatus(info + [
+		message: message,
+		result: proj.result,
+		context: proj.gitHubStatusContext,
+	])
+}
+
 // Run a beforeXXX hook (beforeBuild, beforeTarball, etc.)
 def runCallback(CheribuildProjectParams proj, cb) {
 	// def cb = this."${hook}"
@@ -257,7 +279,7 @@ def runTestsImpl(CheribuildProjectParams proj, String testExtraArgs, String cher
 }
 
 def runTests(CheribuildProjectParams proj, String testSuffix) {
-	updatePRStatus(proj, "Running tests...")
+	updateStatus(proj, "Running tests...")
 	// Custom test script only support for CheriBSD
 	String testCPU = proj.architecture
 	if (proj.testScript && testCPU != "mips64" && testCPU != "mips64-hybrid" && testCPU != "mips64-purecap") {
@@ -375,13 +397,7 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 				message = "Error"
 				break
 			}
-			if (proj.setGitHubStatus) {
-				echo("Setting github status after build\nproj.result=${proj.result}, currentBuild.result=${currentBuild.result} currentBuild.currentResult=${currentBuild.currentResult}")
-				if (!updatePRStatus(proj, message) && proj.setGitHubStatus) {
-					setGitHubStatus(proj.getRepoInfoForGitHubStatus() +
-									[message: message, result: proj.result, context: proj.gitHubStatusContext])
-				}
-			}
+			updateStatus(proj, message)
 		}
 	}
 }
@@ -413,7 +429,7 @@ String getMarkedCommit(String headSha) {
 def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 	def gitHubCommitSHA = null
 	def gitHubRepoURL = null
-	updatePRStatus(proj, "Setting up...")
+	updateStatus(proj, "Setting up...")
 
 	if (proj.skipInitialSetup) {
 		proj.skipScm = true
@@ -465,10 +481,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			echo("Checked out cheribuild: ${x}")
 		}
 	}
-	if (!updatePRStatus(proj, "Building...") && proj.setGitHubStatus) {
-		setGitHubStatus(proj.getRepoInfoForGitHubStatus() +
-						[message: "Building...", context: proj.gitHubStatusContext])
-	}
+	updateStatus(proj, "Building...")
 	runCallback(proj, proj.beforeBuild)
 	if (!proj.skipArtifacts) {
 		stage("Copying required artifacts") {
@@ -513,11 +526,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 		}
 		if (!proj.skipArchiving) {
 			stage("Archiving artifacts for ${proj.target}") {
-				if (!updatePRStatus(proj, "Archiving artifacts...") && proj.setGitHubStatus) {
-					setGitHubStatus(proj.getRepoInfoForGitHubStatus() +
-									[message: "Archiving artifacts ...",
-									 context: proj.gitHubStatusContext])
-				}
+				updateStatus(proj, "Archiving artifacts...")
 				archiveArtifacts allowEmptyArchive: false, artifacts: proj.tarballName, fingerprint: true,
 						onlyIfSuccessful: true
 			}
