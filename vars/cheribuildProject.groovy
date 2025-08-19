@@ -361,27 +361,23 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			if (proj._result == BuildResult.PENDING) {
 				proj.statusFailure("RESULT IS STILL PENDING! Something is very wrong...")
 			}
-			String prStatus
+			String message
 			switch (proj._result) {
 			case BuildResult.SUCCESS:
-				prStatus = "Successful"
+				message = "Successful"
 				break
 			case BuildResult.UNSTABLE:
-				prStatus = "Failed"
+				message = "Failed"
 				break
 			default:
 				proj.statusFailure("Unexpected result ${proj._result}")
 			case BuildResult.FAILURE:
-				prStatus = "Error"
+				message = "Error"
 				break
 			}
 			if (proj.setGitHubStatus) {
 				echo("Setting github status after build\nproj.result=${proj.result}, currentBuild.result=${currentBuild.result} currentBuild.currentResult=${currentBuild.currentResult}")
-				if (!updatePRStatus(proj, prStatus) && proj.setGitHubStatus) {
-					def message = "${currentBuild.projectName}"
-					if (proj.nodeLabel) {
-						message += " ${proj.nodeLabel}"
-					}
+				if (!updatePRStatus(proj, message) && proj.setGitHubStatus) {
 					setGitHubStatus(proj.getRepoInfoForGitHubStatus() +
 									[message: message, result: proj.result, context: proj.gitHubStatusContext])
 				}
@@ -471,7 +467,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 	}
 	if (!updatePRStatus(proj, "Building...") && proj.setGitHubStatus) {
 		setGitHubStatus(proj.getRepoInfoForGitHubStatus() +
-						[message: "${currentBuild.projectName} building ...", context: proj.gitHubStatusContext])
+						[message: "Building...", context: proj.gitHubStatusContext])
 	}
 	runCallback(proj, proj.beforeBuild)
 	if (!proj.skipArtifacts) {
@@ -519,7 +515,7 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			stage("Archiving artifacts for ${proj.target}") {
 				if (!updatePRStatus(proj, "Archiving artifacts...") && proj.setGitHubStatus) {
 					setGitHubStatus(proj.getRepoInfoForGitHubStatus() +
-									[message: "${currentBuild.projectName} archiving artifacts ...",
+									[message: "Archiving artifacts ...",
 									 context: proj.gitHubStatusContext])
 				}
 				archiveArtifacts allowEmptyArchive: false, artifacts: proj.tarballName, fingerprint: true,
