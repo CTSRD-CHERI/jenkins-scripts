@@ -173,6 +173,10 @@ boolean updatePRStatus(CheribuildProjectParams proj, String message) {
 			echo("No commit info for PR${env.CHANGE_ID}, not setting non-pending PR status (${result})")
 			return false
 		}
+		if (currentBuild.durationString && result != BuildResult.PENDING) {
+			String duration = currentBuild.durationString.replaceAll(/and counting$/, "")
+			message += " in ${duration}"
+		}
 		def status = result.name().toLowerCase()
 		if (status == 'failure') {
 			status = 'error'
