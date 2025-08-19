@@ -25,15 +25,17 @@ def call(Map<String, String> args = [:]) {
             String description = currentBuild.displayName
             if (description == null)
                 description = ''
-            message = "${prettyJobName}: ${description}"
+            message = "${prettyJobName}: ${description} ${result}"
         }
-        if (includeTestStatus)
-            message += "\n${getTestStatus()}"
 
         if (currentBuild.durationString && result != 'PENDING') {
             String duration = currentBuild.durationString.replaceAll(/and counting$/, "")
-            message += "\n${result} after ${duration}"
+            message += " in ${duration}"
         }
+
+        if (includeTestStatus)
+            message += "\n${getTestStatus()
+
         // Map from Jenkins states to GitHub states: https://github.com/github-api/github-api/blob/master/src/main/java/org/kohsuke/github/GHCommitState.java
         if (result == 'UNSTABLE')
             result = 'FAILURE';
