@@ -208,7 +208,7 @@ def updateStatus(CheribuildProjectParams proj, String message) {
 	// If we haven't yet checked out the source to set the status for we
 	// can't set a commit status as we don't have the gitInfo.
 	Map info = proj.getRepoInfoForGitHubStatus()
-	if (info == null)
+	if (!info)
 		return
 
 	setGitHubStatus(info + [
