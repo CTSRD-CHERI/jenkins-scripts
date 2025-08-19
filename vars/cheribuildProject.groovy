@@ -202,7 +202,7 @@ def updateStatus(CheribuildProjectParams proj, String message) {
 
 	echo("Setting GitHub status to ${message} (${proj.result})")
 
-	if (updatePRStatus(proj, message)
+	if (updatePRStatus(proj, message))
 		return
 
 	// If we haven't yet checked out the source to set the status for we
