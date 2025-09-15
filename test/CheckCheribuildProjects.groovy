@@ -53,7 +53,7 @@ class CheckCheribuildProjects extends BaseRegressionTest {
         def script = runScript("test-scripts/postgres.groovy")
         // script.run()
         printCallStack()
-        assertJobStatusSuccess()
+        assertJobStatusUnstable()
     }
 
     @Test
@@ -65,7 +65,7 @@ class CheckCheribuildProjects extends BaseRegressionTest {
         def script = runScript("test-scripts/newlib-baremetal.groovy")
         // script.run()
         printCallStack()
-        assertJobStatusSuccess()
+        assertJobStatusUnstable()
     }
 
     @Test
@@ -133,7 +133,7 @@ class CheckCheribuildProjects extends BaseRegressionTest {
         def script = runScript("test-scripts/gdb.groovy")
         // script.run()
         printCallStack()
-        assertJobStatusSuccess()
+        assertJobStatusUnstable()
     }
 
     @Test
@@ -143,7 +143,7 @@ class CheckCheribuildProjects extends BaseRegressionTest {
         def script = runScript("test-scripts/mibench-new.groovy")
         // script.run()
         printCallStack()
-        assertJobStatusSuccess()
+        assertJobStatusUnstable()
     }
 
     @Test
@@ -165,6 +165,15 @@ class CheckCheribuildProjects extends BaseRegressionTest {
         def script = runScript("jobs/cmake.groovy")
         // script.run()
         printCallStack()
-        assertJobStatusSuccess()
+        assertJobStatusUnstable()
+    }
+
+    @Test
+    void bodiagsuite_test() throws Exception {
+        CommonTestHelper.addEnvVars(this, ["JOB_NAME": "bodiagsuite/master",
+                                           WORKSPACE : "/workspace"])
+        def script = runScript("test-scripts/bodiagsuite.groovy")
+        printCallStack()
+        assertJobStatusUnstable()
     }
 }

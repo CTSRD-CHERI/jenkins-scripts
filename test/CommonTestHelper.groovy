@@ -96,14 +96,6 @@ class CommonTestHelper {
         helper.registerSharedLibrary(library)
         registerMethod(helper, "lock", [String.class, Closure.class], null)
         registerMethod(helper, "culprits", [], null)
-        registerMethod(helper, "catchError", [Closure.class], { Closure c ->
-            try {
-                c.delegate = delegate
-                helper.callClosure(c)
-            } catch (ignored) {
-                binding.getVariable('currentBuild').result = 'FAILURE'
-            }
-        })
         // Properties() helpers
         registerMethod(helper, "compressBuildLog", { -> ["compressBuildLog"] })
         registerMethod(helper, "rateLimitBuilds", [Map.class], { args -> ["rateLimitBuilds": args] })
@@ -125,9 +117,7 @@ class CommonTestHelper {
         registerMethod(helper, "ansiColor", [String.class, Closure.class], null)
         registerMethod(helper, "warnings", [Map.class], /*{ args -> println "Copying $args" }*/null)
         registerMethod(helper, "recordIssues", [Map.class], /*{ args -> println "Copying $args" }*/null)
-        registerMethod(helper, "clang", [], { args -> ["clang"]})
-        registerMethod(helper, "clang", [Map.class], { args -> ["clang"]})
-        registerMethod(helper, "git", [String.class], { url -> [GIT_URL:url, GIT_COMMIT:"abcdef123456"] })
+        // registerMethod(helper, "git", [String.class], { url -> [GIT_URL:url, GIT_COMMIT:"abcdef123456"] })
         registerMethod(helper, "git", [Map.class], { args -> [GIT_URL:args.url, GIT_COMMIT:"abcdef123456"] })
         registerMethod(helper, "githubNotify", [Map.class], null)
         // for parameters
@@ -141,7 +131,6 @@ class CommonTestHelper {
         test.addEnvVar('CHANGE_ID', null)
         // For parameters
         registerMethod(helper, "text", [Map.class], { args ->  test.addParam(args.name, args.defaultValue); args})
-        registerMethod(helper, "parameters", [List.class], { args -> println(args) })
         binding.setVariable('params', [:])
 
         // Override the default helper to ensure the exception is raised
