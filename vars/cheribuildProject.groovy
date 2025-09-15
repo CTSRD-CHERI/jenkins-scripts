@@ -1,3 +1,4 @@
+import com.cloudbees.groovy.cps.NonCPS
 import groovy.json.*
 
 enum BuildResult {
@@ -35,13 +36,13 @@ class CheribuildProjectParams implements Serializable {
 	void setResult(String newResult) {
 		setResult(newResult as BuildResult)
 	}
-	Closure callGlobalUnstable = null;
+	Closure callGlobalUnstable = null
 
 	void statusUnstable(String message) {
 		setResult(BuildResult.UNSTABLE)
 		this.callGlobalUnstable(message)
 	}
-	Closure callGlobalError = null;
+	Closure callGlobalError = null
 
 	void statusFailure(String message) {
 		setResult(BuildResult.FAILURE)
@@ -191,9 +192,9 @@ boolean updatePRStatus(CheribuildProjectParams proj, String message) {
 		// TODO: CHANGE_URL? or BUILD_URL?
 	} catch (e) {
 		error("Failed to set PR status: ${e}")
-		return false;
+		return false
 	}
-	return true;
+	return true
 }
 
 def updateStatus(CheribuildProjectParams proj, String message) {
@@ -614,7 +615,7 @@ CheribuildProjectParams parseParams(Map args) {
 		// a target such as gdb-riscv64-hybrid-for-purecap-rootfs we have to use the purecap riscv sysroot.
 		params.sysrootArchitecture = params.architecture
 		// We assume that the base architecture never contains a dash.
-		String baseArchitecture = params.sysrootArchitecture.split('-')[0];
+		String baseArchitecture = params.sysrootArchitecture.split('-')[0]
 		if (params.sysrootArchitecture.endsWith('for-purecap-rootfs')) {
 			params.sysrootArchitecture = baseArchitecture + "-purecap"
 		} else if (params.sysrootArchitecture.endsWith('for-hybrid-rootfs')) {
