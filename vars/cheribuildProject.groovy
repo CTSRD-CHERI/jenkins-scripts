@@ -675,6 +675,9 @@ CheribuildProjectParams parseParams(Map args) {
 	if (params.extraArgs instanceof List) {
 		params.extraArgs = params.extraArgs.collect({ shellQuote(it) }).join(" ")
 	}
+	if (params.extraArgs instanceof GString) {
+		params.extraArgs = params.extraArgs.toString()
+	}
 	if (!(params.extraArgs instanceof String)) {
 		throw new IllegalArgumentException("extraArgs must be a String or List of String")
 	}
