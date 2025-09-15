@@ -395,9 +395,11 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			case BuildResult.UNSTABLE:
 				message = "Failed"
 				break
+			case BuildResult.FAILURE:
+				message = "Error"
+				break
 			default:
 				proj.statusFailure("Unexpected result ${proj._result}")
-			case BuildResult.FAILURE:
 				message = "Error"
 				break
 			}
