@@ -10,16 +10,17 @@ idea {
 }
 
 repositories {
-    maven { url 'http://repo.jenkins-ci.org/releases/'}
-    maven { url 'http://updates.jenkins-ci.org/download/plugins/'}
-    maven { url 'http://jenkins-updates.cloudbees.com/download/plugins/'}
-    maven { url 'https://jitpack.io' }
+    maven { url = 'https://repo.jenkins-ci.org/releases/'}
+    maven { url = 'https://repo.jenkins-ci.org/public/' }
+    maven { url = 'https://updates.jenkins-ci.org/download/plugins/'}
+    maven { url = 'https://jenkins-updates.cloudbees.com/download/plugins/'}
+    maven { url = 'https://jitpack.io' }
     mavenCentral()
 }
 sourceSets {
     jobs {
         groovy {
-            srcDirs 'jobs'
+            srcDirs = ['jobs']
             compileClasspath += main.compileClasspath
         }
     }
@@ -37,38 +38,31 @@ test {
     include "test"
 }
 
-repositories {
-    jcenter()
-    maven {
-        url 'https://repo.jenkins-ci.org/public/'
-    }
-}
-
 dependencies {
-    compile 'org.codehaus.groovy:groovy-all:3.0.25'
-    compile group: 'org.jenkins-ci.main', name: 'jenkins-core', version: 'latest.release'
-    // compile group: 'org.jenkins-ci.plugins.workflow', name: 'workflow-multibranch', version: '+'
-    // compile 'org.jenkins-ci.plugins:junit:jar:1.24'
+    implementation 'org.codehaus.groovy:groovy-all:3.0.25'
+    implementation group: 'org.jenkins-ci.main', name: 'jenkins-core', version: 'latest.release'
+    // implementation group: 'org.jenkins-ci.plugins.workflow', name: 'workflow-multibranch', version: '+'
+    // implementation 'org.jenkins-ci.plugins:junit:jar:1.24'
     // For AbstractTestResultAction (doesn't work properly)
-    compile group: 'com.cloudbees', name: 'groovy-cps', version: 'latest.release'
-    // compile group: 'org.jenkins-ci.plugins', name: 'junit', version: '1.24'
+    implementation group: 'com.cloudbees', name: 'groovy-cps', version: 'latest.release'
+    // implementation group: 'org.jenkins-ci.plugins', name: 'junit', version: '1.24'
     // compile(group: 'org.jenkins-ci.plugins', name: 'job-dsl-core', version: '1.70', classifier: 'sources')
     // compile(group: 'org.jenkins-ci.plugins', name: 'junit', version: '1.26.1', classifier: 'sources')
-    compile(group: 'org.jenkins-ci.plugins', name: 'junit', version: 'latest.release', ext: 'jar')
+    implementation(group: 'org.jenkins-ci.plugins', name: 'junit', version: 'latest.release', ext: 'jar')
     // compile(group: 'org.jenkins-ci.plugins', name: 'job-dsl-core', version: 'latest.release', ext: 'jar')
-    compile(group: 'org.jenkins-ci.plugins', name: 'branch-api', version: 'latest.release', ext: 'jar')
-    compile(group: 'org.jenkins-ci.plugins', name: 'script-security', version: 'latest.release', ext: 'jar')
-    compile(group: 'org.jenkins-ci.plugins.workflow', name: 'workflow-support', version: 'latest.release', ext: 'jar')
-    compile(group: 'org.jenkins-ci.plugins.workflow', name: 'workflow-cps', version: 'latest.release', ext: 'jar')
-    compile(group: 'org.jenkins-ci.plugins.workflow', name: 'workflow-job', version: 'latest.release', ext: 'jar')
-    compile(group: 'org.jenkins-ci.plugins.workflow', name: 'workflow-multibranch', version: 'latest.release', ext: 'jar')
-    // compile group: 'org.jenkins-ci.plugins.workflow', name: 'workflow-multibranch', version: '+'
+    implementation(group: 'org.jenkins-ci.plugins', name: 'branch-api', version: 'latest.release', ext: 'jar')
+    implementation(group: 'org.jenkins-ci.plugins', name: 'script-security', version: 'latest.release', ext: 'jar')
+    implementation(group: 'org.jenkins-ci.plugins.workflow', name: 'workflow-support', version: 'latest.release', ext: 'jar')
+    implementation(group: 'org.jenkins-ci.plugins.workflow', name: 'workflow-cps', version: 'latest.release', ext: 'jar')
+    implementation(group: 'org.jenkins-ci.plugins.workflow', name: 'workflow-job', version: 'latest.release', ext: 'jar')
+    implementation(group: 'org.jenkins-ci.plugins.workflow', name: 'workflow-multibranch', version: 'latest.release', ext: 'jar')
+    // implementation group: 'org.jenkins-ci.plugins.workflow', name: 'workflow-multibranch', version: '+'
 
-    testCompile 'junit:junit:4.12'
+    testImplementation 'junit:junit:4.13.2'
     // testImplementation "com.lesfurets:jenkins-pipeline-unit:1.3"
     // testImplementation "com.github.jenkinsci:JenkinsPipelineUnit:2422551"
-    testCompile "com.lesfurets:jenkins-pipeline-unit:1.10"
-    // testCompile "com.github.jenkinsci:JenkinsPipelineUnit:2422551"
+    testImplementation "com.lesfurets:jenkins-pipeline-unit:1.29"
+    // testImplementation "com.github.jenkinsci:JenkinsPipelineUnit:2422551"
 }
 
 //task copyTask(type: Copy) {
