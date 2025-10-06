@@ -25,6 +25,16 @@ class CommonTestHelper {
         }
     }
 
+    static class PullRequestMock {
+        List<String> labels = []
+        List<Map<String, Object>> commits = [[sha: "12345abc", statuses: []]]
+        boolean draft = false
+        String head = "12345abc"
+        public void createStatus(Map args) {
+            println("createStatus: ${args}")
+        }
+    }
+
 //    static def withEnvInterceptor = { list, closure ->
 //        oldEnv = binding.getVariable("env")
 //        newEnv = oldEnv.clone()
@@ -126,6 +136,7 @@ class CommonTestHelper {
         def scmBranch = "feature_test"
         binding.setVariable('scm', [branch: 'master', url: 'https://www.github.com/CTSRD-CHERI/' + testName + '.git'])
         binding.setVariable('docker', new DockerMock())
+        binding.setVariable('pullRequest', new PullRequestMock())
         test.addEnvVar('NODE_LABELS', 'linux14 linux docker')
         test.addEnvVar('UNIT_TEST', 'true')
         test.addEnvVar('CHANGE_ID', null)

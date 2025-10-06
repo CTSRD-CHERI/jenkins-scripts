@@ -36,10 +36,6 @@ class CheckCheribuildProjects extends BaseRegressionTest {
     @Test
     void qemu_pr_test_run() throws Exception {
         CommonTestHelper.addEnvVars(this, ["JOB_NAME": "QEMU/qemu-cheri", "CHANGE_ID": "12"])
-        binding.setVariable('pullRequest', [
-                labels : [],
-                commits: [[sha: "12345abc", statuses: []]]
-        ])
         // Normal run should work
         runScript("test-scripts/qemu.groovy")
         printCallStack()
