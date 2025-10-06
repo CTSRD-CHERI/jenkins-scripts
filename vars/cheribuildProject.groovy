@@ -741,7 +741,10 @@ def call(Map args) {
 	}
 	def tasks = [:]
 	boolean shouldBuild = false
-	def skippedBuildTask = { -> echo "Not building this pull request." }
+	def skippedBuildTask = { params ->
+		echo "Not building this pull request."
+		return params
+	}
 	taskArgs.each { key, val ->
 		def params = parseParams(val)
 		if (env.CHANGE_ID && !shouldBuildPullRequest(context: params.gitHubStatusContext)) {
@@ -752,7 +755,7 @@ def call(Map args) {
 		tasks[key] = { -> return runCheribuild(params) }
 	}
 	if (!shouldBuild) {
-		return skippedBuildTask()
+		return skippedBuildTask([:])
 	}
 	if (singleArch) {
 		assert tasks.size() == 1

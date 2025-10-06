@@ -24,13 +24,39 @@ class CheckCheribuildProjects extends BaseRegressionTest {
     @Test
     void qemu_test() throws Exception {
 //        def script = loadScript("test-scripts/qemu.groovy")
-//        script.run()
+//        script.run()[
 //        printCallStack()
         CommonTestHelper.addEnvVars(this, ["JOB_NAME": "QEMU/qemu-cheri"])
         def script = runScript("test-scripts/qemu.groovy")
         // script.run()
         printCallStack()
         assertJobStatusUnstable()
+    }
+
+    @Test
+    void qemu_pr_test_run() throws Exception {
+        CommonTestHelper.addEnvVars(this, ["JOB_NAME": "QEMU/qemu-cheri", "CHANGE_ID": "12"])
+        binding.setVariable('pullRequest', [
+                labels : [],
+                commits: [[sha: "12345abc", statuses: []]]
+        ])
+        // Normal run should work
+        runScript("test-scripts/qemu.groovy")
+        printCallStack()
+        assertJobStatusUnstable()
+    }
+
+    @Test
+    void qemu_pr_test_skipped() throws Exception {
+        // Regression test for a null dereference when skipping PR builds
+        CommonTestHelper.addEnvVars(this, ["JOB_NAME": "QEMU/qemu-cheri", "CHANGE_ID": "12"])
+        binding.setVariable('pullRequest', [
+                labels : ['NO-JENKINS'],
+                commits: [[sha: "12345abc", statuses: []]]
+        ])
+        runScript("test-scripts/qemu.groovy")
+        printCallStack()
+        assertJobStatusSuccess()
     }
 
     @Test
