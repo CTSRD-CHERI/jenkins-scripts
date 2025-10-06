@@ -741,9 +741,9 @@ def call(Map args) {
 	}
 	def tasks = [:]
 	boolean shouldBuild = false
-	def skippedBuildTask = { params ->
+	def skippedBuildTask = { ->
 		echo "Not building this pull request."
-		return params
+		return [:]
 	}
 	taskArgs.each { key, val ->
 		def params = parseParams(val)
@@ -755,7 +755,7 @@ def call(Map args) {
 		tasks[key] = { -> return runCheribuild(params) }
 	}
 	if (!shouldBuild) {
-		return skippedBuildTask([:])
+		return skippedBuildTask()
 	}
 	if (singleArch) {
 		assert tasks.size() == 1

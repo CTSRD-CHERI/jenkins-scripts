@@ -24,7 +24,7 @@ class CheckCheribuildProjects extends BaseRegressionTest {
     @Test
     void qemu_test() throws Exception {
 //        def script = loadScript("test-scripts/qemu.groovy")
-//        script.run()[
+//        script.run()
 //        printCallStack()
         CommonTestHelper.addEnvVars(this, ["JOB_NAME": "QEMU/qemu-cheri"])
         def script = runScript("test-scripts/qemu.groovy")
