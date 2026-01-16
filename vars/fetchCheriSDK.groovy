@@ -55,7 +55,7 @@ def call(Map args) {
             params.llvmBranch = 'abi-breaking-changes'
         else if (gitBranch == 'upstream-llvm-merge')
             params.llvmBranch = 'upstream-llvm-merge'
-        else if (gitBranch in ['dev_c18n', 'kernel-c18n'])
+        else if (gitBranch in ['cpm-kernel-c18n-2026h1', 'dev_c18n', 'kernel-c18n'])
             params.llvmBranch = 'c18n_policy'
         else
             params.llvmBranch = 'master'
@@ -66,7 +66,7 @@ def call(Map args) {
         // morello%2F (Jenkins URL-encodes the branch name)
         if (gitBranch == 'abi-breaking-changes' || gitBranch == 'upstream-llvm-merge')
             params.morelloLlvmBranch = 'morello%2Fdev'
-        else if (gitBranch in ['dev_c18n', 'kernel-c18n'])
+        else if (gitBranch in ['cpm-kernel-c18n-2026h1', 'dev_c18n', 'kernel-c18n'])
             params.morelloLlvmBranch = 'c18n_policy'
         else
             params.morelloLlvmBranch = "morello%2F${params.llvmBranch}"
