@@ -56,7 +56,7 @@ def call(Map args) {
         else if (gitBranch == 'upstream-llvm-merge')
             params.llvmBranch = 'upstream-llvm-merge'
         else if (gitBranch in ['cpm-kernel-c18n-2026h1', 'dev_c18n', 'kernel-c18n'])
-            params.llvmBranch = 'c18n_policy'
+            params.llvmBranch = 'c18n_acl'
         else
             params.llvmBranch = 'master'
         // echo("Inferred LLVM branch from current git branch (${gitBranch}): ${params.llvmBranch}")
@@ -67,7 +67,7 @@ def call(Map args) {
         if (gitBranch == 'abi-breaking-changes' || gitBranch == 'upstream-llvm-merge')
             params.morelloLlvmBranch = 'morello%2Fdev'
         else if (gitBranch in ['cpm-kernel-c18n-2026h1', 'dev_c18n', 'kernel-c18n'])
-            params.morelloLlvmBranch = 'c18n_policy'
+            params.morelloLlvmBranch = 'c18n_acl'
         else
             params.morelloLlvmBranch = "morello%2F${params.llvmBranch}"
     }
