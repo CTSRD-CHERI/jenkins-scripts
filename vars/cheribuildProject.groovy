@@ -79,6 +79,9 @@ class CheribuildProjectParams implements Serializable {
 	String llvmBranch = null
 	// Git branch of LLVM to use for building. When NULL infer from branch name.
 	// otherwise pull just a specific set of artifacts
+	String morelloLlvmBranch = null
+	// Git branch of Morello LLVM to use for building. When NULL infer from branch name.
+	// otherwise pull just a specific set of artifacts
 	String cheribsdBranch = 'main' // Branch of CheriBSD to use for the disk images/sysroot
 	String cheribuildBranch = null  // Branch of cheribuild to use for building
 	List artifactsToCopy = []
@@ -499,7 +502,9 @@ def runCheribuildImplWithEnv(CheribuildProjectParams proj) {
 			// now copy all the artifacts
 			if (proj.fetchCheriCompiler) {
 				fetchCheriSDK(target: proj.target, cpu: proj.sysrootArchitecture,
-						compilerOnly: proj.sdkCompilerOnly, llvmBranch: proj.llvmBranch,
+						compilerOnly: proj.sdkCompilerOnly,
+						llvmBranch: proj.llvmBranch,
+						morelloLlvmBranch: proj.morelloLlvmBranch,
 						cheribsdBranch: proj.cheribsdBranch,
 						buildOS: proj.buildOS, capTableABI: proj.capTableABI,
 						sysrootExtraArchives: proj.sysrootExtraArchives,
