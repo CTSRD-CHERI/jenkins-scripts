@@ -59,6 +59,8 @@ def call(Map args) {
         else if (gitBranch in ['cpm-kernel-c18n-2026h1', 'dev_c18n', 'kernel-c18n',
                                'demo-2026-03'])
             params.llvmBranch = 'c18n_acl'
+	else if (gitBranch == 'pcap-debug')
+ 	    params.llvmBranch = 'pcap'
         else
             params.llvmBranch = 'master'
         // echo("Inferred LLVM branch from current git branch (${gitBranch}): ${params.llvmBranch}")
