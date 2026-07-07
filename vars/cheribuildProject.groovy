@@ -392,8 +392,10 @@ def runCheribuildImpl(CheribuildProjectParams proj) {
 			if (proj._result == BuildResult.PENDING) {
 				proj._result = BuildResult.SUCCESS
 			}
-		} catch (e) {
-			// e.printStackTrace()
+		} catch (Throwable e) {
+			if (!(e instanceof Exception)) {
+				e.printStackTrace()
+			}
 			echo("Marking current build as failed! (${e}:${e.getMessage()})")
 			proj._result = BuildResult.FAILURE
 			throw e
