@@ -126,8 +126,10 @@ class CheribuildProjectParams implements Serializable {
 	def beforeBuildInDocker  // first command inside docker
 	def beforeTarball  // after building but before creating the tarball
 	def afterBuildInDocker
+	def finallyAfterBuildInDocker
 	// after building and tarball (no longer inside docker)
 	def afterBuild  // after building and tarball (no longer inside docker)
+	def finallyAfterBuild
 	def beforeTests // before running the tests (before docker)
 	def beforeTestsInDocker // before running the tests (inside docker)
 	// def afterTestsInCheriBSD // before running the tests (sent to cheribsd command line)
@@ -241,11 +243,9 @@ def runCallback(CheribuildProjectParams proj, cb) {
 	}
 }
 
-def build(CheribuildProjectParams proj, String stageSuffix) {
-	// No docker yet
-	// sdkImage.inside('-u 0') {
-	ansiColor('xterm') {
-		def buildStage = proj.buildStage ? proj.buildStage : "Build ${proj.target} ${stageSuffix}"
+def buildInDocker(CheribuildProjectParams proj, String stageSuffix) {
+	def buildStage = proj.buildStage ? proj.buildStage : "Build ${proj.target} ${stageSuffix}"
+	try {
 		stage(buildStage) {
 			sh "rm -fv ${proj.tarballName}; pwd"
 			runCallback(proj, proj.beforeBuildInDocker)
@@ -259,9 +259,23 @@ def build(CheribuildProjectParams proj, String stageSuffix) {
 			}
 		}
 		runCallback(proj, proj.afterBuildInDocker)
+	} finally {
+		runCallback(proj, proj.finallyAfterBuildInDocker)
 	}
-	// }
-	runCallback(proj, proj.afterBuild)
+}
+
+def build(CheribuildProjectParams proj, String stageSuffix) {
+	try {
+		// No docker yet
+		// sdkImage.inside('-u 0') {
+		ansiColor('xterm') {
+			buildInDocker(proj, stageSuffix)
+		}
+		// }
+		runCallback(proj, proj.afterBuild)
+	} finally {
+		runCallback(proj, proj.finallyAfterBuild)
+	}
 }
 
 def runTestsImpl(CheribuildProjectParams proj, String testExtraArgs, String cheribuildExtraTestArgs, String testSuffix) {
